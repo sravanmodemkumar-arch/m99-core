@@ -294,14 +294,7 @@ async function _appendHistory(KV, tenantId, uid, entry) {
 
 function _defaultExams() {
   return [
-    { id: "rrb-gd-2024-full-1", title: "RRB Group D Full Mock Test 1", type: "full",    total_qs: 100, duration_s: 5400, badge: "popular" },
-    { id: "rrb-gd-2024-full-2", title: "RRB Group D Full Mock Test 2", type: "full",    total_qs: 100, duration_s: 5400 },
-    { id: "rrb-gd-2024-full-3", title: "RRB Group D Full Mock Test 3", type: "full",    total_qs: 100, duration_s: 5400, badge: "new" },
-    { id: "rrb-gd-math-1",      title: "Mathematics Section Test 1",   type: "section", total_qs: 25,  duration_s: 1500 },
-    { id: "rrb-gd-reasoning-1", title: "Reasoning Section Test 1",     type: "section", total_qs: 30,  duration_s: 1800 },
-    { id: "rrb-gd-science-1",   title: "General Science Section Test 1", type: "section", total_qs: 25, duration_s: 1500 },
-    { id: "rrb-gd-gk-1",        title: "GK & Current Affairs Test 1",  type: "section", total_qs: 20,  duration_s: 1200 },
-    { id: "rrb-gd-mini-1",      title: "Quick 20-Question Mini Test",  type: "mini",    total_qs: 20,  duration_s: 1200 },
+    { id: "rrb-gd-2024-full-1", title: "RRB Group D Full Mock Test 1", type: "full", total_qs: 100, duration_s: 5400, badge: "popular" },
   ];
 }
 

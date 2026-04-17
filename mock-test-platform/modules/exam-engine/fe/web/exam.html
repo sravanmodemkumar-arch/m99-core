@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RRB Group D — Exam</title>
-<link rel="stylesheet" href="/modules/rrb-group-d/fe/shared/exam.css">
+<title>Exam</title>
+<link rel="stylesheet" href="/modules/exam-engine/fe/shared/exam.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
@@ -22,26 +22,22 @@
 <!-- Exam shell -->
 <div class="exam-shell" id="exam-shell" style="display:none">
 
-  <!-- ══ LEFT COLUMN ══════════════════════════════════════════════════════ -->
+  <!-- ══ LEFT COLUMN ══ -->
   <div class="exam-left">
 
-    <!-- Row 1: Exam nav -->
     <div class="exam-nav-row">
-      <div class="exam-pill" id="exam-title">RRB Group D</div>
+      <div class="exam-pill" id="exam-title">Exam</div>
     </div>
 
-    <!-- Row 2: Sections label + Timer -->
     <div class="sections-label-row">
       <span class="sections-lbl">Sections</span>
       <span class="timer-label">Time Left : <strong class="exam-timer" id="exam-timer">90:00</strong></span>
     </div>
 
-    <!-- Row 3: Section tabs -->
     <div class="section-tabs-row">
       <div class="section-tabs-inner" id="section-tabs"></div>
     </div>
 
-    <!-- Row 4: Marks info bar -->
     <div class="marks-bar">
       <div style="flex:1"></div>
       <span id="marks-info-text" style="display:flex;gap:8px;align-items:center"></span>
@@ -50,16 +46,14 @@
       </select>
     </div>
 
-    <!-- Question scroll -->
     <div class="main-scroll" id="main-scroll">
       <div id="question-area"></div>
     </div>
 
-    <!-- Action bar -->
     <div id="action-bar"></div>
   </div>
 
-  <!-- ══ RIGHT COLUMN (SIDEBAR) ════════════════════════════════════════════ -->
+  <!-- ══ RIGHT COLUMN (SIDEBAR) ══ -->
   <div class="exam-right" id="exam-right">
 
     <!-- Candidate card -->
@@ -87,7 +81,7 @@
     <!-- Legend -->
     <div class="sidebar-legend-wrap" id="sidebar-legend"></div>
 
-    <!-- Palette (section header + question grid) -->
+    <!-- Question palette -->
     <div class="sidebar-palette-scroll" id="sidebar-palette"></div>
 
     <!-- Submit -->
@@ -115,7 +109,7 @@
     <div class="submit-modal-sub">You cannot change your answers after submitting.</div>
     <div id="modal-summary"></div>
     <div style="display:flex;gap:0.75rem;margin-top:1.25rem">
-      <button class="ref-btn ref-btn-outline" style="flex:1" onclick="closeSubmitModal()">Go Back</button>
+      <button class="ref-btn" style="flex:1" onclick="closeSubmitModal()">Go Back</button>
       <button class="ref-btn ref-btn-primary" style="flex:1" id="confirm-submit-btn" onclick="confirmSubmit()">Submit Now</button>
     </div>
   </div>
@@ -126,19 +120,28 @@ import { boot, requireAuth, api } from "/modules/auth/fe/web/app.js";
 import {
   renderQuestion, renderPaletteSection, renderActionBar,
   renderSectionTabs, renderSubmitSummary, renderLegend,
-} from "/modules/rrb-group-d/fe/shared/components.js";
+} from "/modules/exam-engine/fe/shared/components.js";
 import {
   initState, goTo, selectOption, clearOption, toggleMark,
   tick, summary, serialize, deserialize, Q,
-} from "/modules/rrb-group-d/fe/shared/qstate.js";
-import { scoreExam, percentage } from "/modules/rrb-group-d/fe/shared/scoring.js";
+} from "/modules/exam-engine/fe/shared/qstate.js";
+import { scoreExam, percentage } from "/modules/exam-engine/fe/shared/scoring.js";
+
+// ── Config from URL ────────────────────────────────────────────────────────
+// Required: ?exam_id=xxx
+// Optional: ?api_prefix=/rrb  (default: /exam)
+//           ?result_url=./result.html
+const _params     = new URLSearchParams(location.search);
+const API_PREFIX  = _params.get("api_prefix")  || "/exam";
+const RESULT_URL  = _params.get("result_url")  || "./result.html";
+const EXAM_ID     = _params.get("exam_id")     || "";
+const BACK_URL    = _params.get("back_url")    || "./";
+const EXAM_LABEL  = _params.get("label")       || "";
 
 function _unisexSvg() {
   return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <circle cx="40" cy="40" r="40" fill="#e3f2fd"/>
-    <!-- head -->
     <circle cx="40" cy="30" r="14" fill="#90caf9"/>
-    <!-- shoulders / body -->
     <path d="M12 75 Q12 54 40 54 Q68 54 68 75 Z" fill="#90caf9"/>
   </svg>`;
 }
@@ -149,32 +152,30 @@ let sessionId       = null;
 let timerHandle     = null;
 let syncHandle      = null;
 let activeSectionId = null;
-let sectionElapsed  = {};   // { sectionId: seconds } — used when timer_mode="section"
+let sectionElapsed  = {};
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function init() {
   if (!requireAuth()) return;
   await boot();
 
-  const name     = localStorage.getItem("name") || "Candidate";
-  const photoUrl = localStorage.getItem("avatar_url") || localStorage.getItem("photo_url") || "";
-  const regNo    = localStorage.getItem("reg_no")      || localStorage.getItem("registration_no") || "—";
-  const hallTkt  = localStorage.getItem("hall_ticket") || localStorage.getItem("hall_ticket_no")  || "—";
-  const dob      = localStorage.getItem("dob")         || "—";
+  const name    = localStorage.getItem("name")        || "Candidate";
+  const photoUrl= localStorage.getItem("avatar_url")  || localStorage.getItem("photo_url") || "";
+  const regNo   = localStorage.getItem("reg_no")      || localStorage.getItem("registration_no") || "—";
+  const hallTkt = localStorage.getItem("hall_ticket") || "—";
+  const dob     = localStorage.getItem("dob")         || "—";
 
   document.getElementById("sidebar-name").textContent = name;
   document.getElementById("sidebar-reg").textContent  = regNo;
   document.getElementById("sidebar-hall").textContent = hallTkt;
   document.getElementById("sidebar-dob").textContent  = dob;
-  document.getElementById("user-avatar").innerHTML = photoUrl
+  document.getElementById("user-avatar").innerHTML    = photoUrl
     ? `<img src="${photoUrl}" alt="${name}" onerror="this.parentElement.innerHTML=_unisexSvg()">`
     : _unisexSvg();
 
-  const examId = new URLSearchParams(location.search).get("exam_id") || "rrb-gd-2024";
-
-  const { ok, data } = await api("/rrb/exam/start", {
+  const { ok, data } = await api(`${API_PREFIX}/exam/start`, {
     method: "POST",
-    body: JSON.stringify({ exam_id: examId }),
+    body: JSON.stringify({ exam_id: EXAM_ID }),
   });
   if (!ok) { alert(data.error || "Failed to start exam"); return; }
 
@@ -185,17 +186,15 @@ async function init() {
   });
   bundle = await bundleRes.json();
 
-  // Marks info from bundle
   const m = bundle.marking || { correct: 1, wrong: -0.333 };
   document.getElementById("marks-info-text").innerHTML =
     `<span class="mark-chip mark-chip-correct">✔ Correct <strong>+${m.correct}</strong></span>
      <span class="mark-chip mark-chip-wrong">✘ Wrong <strong>−${Math.abs(m.wrong).toFixed(2)}</strong></span>`;
 
-  // Exam title
-  document.getElementById("exam-title").innerHTML =
-    `${bundle.exam_title || "RRB Group D"}`;
+  document.getElementById("exam-title").textContent =
+    bundle.exam_title || "Exam";
+  document.title = bundle.exam_title || "Exam";
 
-  // State
   if (data.resumed && data.checkpoint && Object.keys(data.checkpoint).length > 0) {
     state = deserialize(localStorage.getItem(`checkpoint_${sessionId}`) || "{}");
     if (!state?.order) state = initState(bundle.questions);
@@ -213,16 +212,13 @@ async function init() {
   document.getElementById("exam-shell").style.display   = "";
   if (window.__examStarted) window.__examStarted();
 
-  // Render legend once
   document.getElementById("sidebar-legend").innerHTML = renderLegend(summary(state).total);
-
   renderSectionTabsBar();
   renderCurrentQuestion();
   renderAllPalettes();
 
   startTimer(bundle.duration_s, data.elapsed_s || 0);
   syncHandle = setInterval(pushSync, 30000);
-
 }
 
 // ── Timer ──────────────────────────────────────────────────────────────────
@@ -230,7 +226,6 @@ function startTimer(duration, elapsed) {
   state = { ...state, elapsed };
   timerHandle = setInterval(() => {
     state = tick(state);
-    // Section-wise elapsed tracking
     if (bundle.timer_mode === "section") {
       sectionElapsed[activeSectionId] = (sectionElapsed[activeSectionId] || 0) + 1;
       const sec = bundle.sections.find(s => s.id === activeSectionId);
@@ -278,48 +273,17 @@ function renderCurrentQuestion() {
 
   document.getElementById("action-bar").innerHTML = renderActionBar({
     qId,
-    isLast:   idx === state.order.length - 1,
-    isMarked: qState.status === Q.MARKED_REVIEW || qState.status === Q.ANSWERED_MARKED,
+    isLast:    idx === state.order.length - 1,
+    isMarked:  qState.status === Q.MARKED_REVIEW || qState.status === Q.ANSWERED_MARKED,
     hasAnswer: !!qState.chosen,
   });
 
-  // Update legend + section tab counts live
   const snap = summary(state);
   document.getElementById("sidebar-legend").innerHTML = renderLegend(snap.total);
   renderSectionTabsBar();
   renderAllPalettes();
   _scrollToCurrent();
   _renderMath();
-}
-
-function _scrollToCurrent() {
-  // Scroll both sidebar and drawer palette to show the active question button
-  for (const scrollEl of ["sidebar-palette", "drawer-palette"]) {
-    const container = document.getElementById(scrollEl)?.closest(".sidebar-palette-scroll, .palette-drawer-wrap");
-    const btn = document.getElementById(scrollEl)?.querySelector(".palette-btn.q-current");
-    if (!container || !btn) continue;
-    const cTop = container.getBoundingClientRect().top;
-    const bTop = btn.getBoundingClientRect().top;
-    const offset = bTop - cTop - container.clientHeight / 2 + btn.clientHeight / 2;
-    container.scrollBy({ top: offset, behavior: "smooth" });
-  }
-}
-
-function _renderMath() {
-  if (!window.__katexReady || !window.renderMathInElement) return;
-  const el = document.getElementById("question-area");
-  if (!el) return;
-  try {
-    renderMathInElement(el, {
-      delimiters: [
-        { left: "\\[", right: "\\]", display: true  },
-        { left: "\\(", right: "\\)", display: false },
-        { left: "$$",  right: "$$",  display: true  },
-        { left: "$",   right: "$",   display: false },
-      ],
-      throwOnError: false,
-    });
-  } catch(e) {}
 }
 
 function renderSectionTabsBar() {
@@ -350,6 +314,34 @@ function _buildPaletteHTML() {
     { id: section.id, label: section.label, questions: sectionQs },
     state.current
   );
+}
+
+function _scrollToCurrent() {
+  for (const scrollEl of ["sidebar-palette", "drawer-palette"]) {
+    const container = document.getElementById(scrollEl)?.closest(".sidebar-palette-scroll, .palette-drawer-wrap");
+    const btn = document.getElementById(scrollEl)?.querySelector(".palette-btn.q-current");
+    if (!container || !btn) continue;
+    const cTop = container.getBoundingClientRect().top;
+    const bTop = btn.getBoundingClientRect().top;
+    container.scrollBy({ top: bTop - cTop - container.clientHeight / 2 + btn.clientHeight / 2, behavior: "smooth" });
+  }
+}
+
+function _renderMath() {
+  if (!window.__katexReady || !window.renderMathInElement) return;
+  const el = document.getElementById("question-area");
+  if (!el) return;
+  try {
+    renderMathInElement(el, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true  },
+        { left: "\\(", right: "\\)", display: false },
+        { left: "$$",  right: "$$",  display: true  },
+        { left: "$",   right: "$",   display: false },
+      ],
+      throwOnError: false,
+    });
+  } catch(e) {}
 }
 
 // ── Global actions ─────────────────────────────────────────────────────────
@@ -400,7 +392,6 @@ window.__submitExam = () => {
   document.getElementById("submit-overlay").classList.add("open");
 };
 
-// ── Mobile palette ─────────────────────────────────────────────────────────
 window.openPalette  = () => {
   document.getElementById("palette-backdrop").classList.add("open");
   document.getElementById("palette-drawer").classList.add("open");
@@ -410,7 +401,6 @@ window.closePalette = () => {
   document.getElementById("palette-drawer").classList.remove("open");
 };
 
-// ── Submit ─────────────────────────────────────────────────────────────────
 window.closeSubmitModal = () => document.getElementById("submit-overlay").classList.remove("open");
 
 window.confirmSubmit = async function() {
@@ -423,7 +413,7 @@ window.confirmSubmit = async function() {
   for (const [id, q] of Object.entries(state.questions))
     responses[id] = { chosen: q.chosen, attempted: q.attempted };
 
-  const { ok, data } = await api("/rrb/exam/submit", {
+  const { ok, data } = await api(`${API_PREFIX}/exam/submit`, {
     method: "POST",
     body: JSON.stringify({ session_id: sessionId, responses, elapsed_s: state.elapsed }),
   });
@@ -442,30 +432,36 @@ window.confirmSubmit = async function() {
   const result = scoreExam(sectionMap);
   const params = new URLSearchParams({
     session_id: sessionId,
-    score:   result.total.score,
-    correct: result.total.correct,
-    wrong:   result.total.wrong,
-    skipped: result.total.skipped,
-    total:   bundle.questions.length,
-    pct:     percentage(result.total.rawScaled, bundle.questions.length),
+    score:      result.total.score,
+    correct:    result.total.correct,
+    wrong:      result.total.wrong,
+    skipped:    result.total.skipped,
+    total:      bundle.questions.length,
+    pct:        percentage(result.total.rawScaled, bundle.questions.length),
+    elapsed_s:  state.elapsed,
+    label:      EXAM_LABEL || bundle.exam_title || "Exam",
+    api_prefix: API_PREFIX,
+    back_url:   BACK_URL,
+    home_url:   BACK_URL,
   });
+  const section_defs = bundle.sections.map(s => ({ id: s.id, label: s.label }));
   sessionStorage.setItem(`result_${sessionId}`, JSON.stringify({
     answer_key: data.answer_key, responses,
-    sections: result.sections, elapsed_s: state.elapsed, ...result.total,
+    sections: result.sections, section_defs,
+    elapsed_s: state.elapsed, ...result.total,
   }));
-  window.location.href = `result.html?${params}`;
+  window.location.href = `${RESULT_URL}?${params}`;
 };
 
 async function autoSubmit() { window.confirmSubmit(); }
 
-// ── KV sync ────────────────────────────────────────────────────────────────
 async function pushSync() {
   if (!sessionId || !state) return;
   const responses = {};
   for (const [id, q] of Object.entries(state.questions))
     if (q.attempted) responses[id] = { chosen: q.chosen, attempted: true };
   localStorage.setItem(`checkpoint_${sessionId}`, serialize(state));
-  fetch("/rrb/exam/sync", {
+  fetch(`${API_PREFIX}/exam/sync`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("auth_token")}` },
     body: JSON.stringify({ session_id: sessionId, elapsed_s: state.elapsed, responses }),

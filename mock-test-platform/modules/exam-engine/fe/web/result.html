@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Result</title>
+<link rel="stylesheet" href="/modules/exam-engine/fe/shared/exam.css">
+<script src="/modules/exam-engine/fe/desktop/desktop-adapter.js" onerror="void 0"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Arial,sans-serif;background:#f0f2f5}
+
+.result-shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── Header ── */
+.res-hdr{
+  background:#1565c0;color:#fff;height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(0,0,0,0.25);gap:16px;
+}
+.res-hdr-title{font-size:clamp(14px,1.1vw+5px,18px);font-weight:800;flex:1;text-align:center;letter-spacing:0.01em}
+.hdr-btn{
+  padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;
+  border:1.5px solid rgba(255,255,255,0.45);background:rgba(255,255,255,0.12);
+  color:#fff;cursor:pointer;white-space:nowrap;transition:background 0.15s;
+}
+.hdr-btn:hover{background:rgba(255,255,255,0.22)}
+.hdr-btn.purple{background:rgba(106,27,154,0.7);border-color:rgba(206,147,216,0.5)}
+
+/* ── Score band ── */
+.score-band{
+  background:linear-gradient(135deg,#1a237e 0%,#1565c0 100%);
+  padding:16px 28px;display:flex;align-items:center;gap:24px;
+  flex-shrink:0;border-bottom:3px solid #0d47a1;flex-wrap:wrap;
+}
+.score-main{display:flex;flex-direction:column;align-items:center;min-width:90px}
+.score-big{
+  font-size:clamp(30px,3vw+10px,50px);font-weight:900;color:#fff;
+  line-height:1;text-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+.score-sub{font-size:11px;color:#90caf9;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.score-div{width:1px;align-self:stretch;background:rgba(255,255,255,0.22);flex-shrink:0}
+.score-chips{display:flex;gap:10px;flex-wrap:wrap}
+.s-chip{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 16px;border-radius:10px;min-width:72px;
+}
+.s-chip.c{background:rgba(46,125,50,0.85);border:1px solid rgba(76,175,80,0.5)}
+.s-chip.w{background:rgba(183,28,28,0.85);border:1px solid rgba(229,57,53,0.5)}
+.s-chip.sk{background:rgba(55,71,79,0.75);border:1px solid rgba(120,144,156,0.4)}
+.s-chip.tot{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.28)}
+.chip-v{font-size:clamp(18px,2vw,26px);font-weight:900;color:#fff;line-height:1}
+.chip-l{font-size:10px;color:rgba(255,255,255,0.8);font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em}
+.score-pct{
+  display:flex;flex-direction:column;align-items:center;
+  padding-left:20px;border-left:1px solid rgba(255,255,255,0.22);
+}
+.pct-v{font-size:clamp(22px,2.5vw,34px);font-weight:900;color:#fff}
+.pct-l{font-size:10px;color:#90caf9;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+
+/* ── Main split ── */
+.res-main{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ── Left: sections ── */
+.res-left{
+  width:clamp(240px,26vw,320px);flex-shrink:0;
+  background:#fff;border-right:2px solid #e0e4ed;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.panel-hd{
+  padding:12px 18px;background:#f8f9ff;border-bottom:2px solid #e8f0fe;
+  font-size:11px;font-weight:800;color:#1565c0;
+  text-transform:uppercase;letter-spacing:0.07em;flex-shrink:0;
+}
+.sec-scroll{flex:1;overflow-y:auto;padding:12px 12px}
+.sec-card{
+  background:#f8f9ff;border:1px solid #e8edf6;border-radius:10px;
+  padding:13px 13px 11px;margin-bottom:10px;
+}
+.sec-name{font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:9px}
+.sec-stats{display:flex;gap:5px}
+.ss{flex:1;text-align:center;padding:7px 3px;border-radius:7px}
+.ss.c{background:#e8f5e9}.ss.w{background:#ffebee}.ss.s{background:#f5f5f5}
+.ss-v{font-size:clamp(14px,1.3vw,20px);font-weight:900;line-height:1}
+.ss.c .ss-v{color:#2e7d32}.ss.w .ss-v{color:#c62828}.ss.s .ss-v{color:#546e7a}
+.ss-l{font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+.sec-bar-wrap{height:5px;background:#e8edf6;border-radius:3px;margin-top:10px;overflow:hidden}
+.sec-bar{height:100%;border-radius:3px;transition:width 1s ease}
+.sec-foot{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:#666;font-weight:600}
+
+/* ── Right: answers ── */
+.res-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f0f2f5}
+.filter-bar{
+  display:flex;gap:8px;padding:11px 18px;
+  background:#fff;border-bottom:2px solid #e0e4ed;
+  flex-shrink:0;align-items:center;flex-wrap:wrap;
+}
+.f-count{font-size:12px;color:#aaa;font-weight:600;margin-left:auto}
+.f-chip{
+  padding:6px 16px;border-radius:999px;font-size:12px;font-weight:700;
+  border:2px solid #dde1ea;background:#fff;cursor:pointer;
+  transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;
+}
+.f-chip:hover:not([class*="fa-"]){background:#f0f4ff;border-color:#90caf9}
+.fa-all    {background:#1565c0;color:#fff;border-color:#1565c0}
+.fa-correct{background:#2e7d32;color:#fff;border-color:#2e7d32}
+.fa-wrong  {background:#c62828;color:#fff;border-color:#c62828}
+.fa-skipped{background:#546e7a;color:#fff;border-color:#546e7a}
+
+.ans-scroll{flex:1;overflow-y:auto;padding:10px 14px}
+.ans-hd{
+  display:grid;grid-template-columns:46px 1fr 88px 88px 110px 68px;
+  gap:8px;padding:7px 14px;margin-bottom:4px;
+  font-size:10px;font-weight:800;color:#8a9ab7;
+  text-transform:uppercase;letter-spacing:0.06em;
+}
+.ans-row{
+  display:grid;grid-template-columns:46px 1fr 88px 88px 110px 68px;
+  align-items:center;gap:8px;padding:11px 14px;
+  background:#fff;border:1px solid #e8edf6;border-left:4px solid transparent;
+  border-radius:8px;margin-bottom:5px;font-size:13px;
+  transition:box-shadow 0.12s;
+}
+.ans-row:hover{box-shadow:0 2px 10px rgba(0,0,0,0.07)}
+.ans-row.correct{border-left-color:#2e7d32}
+.ans-row.wrong  {border-left-color:#c62828}
+.ans-row.skipped{border-left-color:#90a4ae}
+.a-num{font-size:13px;font-weight:800;color:#1565c0}
+.a-sec{font-size:11px;color:#777;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a-chosen{font-size:13px;font-weight:700}
+.a-correct{font-size:13px;font-weight:700;color:#2e7d32}
+.v-c{color:#2e7d32;font-weight:800}.v-w{color:#c62828;font-weight:800}.v-s{color:#90a4ae;font-weight:600}
+.a-marks{font-size:13px;font-weight:800;text-align:right}
+
+/* ── Footer ── */
+.res-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;background:#fff;border-top:2px solid #e0e4ed;
+  flex-shrink:0;gap:12px;
+}
+.f-btn{
+  padding:11px 26px;border-radius:7px;font-size:13px;font-weight:700;
+  border:none;cursor:pointer;min-height:44px;transition:filter 0.15s;
+}
+.f-btn:hover{filter:brightness(0.9)}
+.f-btn.outline{background:#f0f2f5;color:#333;border:2px solid #c8c8c8}
+.f-btn.blue{background:#1565c0;color:#fff}
+.f-btn.purple{background:#6a1b9a;color:#fff}
+.f-meta{font-size:12px;color:#aaa;font-weight:500;text-align:center}
+
+@media(max-width:767px){
+  .res-left{display:none}
+  .ans-hd,.ans-row{grid-template-columns:36px 1fr 60px 60px 90px 56px;font-size:12px;padding:9px 10px}
+  .score-band{padding:12px 16px;gap:16px}
+}
+</style>
+</head>
+<body>
+<div class="result-shell">
+
+  <!-- Header -->
+  <div class="res-hdr">
+    <button class="hdr-btn" onclick="goBack()">← Home</button>
+    <div class="res-hdr-title" id="exam-label">Result</div>
+    <button class="hdr-btn purple" onclick="goAnalysis()">Analysis →</button>
+  </div>
+
+  <!-- Score band -->
+  <div class="score-band">
+    <div class="score-main">
+      <div class="score-big" id="score-val">—</div>
+      <div class="score-sub">Score</div>
+    </div>
+    <div class="score-div"></div>
+    <div class="score-chips">
+      <div class="s-chip c"><div class="chip-v" id="chip-c">—</div><div class="chip-l">Correct</div></div>
+      <div class="s-chip w"><div class="chip-v" id="chip-w">—</div><div class="chip-l">Wrong</div></div>
+      <div class="s-chip sk"><div class="chip-v" id="chip-s">—</div><div class="chip-l">Skipped</div></div>
+      <div class="s-chip tot"><div class="chip-v" id="chip-t">—</div><div class="chip-l">Total</div></div>
+    </div>
+    <div class="score-div"></div>
+    <div class="score-pct">
+      <div class="pct-v" id="pct-val">—</div>
+      <div class="pct-l">Accuracy</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="res-main">
+
+    <!-- Left: section breakdown -->
+    <div class="res-left">
+      <div class="panel-hd">Section Breakdown</div>
+      <div class="sec-scroll" id="sec-list"></div>
+    </div>
+
+    <!-- Right: answer review -->
+    <div class="res-right">
+      <div class="filter-bar">
+        <button class="f-chip fa-all"     onclick="setFilter('all',this)">All</button>
+        <button class="f-chip"            onclick="setFilter('correct',this)">✓ Correct</button>
+        <button class="f-chip"            onclick="setFilter('wrong',this)">✗ Wrong</button>
+        <button class="f-chip"            onclick="setFilter('skipped',this)">— Skipped</button>
+        <span class="f-count" id="f-count"></span>
+      </div>
+      <div class="ans-scroll">
+        <div class="ans-hd">
+          <span>#</span><span>Section</span>
+          <span>Your Ans</span><span>Correct</span>
+          <span>Verdict</span><span>Marks</span>
+        </div>
+        <div id="ans-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="res-footer">
+    <button class="f-btn outline" onclick="goBack()">← Back to Home</button>
+    <div class="f-meta" id="f-meta"></div>
+    <button class="f-btn purple" onclick="goAnalysis()">View Detailed Analysis →</button>
+  </div>
+</div>
+
+<script type="module">
+import { boot, requireAuth } from "/modules/auth/fe/web/app.js";
+
+const _p         = new URLSearchParams(location.search);
+const SID        = _p.get("session_id") || "";
+const SCORE      = parseFloat(_p.get("score")   || "0");
+const CORRECT    = parseInt(_p.get("correct")    || "0");
+const WRONG      = parseInt(_p.get("wrong")      || "0");
+const SKIPPED    = parseInt(_p.get("skipped")    || "0");
+const TOTAL      = parseInt(_p.get("total")      || "0");
+const PCT        = parseFloat(_p.get("pct")      || "0");
+const BACK_URL   = _p.get("back_url")             || "./";
+const LABEL      = _p.get("label")               || "Exam Result";
+const API_PREFIX = _p.get("api_prefix")           || "/exam";
+
+const COLORS = ["#1565c0","#6a1b9a","#2e7d32","#e65100","#0277bd","#ad1457","#00838f","#558b2f"];
+
+let allRows = [], activeFilter = "all";
+
+async function init() {
+  if (!requireAuth()) return;
+  await boot();
+
+  document.getElementById("exam-label").textContent = LABEL;
+  const sign = SCORE >= 0 ? "+" : "";
+  document.getElementById("score-val").textContent = `${sign}${SCORE.toFixed(2)}`;
+  document.getElementById("chip-c").textContent = CORRECT;
+  document.getElementById("chip-w").textContent = WRONG;
+  document.getElementById("chip-s").textContent = SKIPPED;
+  document.getElementById("chip-t").textContent = TOTAL;
+  document.getElementById("pct-val").textContent = `${PCT}%`;
+
+  const es = parseInt(_p.get("elapsed_s") || "0");
+  document.getElementById("f-meta").textContent =
+    `Session ${SID.slice(-8)} · Time used: ${Math.floor(es/60)}m ${es%60}s`;
+
+  const raw = sessionStorage.getItem(`result_${SID}`);
+  if (!raw) { renderSections(null, []); return; }
+  const data = JSON.parse(raw);
+  renderSections(data.sections, data.section_defs || []);
+  buildRows(data.answer_key, data.responses, data.sections, data.section_defs || []);
+  renderRows();
+}
+
+function renderSections(sections, defs) {
+  const el = document.getElementById("sec-list");
+  if (!sections || !defs.length) {
+    el.innerHTML = `<div style="padding:24px;text-align:center;color:#aaa;font-size:13px">No section data available</div>`;
+    return;
+  }
+  el.innerHTML = defs.map((def, i) => {
+    const d = sections[def.id] || { correct:0, wrong:0, skipped:0, rawScaled:0 };
+    const att = d.correct + d.wrong;
+    const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+    const sc  = (d.rawScaled / 1000).toFixed(2);
+    const color = COLORS[i % COLORS.length];
+    return `
+      <div class="sec-card">
+        <div class="sec-name">${def.label}</div>
+        <div class="sec-stats">
+          <div class="ss c"><div class="ss-v">${d.correct}</div><div class="ss-l">Correct</div></div>
+          <div class="ss w"><div class="ss-v">${d.wrong}</div><div class="ss-l">Wrong</div></div>
+          <div class="ss s"><div class="ss-v">${d.skipped}</div><div class="ss-l">Skipped</div></div>
+        </div>
+        <div class="sec-bar-wrap">
+          <div class="sec-bar" style="width:${acc}%;background:${color}"></div>
+        </div>
+        <div class="sec-foot">
+          <span>Score: ${sc >= 0 ? '+' : ''}${sc}</span>
+          <span>Accuracy: ${acc}%</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function buildRows(answerKey, responses, sections, defs) {
+  const qSec = {};
+  if (sections) {
+    for (const [sid, s] of Object.entries(sections))
+      for (const qid of Object.keys(s.responses || {})) qSec[qid] = sid;
+  }
+  const labels = Object.fromEntries((defs||[]).map(d => [d.id, d.label]));
+  let idx = 0;
+  allRows = Object.entries(answerKey || {}).map(([qid, correct]) => {
+    idx++;
+    const r = (responses||{})[qid] || { chosen:null, attempted:false };
+    const sid = qSec[qid] || "";
+    const verdict = !r.attempted ? "skipped" : r.chosen === correct ? "correct" : "wrong";
+    const marks = verdict === "correct" ? "+1" : verdict === "wrong" ? "−0.33" : "0";
+    return { idx, qid, sec: labels[sid] || sid, chosen: r.chosen||"—", correct, verdict, marks };
+  });
+}
+
+function renderRows() {
+  const rows = activeFilter === "all" ? allRows : allRows.filter(r => r.verdict === activeFilter);
+  document.getElementById("f-count").textContent = `${rows.length} questions`;
+  document.getElementById("ans-rows").innerHTML = rows.map(r => `
+    <div class="ans-row ${r.verdict}">
+      <span class="a-num">${r.idx}</span>
+      <span class="a-sec">${r.sec}</span>
+      <span class="a-chosen" style="color:${r.verdict==='wrong'?'#c62828':'#1a1a1a'}">${r.chosen}</span>
+      <span class="a-correct">${r.correct}</span>
+      <span class="${r.verdict==='correct'?'v-c':r.verdict==='wrong'?'v-w':'v-s'}">
+        ${r.verdict==='correct'?'✓ Correct':r.verdict==='wrong'?'✗ Wrong':'— Skipped'}
+      </span>
+      <span class="a-marks" style="color:${r.verdict==='correct'?'#2e7d32':r.verdict==='wrong'?'#c62828':'#90a4ae'}">${r.marks}</span>
+    </div>`).join("") ||
+    `<div style="padding:40px;text-align:center;color:#aaa;font-size:14px">No questions</div>`;
+}
+
+window.setFilter = function(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll(".f-chip").forEach(c => {
+    c.className = "f-chip";
+  });
+  btn.classList.add(`fa-${f}`);
+  renderRows();
+};
+
+window.goBack     = () => { window.location.href = BACK_URL; };
+window.goAnalysis = () => {
+  const p = new URLSearchParams({
+    session_id: SID, label: LABEL,
+    api_prefix: API_PREFIX, back_url: location.href,
+    home_url:   BACK_URL,
+    correct: CORRECT, wrong: WRONG, skipped: SKIPPED,
+    total: TOTAL, pct: PCT, score: SCORE,
+    elapsed_s: _p.get("elapsed_s")||"0",
+  });
+  window.location.href = `analysis.html?${p}`;
+};
+
+init();
+</script>
+</body>
+</html>

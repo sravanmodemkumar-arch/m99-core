@@ -155,8 +155,7 @@ export async function lockTSF(sessionId, finalResponses, kv) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function _buildClientBundle(tsf, _bank, cfg) {
-  // question_order already carries the mapped question data in ._q
+function _buildClientBundle(tsf, bank, cfg) {
   const questions = tsf.question_order.map(({ id, section, _q }) => ({
     id,
     section,
@@ -165,12 +164,22 @@ function _buildClientBundle(tsf, _bank, cfg) {
     options: _q?.options || [],
   }));
 
+  // Merge bank section metadata (duration_s per section, etc.) into cfg sections
+  const bankSectionMap = {};
+  for (const bs of (bank.sections || [])) bankSectionMap[bs.id] = bs;
+  const sections = cfg.sections.map(s => ({
+    ...s,
+    duration_s: bankSectionMap[s.id]?.duration_s ?? null,
+  }));
+
   return {
-    session_id:    tsf.session_id,
-    exam_id:       tsf.exam_id,
-    duration_s:    tsf.duration_s,
-    started_at:    tsf.started_at,
-    sections:      cfg.sections,
+    session_id: tsf.session_id,
+    exam_id:    tsf.exam_id,
+    duration_s: tsf.duration_s,
+    timer_mode: bank.timer_mode || "global",   // "global" | "section"
+    marking:    bank.marking    || { correct: 1, wrong: -0.333, skipped: 0 },
+    started_at: tsf.started_at,
+    sections,
     questions,
     // answer_key intentionally omitted
   };

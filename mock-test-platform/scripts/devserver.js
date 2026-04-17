@@ -58,7 +58,17 @@ createServer((req, res) => {
   }
 
   // ── Serve static files ──────────────────────────────────────────────────
-  let filePath = join(ROOT, path === "/" ? "/modules/rrb-group-d/fe/web/home.html" : path);
+  if (path === "/favicon.ico") {
+    res.writeHead(200, { "Content-Type": "image/svg+xml" });
+    res.end(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1e3a8a"/><text x="16" y="22" text-anchor="middle" font-size="18" fill="#fff" font-family="sans-serif">R</text></svg>`);
+    return;
+  }
+  if (path === "/") {
+    res.writeHead(302, { Location: "/modules/rrb-group-d/fe/web/home.html" });
+    res.end();
+    return;
+  }
+  let filePath = join(ROOT, path);
 
   // Directory → index.html
   if (existsSync(filePath) && statSync(filePath).isDirectory()) {
