@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  body { display:flex; flex-direction:column; min-height:100vh; }
+  .welcome-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem 1.25rem; text-align:center; }
+  .welcome-slides { position:relative; width:100%; max-width:420px; margin-bottom:2rem; }
+  .welcome-slide { display:none; animation:fadein 0.4s; }
+  .welcome-slide.active { display:block; }
+  @keyframes fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .slide-img { font-size:5rem; margin-bottom:1.5rem; }
+  .slide-title { font-size:1.625rem; font-weight:800; color:var(--text); margin-bottom:0.75rem; }
+  .slide-desc { font-size:1rem; color:var(--text-muted); line-height:1.6; max-width:340px; margin:0 auto; }
+  .dots { display:flex; justify-content:center; gap:0.5rem; margin:1.5rem 0; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--border); transition:background 0.2s,width 0.2s; cursor:pointer; }
+  .dot.active { background:var(--primary); width:24px; border-radius:4px; }
+  .welcome-footer { padding:1.5rem 1.25rem; width:100%; max-width:420px; margin:0 auto; display:flex; flex-direction:column; gap:0.75rem; }
+</style>
+</head>
+<body>
+<div style="display:flex;justify-content:flex-end;padding:1rem 1.25rem">
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="welcome-wrap">
+  <div class="welcome-slides" id="slides">
+    <div class="welcome-slide active">
+      <div class="slide-img">🎯</div>
+      <div class="slide-title">Practice Like the Real Exam</div>
+      <div class="slide-desc">Timed mock tests with exact exam patterns for RRB, SSC, IBPS and more.</div>
+    </div>
+    <div class="welcome-slide">
+      <div class="slide-img">⚡</div>
+      <div class="slide-title">Instant Results</div>
+      <div class="slide-desc">Get your score the moment you submit. No waiting. No server delays.</div>
+    </div>
+    <div class="welcome-slide">
+      <div class="slide-img">📊</div>
+      <div class="slide-title">Know Your Weak Areas</div>
+      <div class="slide-desc">Detailed analytics show exactly where you need to improve.</div>
+    </div>
+  </div>
+  <div class="dots" id="dots">
+    <div class="dot active" onclick="goSlide(0)"></div>
+    <div class="dot" onclick="goSlide(1)"></div>
+    <div class="dot" onclick="goSlide(2)"></div>
+  </div>
+</div>
+
+<div class="welcome-footer">
+  <button class="btn btn-primary" id="next-btn" onclick="next()">Next</button>
+  <button class="btn-ghost" onclick="skip()">Skip</button>
+</div>
+
+<script type="module">
+import { boot } from "./app.js";
+let current = 0;
+const slides = document.querySelectorAll(".welcome-slide");
+const dots = document.querySelectorAll(".dot");
+
+function goSlide(n) {
+  slides[current].classList.remove("active");
+  dots[current].classList.remove("active");
+  current = n;
+  slides[current].classList.add("active");
+  dots[current].classList.add("active");
+  document.getElementById("next-btn").textContent = current === slides.length - 1 ? "Get Started" : "Next";
+}
+window.goSlide = goSlide;
+
+window.next = function() {
+  if (current < slides.length - 1) { goSlide(current + 1); return; }
+  localStorage.setItem("welcomed", "1");
+  window.location.href = "login.html";
+};
+window.skip = function() { localStorage.setItem("welcomed", "1"); window.location.href = "login.html"; };
+
+document.addEventListener("DOMContentLoaded", () => boot());
+</script>
+</body>
+</html>

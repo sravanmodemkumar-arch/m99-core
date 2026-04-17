@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — Step 2</title>
+<link rel="stylesheet" href="../shared/base.css">
+</head>
+<body>
+<div class="page-center">
+<div class="auth-card card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+    <div>
+      <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Step 2 of 3</div>
+      <div style="font-size:1.125rem;font-weight:700">Address</div>
+    </div>
+    <button class="mode-toggle" id="mode-toggle">🌙</button>
+  </div>
+  <div class="progress-bar"><div class="progress-step done"></div><div class="progress-step active"></div><div class="progress-step"></div></div>
+
+  <div class="field">
+    <label>Pincode *</label>
+    <input type="tel" id="pincode" maxlength="6" inputmode="numeric" placeholder="6-digit pincode" oninput="lookupPin()">
+    <div class="helper" id="pin-status"></div>
+    <div class="error" id="pin-error"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>State *</label><input type="text" id="state" placeholder="State"><div class="error" id="state-error"></div></div>
+    <div class="field"><label>City *</label><input type="text" id="city" placeholder="City"><div class="error" id="city-error"></div></div>
+  </div>
+  <div class="field"><label>Full Address</label><textarea id="address" rows="3" placeholder="House/flat, street, locality (optional)"></textarea></div>
+
+  <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+    <button class="btn btn-secondary btn-sm" style="flex:1" onclick="window.location.href='register-1.html'">← Back</button>
+    <button class="btn btn-primary" style="flex:2" id="next-btn" onclick="nextStep()">Continue →</button>
+  </div>
+</div>
+</div>
+<script type="module">
+import { boot, showError } from "./app.js";
+let pinTimer;
+window.lookupPin = () => {
+  clearTimeout(pinTimer);
+  const pin = document.getElementById("pincode").value;
+  if (pin.length !== 6) return;
+  document.getElementById("pin-status").textContent = "Looking up…";
+  pinTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const d = await res.json();
+      if (d[0].Status === "Success") {
+        const p = d[0].PostOffice[0];
+        document.getElementById("state").value = p.State;
+        document.getElementById("city").value = p.District;
+        document.getElementById("pin-status").textContent = "✓ " + p.Name;
+      } else document.getElementById("pin-status").textContent = "";
+    } catch { document.getElementById("pin-status").textContent = ""; }
+  }, 600);
+};
+window.nextStep = () => {
+  let valid = true;
+  [["pincode","pin-error"],["state","state-error"],["city","city-error"]].forEach(([id,err]) => {
+    if (!document.getElementById(id).value) { showError(err,"Required"); valid=false; } else showError(err,"");
+  });
+  if (!valid) return;
+  const data = { pincode: document.getElementById("pincode").value, state: document.getElementById("state").value, city: document.getElementById("city").value, address: document.getElementById("address").value };
+  sessionStorage.setItem("reg_step2", JSON.stringify(data));
+  window.location.href = "register-3.html";
+};
+document.addEventListener("DOMContentLoaded", () => boot());
+</script>
+</body>
+</html>
