@@ -1,0 +1,7 @@
+# Cloudflare Workers local dev secrets — copy to .dev.vars and fill in values
+# Used by: wrangler dev
+# Production: wrangler secret put <KEY>
+
+# No secrets for the gateway worker in v1.
+# Routing config lives in KV (slug: / domain: keys).
+# Service bindings are declared in wrangler.toml.

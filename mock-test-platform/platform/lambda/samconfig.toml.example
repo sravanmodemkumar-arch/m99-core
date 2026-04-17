@@ -1,0 +1,22 @@
+# AWS SAM deploy config — copy to samconfig.toml and fill in values
+# samconfig.toml is gitignored — never commit it
+# Secrets are read from AWS SSM Parameter Store at deploy time
+
+[default.deploy.parameters]
+stack_name   = "mock-test-platform"
+region       = "ap-south-1"
+capabilities = "CAPABILITY_IAM"
+resolve_s3   = true
+
+# Pull secrets from SSM — set these with:
+#   aws ssm put-parameter --name /mtp/prod/rds_password --value "..." --type SecureString
+#   aws ssm put-parameter --name /mtp/prod/jwt_secret   --value "..." --type SecureString
+parameter_overrides = """
+  RdsHost=your-rds-endpoint.ap-south-1.rds.amazonaws.com
+  RdsPort=5432
+  RdsDb=mocktest
+  RdsUser=app
+  RdsPassword={{resolve:ssm-secure:/mtp/prod/rds_password}}
+  JwtSecret={{resolve:ssm-secure:/mtp/prod/jwt_secret}}
+  R2Bucket=mock-test-content
+"""

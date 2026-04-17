@@ -1,0 +1,14 @@
+# Cloudflare Workers local dev secrets — copy to .dev.vars and fill in values
+# Used by: wrangler dev
+# Production: wrangler secret put <KEY>
+
+# JWT — must match the same secret used by rrb-group-d worker and Lambda
+JWT_SECRET=change-me-min-32-chars-random-string
+
+# SMS — set to "log" for local dev (prints OTP to console instead of sending SMS)
+# Options: log | msg91
+SMS_PROVIDER=log
+
+# MSG91 — only needed when SMS_PROVIDER=msg91
+MSG91_KEY=
+MSG91_TEMPLATE=
