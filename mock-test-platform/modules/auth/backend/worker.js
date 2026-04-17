@@ -15,7 +15,7 @@ const CORS = {
 
 export default {
   async fetch(request, env) {
-    if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
 
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/$/, "");
