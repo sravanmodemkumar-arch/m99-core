@@ -1,0 +1,12 @@
+name = "mtp-auth"
+main = "backend/worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+[vars]
+JWT_EXPIRY_HOURS = "24"
+SMS_PROVIDER = "log"
