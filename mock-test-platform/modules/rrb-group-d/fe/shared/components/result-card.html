@@ -1,0 +1,21 @@
+<!-- Result card fragment — rendered after exam submit -->
+<div class="result-card">
+  <div class="result-score" id="res-score">--</div>
+  <div class="result-label">Score</div>
+  <div class="result-grid">
+    <div class="result-stat correct"><span id="res-correct">-</span><small>Correct</small></div>
+    <div class="result-stat wrong"><span id="res-wrong">-</span><small>Wrong</small></div>
+    <div class="result-stat skipped"><span id="res-skipped">-</span><small>Skipped</small></div>
+    <div class="result-stat"><span id="res-total">-</span><small>Total</small></div>
+  </div>
+  <div class="result-pct" id="res-pct"></div>
+  <div class="result-rank" id="res-rank" style="display:none"></div>
+
+  <!-- Section breakdown -->
+  <div id="res-section-breakdown" style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem"></div>
+
+  <div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap">
+    <a href="./analysis.html" class="btn btn-outline" style="flex:1">View Analysis</a>
+    <a href="./home.html" class="btn btn-primary" style="flex:1">Go to Home</a>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+<!-- Submit confirmation modal — injected into #modal-host -->
+<div class="modal-backdrop" id="submit-modal" onclick="if(event.target===this)__closeModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Submit Exam?</div>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted);margin-bottom:1rem">Review your attempt before submitting. You cannot change answers after submission.</p>
+      <div id="submit-summary-content"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:0.75rem">
+      <button class="btn btn-outline" style="flex:1" onclick="__closeModal()">Go Back</button>
+      <button class="btn btn-primary" style="flex:1" id="confirm-submit-btn" onclick="__confirmSubmit()">Submit Now</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+{
+  "name": "mock-test-platform-rrb-desktop",
+  "version": "1.0.0",
+  "description": "RRB Group D exam desktop shell — Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win":   "electron-builder --win",
+    "build:mac":   "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.mocktest.rrb",
+    "productName": "RRB Group D Mock Test",
+    "extends": null,
+    "files": ["main.js", "preload.js", "assets/**"],
+    "win":   { "target": "nsis", "icon": "assets/icon.ico" },
+    "mac":   { "target": "dmg",  "icon": "assets/icon.icns", "category": "public.app-category.education" },
+    "linux": { "target": "AppImage", "icon": "assets/icon.png", "category": "Education" }
+  }
+}

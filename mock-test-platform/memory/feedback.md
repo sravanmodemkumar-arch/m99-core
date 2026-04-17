@@ -22,11 +22,12 @@
 5. `feature/auth/web` → login.html + home.html ✅
 6. `feature/auth/screens` → 18 screens web ✅
 7. `feature/auth/mobile` → 18 screens React Native ✅ → merged to build/v1
-8. `feature/rrb-group-d/shared` (scoring + qstate + UI components) → commit
-9. `feature/rrb-group-d/backend` → commit
-10. `feature/rrb-group-d/web` (responsive: mobile/tablet/desktop) → commit
-11. `feature/rrb-group-d/mobile` (phone + tablet layouts) → commit
-12. `feature/rrb-group-d/desktop` (Electron shell) → commit → merge rrb-group-d to dev
+7b. `feature/auth/desktop` → Electron shell + adapter ✅ → merged to build/v1
+8. `feature/rrb-group-d/shared` (scoring + qstate + UI components) → commit ✅
+9. `feature/rrb-group-d/backend` → commit ✅
+10. `feature/rrb-group-d/web` (responsive: mobile/tablet/desktop) → commit ✅
+11. `feature/rrb-group-d/mobile` (phone + tablet layouts) → commit ✅
+12. `feature/rrb-group-d/desktop` (Electron shell) → commit → merge rrb-group-d to dev ✅ (in progress)
 13. `feature/app-shell/navigation` → commit → merge to dev
 
 ## Auth Screen Rules (locked)
