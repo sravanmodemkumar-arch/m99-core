@@ -1,14 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const BASE_URL = "https://api.yourdomain.com"; // override per module via config
+import { getConfig } from "../../../../../shared/config.js";
 
 export async function getToken() {
   return await AsyncStorage.getItem("auth_token");
 }
 
 export async function apiGet(path, prefix = "/exam") {
+  const { exam_base } = await getConfig();
   const token = await getToken();
-  const res = await fetch(`${BASE_URL}${prefix}${path}`, {
+  const res = await fetch(`${exam_base}${prefix}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -16,8 +16,9 @@ export async function apiGet(path, prefix = "/exam") {
 }
 
 export async function apiPost(path, body, prefix = "/exam") {
+  const { exam_base } = await getConfig();
   const token = await getToken();
-  const res = await fetch(`${BASE_URL}${prefix}${path}`, {
+  const res = await fetch(`${exam_base}${prefix}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

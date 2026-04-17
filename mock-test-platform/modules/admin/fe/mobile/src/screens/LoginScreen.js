@@ -1,25 +1,41 @@
 import React, { useState, useRef } from "react";
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView,
+  Platform, Alert, Modal, ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const BASE_URL = "https://api.yourplatform.com";
+import { getConfig, saveConfig, DEFAULTS, resetConfigCache } from "../../../../../shared/config.js";
 
 export default function LoginScreen({ navigation }) {
   const [phone,   setPhone]   = useState("");
   const [otp,     setOtp]     = useState("");
   const [step,    setStep]    = useState("phone");
   const [loading, setLoading] = useState(false);
+  const [cfgOpen, setCfgOpen] = useState(false);
+  const [cfgVals, setCfgVals] = useState(null);
   const otpRef = useRef(null);
+
+  async function openSettings() {
+    const c = await getConfig();
+    setCfgVals({ ...c });
+    setCfgOpen(true);
+  }
+
+  async function saveSettings() {
+    await saveConfig(cfgVals);
+    resetConfigCache();
+    setCfgOpen(false);
+    Alert.alert("Saved", "Server config updated.");
+  }
 
   async function requestOtp() {
     const p = phone.trim();
     if (p.length < 10) { Alert.alert("Invalid phone", "Enter a 10-digit mobile number."); return; }
     setLoading(true);
     try {
-      const res  = await fetch(`${BASE_URL}/auth/otp/request`, {
+      const { auth_base } = await getConfig();
+      const res  = await fetch(`${auth_base}/auth/otp/request`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: p }),
       });
@@ -36,23 +52,25 @@ export default function LoginScreen({ navigation }) {
     if (o.length < 4) { Alert.alert("Invalid OTP"); return; }
     setLoading(true);
     try {
-      const res  = await fetch(`${BASE_URL}/auth/otp/verify`, {
+      const { auth_base, admin_base } = await getConfig();
+      const res  = await fetch(`${auth_base}/auth/otp/verify`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: p, otp: o }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-      // Verify admin role via /admin/me
-      const meRes = await fetch(`${BASE_URL}/admin/me`, {
+      const meRes = await fetch(`${admin_base}/admin/me`, {
         headers: { Authorization: `Bearer ${data.token}` },
       });
       if (!meRes.ok) { Alert.alert("Access Denied", "You do not have admin access."); return; }
       const me = await meRes.json();
 
-      await AsyncStorage.setItem("admin_token", data.token);
-      await AsyncStorage.setItem("admin_role",  me.role);
-      await AsyncStorage.setItem("admin_tenant", me.tenant_id);
+      await AsyncStorage.multiSet([
+        ["admin_token",  data.token],
+        ["admin_role",   me.role],
+        ["admin_tenant", me.tenant_id],
+      ]);
       navigation.replace("Main");
     } catch (e) { Alert.alert("Failed", e.message || "Invalid OTP."); }
     finally { setLoading(false); }
@@ -61,6 +79,10 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <View style={s.card}>
+        <TouchableOpacity style={s.gear} onPress={openSettings}>
+          <Text style={s.gearTxt}>⚙</Text>
+        </TouchableOpacity>
+
         <View style={s.brand}>
           <Text style={s.icon}>⚙️</Text>
           <Text style={s.title}>Admin Panel</Text>
@@ -96,26 +118,74 @@ export default function LoginScreen({ navigation }) {
           </>
         )}
       </View>
+
+      {/* ── Server config modal ── */}
+      <Modal visible={cfgOpen} transparent animationType="slide" onRequestClose={() => setCfgOpen(false)}>
+        <View style={s.overlay}>
+          <View style={s.modal}>
+            <Text style={s.modalTitle}>Server Config</Text>
+            <Text style={s.modalNote}>Changes saved to this device only. Edit modules/shared/config.js to update defaults.</Text>
+            <ScrollView>
+              {cfgVals && Object.entries(DEFAULTS).map(([key]) => (
+                <View key={key} style={s.cfgRow}>
+                  <Text style={s.cfgLbl}>{key}</Text>
+                  <TextInput
+                    style={s.cfgInp}
+                    value={cfgVals[key] || ""}
+                    onChangeText={v => setCfgVals(c => ({ ...c, [key]: v }))}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder={DEFAULTS[key]}
+                    placeholderTextColor="#bbb"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setCfgOpen(false)}>
+                <Text style={s.cancelTxt}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.saveBtn} onPress={saveSettings}>
+                <Text style={s.saveTxt}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  root:   { flex:1, backgroundColor:"#1a237e", justifyContent:"center", alignItems:"center", padding:20 },
-  card:   { width:"100%", maxWidth:400, backgroundColor:"#fff", borderRadius:16, padding:28, elevation:8 },
-  brand:  { alignItems:"center", marginBottom:24 },
-  icon:   { fontSize:44, marginBottom:6 },
-  title:  { fontSize:22, fontWeight:"900", color:"#1a237e" },
-  sub:    { fontSize:12, color:"#8a9ab7", marginTop:2 },
-  lbl:    { fontSize:13, fontWeight:"800", color:"#1a2a4a", marginBottom:8 },
-  row:    { flexDirection:"row", alignItems:"center", borderWidth:1.5, borderColor:"#c0c8d8", borderRadius:10, marginBottom:16, overflow:"hidden" },
-  prefix: { paddingHorizontal:12, fontSize:14, fontWeight:"700", color:"#5c6b8a", borderRightWidth:1, borderRightColor:"#c0c8d8", backgroundColor:"#f8f9ff", paddingVertical:13 },
-  inp:    { flex:1, paddingHorizontal:14, paddingVertical:13, fontSize:15, color:"#1a2a4a" },
-  otpInp: { borderWidth:1.5, borderColor:"#c0c8d8", borderRadius:10, marginBottom:16, textAlign:"center", fontSize:22, fontWeight:"900", letterSpacing:6 },
-  hint:   { fontSize:12, color:"#8a9ab7", marginBottom:12 },
-  link:   { color:"#1565c0", fontWeight:"700" },
-  btn:    { backgroundColor:"#1a237e", borderRadius:10, paddingVertical:15, alignItems:"center" },
-  dis:    { opacity:0.6 },
-  btnT:   { color:"#fff", fontSize:15, fontWeight:"800" },
-  resend: { marginTop:14, alignItems:"center" },
+  root:       { flex:1, backgroundColor:"#1a237e", justifyContent:"center", alignItems:"center", padding:20 },
+  card:       { width:"100%", maxWidth:400, backgroundColor:"#fff", borderRadius:16, padding:28, elevation:8 },
+  gear:       { position:"absolute", top:14, right:14, zIndex:10, padding:6 },
+  gearTxt:    { fontSize:20, color:"#bbb" },
+  brand:      { alignItems:"center", marginBottom:24 },
+  icon:       { fontSize:44, marginBottom:6 },
+  title:      { fontSize:22, fontWeight:"900", color:"#1a237e" },
+  sub:        { fontSize:12, color:"#8a9ab7", marginTop:2 },
+  lbl:        { fontSize:13, fontWeight:"800", color:"#1a2a4a", marginBottom:8 },
+  row:        { flexDirection:"row", alignItems:"center", borderWidth:1.5, borderColor:"#c0c8d8", borderRadius:10, marginBottom:16, overflow:"hidden" },
+  prefix:     { paddingHorizontal:12, fontSize:14, fontWeight:"700", color:"#5c6b8a", borderRightWidth:1, borderRightColor:"#c0c8d8", backgroundColor:"#f8f9ff", paddingVertical:13 },
+  inp:        { flex:1, paddingHorizontal:14, paddingVertical:13, fontSize:15, color:"#1a2a4a" },
+  otpInp:     { borderWidth:1.5, borderColor:"#c0c8d8", borderRadius:10, marginBottom:16, textAlign:"center", fontSize:22, fontWeight:"900", letterSpacing:6 },
+  hint:       { fontSize:12, color:"#8a9ab7", marginBottom:12 },
+  link:       { color:"#1565c0", fontWeight:"700" },
+  btn:        { backgroundColor:"#1a237e", borderRadius:10, paddingVertical:15, alignItems:"center" },
+  dis:        { opacity:0.6 },
+  btnT:       { color:"#fff", fontSize:15, fontWeight:"800" },
+  resend:     { marginTop:14, alignItems:"center" },
+  overlay:    { flex:1, backgroundColor:"rgba(0,0,0,0.5)", justifyContent:"flex-end" },
+  modal:      { backgroundColor:"#fff", borderTopLeftRadius:20, borderTopRightRadius:20, padding:24, maxHeight:"80%" },
+  modalTitle: { fontSize:16, fontWeight:"900", color:"#1a2a4a", marginBottom:6 },
+  modalNote:  { fontSize:11, color:"#8a9ab7", marginBottom:16 },
+  cfgRow:     { marginBottom:14 },
+  cfgLbl:     { fontSize:11, fontWeight:"800", color:"#5c6b8a", marginBottom:4, textTransform:"uppercase", letterSpacing:0.5 },
+  cfgInp:     { borderWidth:1.5, borderColor:"#c0c8d8", borderRadius:8, paddingHorizontal:12, paddingVertical:10, fontSize:13, color:"#1a2a4a", fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+  modalBtns:  { flexDirection:"row", gap:10, marginTop:16 },
+  cancelBtn:  { flex:1, borderWidth:1.5, borderColor:"#c0c8d8", borderRadius:10, paddingVertical:13, alignItems:"center" },
+  cancelTxt:  { fontSize:14, fontWeight:"700", color:"#5c6b8a" },
+  saveBtn:    { flex:1, backgroundColor:"#1a237e", borderRadius:10, paddingVertical:13, alignItems:"center" },
+  saveTxt:    { fontSize:14, fontWeight:"800", color:"#fff" },
 });

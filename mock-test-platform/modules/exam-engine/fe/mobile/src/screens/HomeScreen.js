@@ -6,8 +6,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { syncNow, cacheGet } from "../utils/sync";
 import { apiPost } from "../utils/api";
-
-const CDN_MANIFEST = "https://cdn.yourplatform.com/exam-engine/manifest.json"; // matches app-config.json
+import { getConfig } from "../../../../../shared/config.js";
 
 export default function HomeScreen({ navigation }) {
   const [exams,     setExams]     = useState([]);
@@ -37,7 +36,8 @@ export default function HomeScreen({ navigation }) {
   async function syncInBackground() {
     setSyncing(true);
     try {
-      const result = await syncNow(CDN_MANIFEST);
+      const { cdn_manifest } = await getConfig();
+      const result = await syncNow(cdn_manifest);
       if (!result.offline && result.downloaded > 0) {
         await loadCatalogue();
       }

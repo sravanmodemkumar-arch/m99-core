@@ -1,34 +1,20 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const BASE_URL  = "https://api.yourplatform.com";
-const ADMIN_PFX = "/admin";
+import { getConfig } from "../../../../../shared/config.js";
 
 export async function getToken() {
   return AsyncStorage.getItem("admin_token");
 }
 
-export async function adminGet(path) {
+async function _fetch(path, options = {}) {
+  const { admin_base } = await getConfig();
   const token = await getToken();
-  const res = await fetch(`${BASE_URL}${ADMIN_PFX}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (res.status === 401) throw Object.assign(new Error("Unauthorized"), { status: 401 });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function adminPost(path, body) {
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}${ADMIN_PFX}${path}`, {
-    method:  "POST",
+  const res = await fetch(`${admin_base}/admin${path}`, {
+    ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
     },
-    body: JSON.stringify(body),
   });
   if (res.status === 401) throw Object.assign(new Error("Unauthorized"), { status: 401 });
   if (!res.ok) {
@@ -38,37 +24,10 @@ export async function adminPost(path, body) {
   return res.json();
 }
 
-export async function adminPut(path, body) {
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}${ADMIN_PFX}${path}`, {
-    method:  "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 401) throw Object.assign(new Error("Unauthorized"), { status: 401 });
-  if (!res.ok) {
-    const b = await res.json().catch(() => ({}));
-    throw new Error(b.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function adminDelete(path) {
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}${ADMIN_PFX}${path}`, {
-    method:  "DELETE",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (res.status === 401) throw Object.assign(new Error("Unauthorized"), { status: 401 });
-  if (!res.ok) {
-    const b = await res.json().catch(() => ({}));
-    throw new Error(b.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
+export const adminGet    = (path)       => _fetch(path);
+export const adminPost   = (path, body) => _fetch(path, { method: "POST",   body: JSON.stringify(body) });
+export const adminPut    = (path, body) => _fetch(path, { method: "PUT",    body: JSON.stringify(body) });
+export const adminDelete = (path)       => _fetch(path, { method: "DELETE" });
 
 export function fmtDate(ts) {
   if (!ts) return "—";
