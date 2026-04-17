@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .security-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden;}
+  .security-item{padding:1rem 1.25rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
+  .security-item:last-child{border-bottom:none;}
+  .security-item:hover{background:var(--surface-2);}
+  .security-item-header{display:flex;justify-content:space-between;align-items:center;}
+  .security-item-title{font-weight:600;font-size:0.9375rem;}
+  .security-item-desc{font-size:0.8125rem;color:var(--text-muted);margin-top:0.25rem;}
+  .security-arrow{color:var(--text-muted);}
+  .panel{display:none;border-top:1px solid var(--border);padding:1.25rem;background:var(--surface-2);}
+  .panel.open{display:block;}
+  .pw-wrap{position:relative;} .pw-wrap input{padding-right:2.75rem;}
+  .pw-toggle{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);}
+  .otp-row input{padding:0.75rem 0.25rem;}
+  .qr-code{width:180px;height:180px;border-radius:var(--radius-sm);border:2px solid var(--border);margin:0 auto 1rem;display:block;}
+  .session-item{display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);}
+  .session-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <button class="back-btn" onclick="history.back()">←</button>
+  <div class="page-header-title">Security</div>
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="container">
+
+  <!-- Change Password -->
+  <div class="security-section">
+    <div class="security-item" onclick="togglePanel('pw-panel',this)">
+      <div class="security-item-header"><div><div class="security-item-title">Change Password</div><div class="security-item-desc">Update your login password</div></div><span class="security-arrow">›</span></div>
+    </div>
+    <div class="panel" id="pw-panel">
+      <div class="field"><label>Current Password</label><div class="pw-wrap"><input type="password" id="cur-pw" placeholder="Current password"><button class="pw-toggle" onclick="togglePw('cur-pw')">👁️</button></div><div class="error" id="cur-pw-error"></div></div>
+      <div class="field"><label>New Password</label><div class="pw-wrap"><input type="password" id="new-pw" placeholder="Min 8 characters" oninput="checkStrength()"><button class="pw-toggle" onclick="togglePw('new-pw')">👁️</button></div><div class="strength-bar" id="strength-bar"><div class="strength-segment"></div><div class="strength-segment"></div><div class="strength-segment"></div><div class="strength-segment"></div></div><div class="error" id="new-pw-error"></div></div>
+      <div class="field"><label>Confirm New Password</label><div class="pw-wrap"><input type="password" id="confirm-pw" placeholder="Repeat new password"><button class="pw-toggle" onclick="togglePw('confirm-pw')">👁️</button></div><div class="error" id="confirm-pw-error"></div></div>
+      <div id="pw-otp-section" style="display:none"><div class="field"><label>OTP</label><div class="otp-row" id="pw-otp-row"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"></div><div class="error" id="pw-otp-error"></div></div></div>
+      <div id="pw-totp-section" style="display:none"><div class="field"><label>Authenticator Code</label><div class="otp-row" id="pw-totp-row"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"></div><div class="error" id="pw-totp-error"></div></div></div>
+      <button class="btn btn-primary" id="change-pw-btn" onclick="changePassword()">Update Password</button>
+      <div class="error" id="pw-submit-error" style="margin-top:0.5rem;text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- Change Phone/Email -->
+  <div class="security-section">
+    <div class="security-item" onclick="togglePanel('identifier-panel',this)">
+      <div class="security-item-header"><div><div class="security-item-title">Change Phone / Email</div><div class="security-item-desc">Update your contact identifiers</div></div><span class="security-arrow">›</span></div>
+    </div>
+    <div class="panel" id="identifier-panel">
+      <div class="field"><label>Select what to change</label><select id="identifier-type" onchange="updateIdentifierLabel()"><option value="phone">Phone Number</option><option value="email">Email Address</option></select></div>
+      <div class="field"><label id="new-identifier-label">New Phone Number</label><input type="text" id="new-identifier" placeholder="New value"><div class="error" id="new-identifier-error"></div></div>
+      <div class="field"><label>Current Password</label><div class="pw-wrap"><input type="password" id="identifier-pw"><button class="pw-toggle" onclick="togglePw('identifier-pw')">👁️</button></div><div class="error" id="identifier-pw-error"></div></div>
+      <div id="identifier-otp-section" style="display:none"><div class="field"><label>OTP (sent to new contact)</label><div class="otp-row" id="identifier-otp-row"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"></div><div class="error" id="identifier-otp-error"></div></div></div>
+      <div id="identifier-totp-section" style="display:none"><div class="field"><label>Authenticator Code</label><div class="otp-row" id="identifier-totp-row"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"></div></div></div>
+      <button class="btn btn-primary" id="change-identifier-btn" onclick="changeIdentifier()">Update</button>
+      <div class="error" id="identifier-submit-error" style="margin-top:0.5rem;text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- TOTP -->
+  <div class="security-section" id="totp-section">
+    <div class="security-item" onclick="togglePanel('totp-panel',this)">
+      <div class="security-item-header"><div><div class="security-item-title">Authenticator App (TOTP)</div><div class="security-item-desc" id="totp-desc">Not enabled</div></div><span class="badge" id="totp-badge" style="margin-right:0.5rem"></span><span class="security-arrow">›</span></div>
+    </div>
+    <div class="panel" id="totp-panel">
+      <div id="totp-setup" style="display:none;text-align:center">
+        <div style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">Scan this QR code with Google Authenticator or Authy</div>
+        <img id="totp-qr" class="qr-code" src="" alt="QR Code">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem">Or enter manually: <code id="totp-secret" style="background:var(--surface-2);padding:0.25rem 0.5rem;border-radius:4px;font-size:0.8125rem"></code></div>
+        <div class="field"><label>Enter 6-digit code to confirm</label><div class="otp-row" id="totp-confirm-row"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"></div><div class="error" id="totp-confirm-error"></div></div>
+        <button class="btn btn-primary" id="enable-totp-btn" onclick="enableTotp()">Enable TOTP</button>
+      </div>
+      <div id="totp-disable" style="display:none">
+        <div style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">To disable TOTP, enter your password and authenticator code.</div>
+        <div class="field"><label>Password</label><div class="pw-wrap"><input type="password" id="disable-pw"><button class="pw-toggle" onclick="togglePw('disable-pw')">👁️</button></div><div class="error" id="disable-pw-error"></div></div>
+        <div class="field"><label>Authenticator Code</label><div class="otp-row" id="disable-totp-row"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric"></div><div class="error" id="disable-totp-error"></div></div>
+        <button class="btn btn-danger" id="disable-totp-btn" onclick="disableTotp()">Disable TOTP</button>
+      </div>
+      <div id="totp-load-btn"><button class="btn btn-secondary" onclick="loadTotpSetup()">Set Up Authenticator App</button></div>
+    </div>
+  </div>
+
+  <!-- Active Sessions -->
+  <div class="security-section">
+    <div class="security-item" onclick="togglePanel('sessions-panel',this)">
+      <div class="security-item-header"><div><div class="security-item-title">Active Sessions</div><div class="security-item-desc">Manage devices logged in</div></div><span class="security-arrow">›</span></div>
+    </div>
+    <div class="panel" id="sessions-panel">
+      <div id="sessions-list"><div class="skeleton" style="height:3rem;margin-bottom:0.5rem"></div></div>
+      <button class="btn btn-danger btn-sm" style="margin-top:0.75rem" onclick="endAllSessions()">End All Other Sessions</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { boot, api, showError, setLoading, otpAutoAdvance, getOtpValue, requireAuth, toast } from "./app.js";
+let cfg = {}, userProfile = {};
+
+async function init() {
+  cfg = await boot();
+  if (!requireAuth()) return;
+  const { ok, data } = await api("/auth/me/profile");
+  if (ok) { userProfile = data; updateTotpUI(data.totp_enabled); }
+  setupReauthSections();
+}
+
+function setupReauthSections() {
+  if (cfg.sensitive_action_reauth?.require_otp) {
+    document.getElementById("pw-otp-section").style.display="block"; otpAutoAdvance("#pw-otp-row");
+    document.getElementById("identifier-otp-section").style.display="block"; otpAutoAdvance("#identifier-otp-row");
+  }
+  if (cfg.sensitive_action_reauth?.require_totp || userProfile.totp_enabled) {
+    document.getElementById("pw-totp-section").style.display="block"; otpAutoAdvance("#pw-totp-row");
+    document.getElementById("identifier-totp-section").style.display="block"; otpAutoAdvance("#identifier-totp-row");
+  }
+  otpAutoAdvance("#totp-confirm-row");
+  otpAutoAdvance("#disable-totp-row");
+}
+
+function updateTotpUI(enabled) {
+  document.getElementById("totp-desc").textContent = enabled ? "Enabled — your account is protected" : "Not enabled";
+  document.getElementById("totp-badge").className = `badge ${enabled?"badge-success":"badge-muted"}`;
+  document.getElementById("totp-badge").textContent = enabled ? "ON" : "OFF";
+  document.getElementById("totp-setup").style.display = enabled ? "none" : "none";
+  document.getElementById("totp-disable").style.display = enabled ? "block" : "none";
+  document.getElementById("totp-load-btn").style.display = enabled ? "none" : "block";
+  if (enabled) otpAutoAdvance("#disable-totp-row");
+}
+
+window.togglePanel = function(id, item) {
+  const panel = document.getElementById(id);
+  panel.classList.toggle("open");
+  if (id==="sessions-panel" && panel.classList.contains("open")) loadSessions();
+};
+
+window.togglePw = id => { const i=document.getElementById(id); i.type=i.type==="password"?"text":"password"; };
+window.checkStrength = () => {
+  const v = document.getElementById("new-pw").value;
+  const s = [0,0,0,0].reduce((a,_,i)=>[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)][i]?a+1:a,0);
+  document.getElementById("strength-bar").className=`strength-bar strength-${s}`;
+};
+window.updateIdentifierLabel = () => {
+  const type = document.getElementById("identifier-type").value;
+  document.getElementById("new-identifier-label").textContent = type==="phone"?"New Phone Number":"New Email Address";
+  document.getElementById("new-identifier").type = type==="email"?"email":"tel";
+};
+
+window.changePassword = async function() {
+  const cur=document.getElementById("cur-pw").value, nw=document.getElementById("new-pw").value, cn=document.getElementById("confirm-pw").value;
+  showError("cur-pw-error",""); showError("new-pw-error",""); showError("confirm-pw-error","");
+  if (!cur){showError("cur-pw-error","Required");return;} if (!nw||nw.length<8){showError("new-pw-error","Min 8 chars");return;} if (nw!==cn){showError("confirm-pw-error","Mismatch");return;}
+  const payload={current_password:cur,new_password:nw};
+  if (cfg.sensitive_action_reauth?.require_otp){const o=getOtpValue("#pw-otp-row");if(o.length!==6){showError("pw-otp-error","Required");return;}payload.otp=o;}
+  if (cfg.sensitive_action_reauth?.require_totp||userProfile.totp_enabled){const t=getOtpValue("#pw-totp-row");if(t.length!==6){showError("pw-totp-error","Required");return;}payload.totp=t;}
+  setLoading("change-pw-btn",true,"Update Password");
+  const{ok,data}=await api("/auth/change-password",{method:"POST",body:JSON.stringify(payload)});
+  setLoading("change-pw-btn",false,"Update Password");
+  if(!ok){showError("pw-submit-error",data.error||"Failed");return;}
+  toast("Password updated","success"); document.getElementById("pw-panel").classList.remove("open");
+};
+
+window.changeIdentifier = async function() {
+  const type=document.getElementById("identifier-type").value, val=document.getElementById("new-identifier").value, pw=document.getElementById("identifier-pw").value;
+  if(!val){showError("new-identifier-error","Required");return;} if(!pw){showError("identifier-pw-error","Required");return;}
+  const payload={type,value:val,password:pw};
+  if(cfg.sensitive_action_reauth?.require_otp){const o=getOtpValue("#identifier-otp-row");if(o.length!==6){showError("identifier-otp-error","Required");return;}payload.otp=o;}
+  if(cfg.sensitive_action_reauth?.require_totp||userProfile.totp_enabled){const t=getOtpValue("#identifier-totp-row");if(t.length!==6)return;payload.totp=t;}
+  setLoading("change-identifier-btn",true,"Update");
+  const{ok,data}=await api("/auth/change-identifier",{method:"POST",body:JSON.stringify(payload)});
+  setLoading("change-identifier-btn",false,"Update");
+  if(!ok){showError("identifier-submit-error",data.error||"Failed");return;}
+  toast(`${type==="phone"?"Phone":"Email"} updated`,"success"); document.getElementById("identifier-panel").classList.remove("open");
+};
+
+window.loadTotpSetup = async function() {
+  document.getElementById("totp-load-btn").style.display="none";
+  document.getElementById("totp-setup").style.display="block";
+  const{ok,data}=await api("/auth/totp/setup");
+  if(!ok)return;
+  document.getElementById("totp-qr").src=data.qr_url;
+  document.getElementById("totp-secret").textContent=data.secret;
+  otpAutoAdvance("#totp-confirm-row");
+};
+
+window.enableTotp = async function() {
+  const code=getOtpValue("#totp-confirm-row");
+  if(code.length!==6){showError("totp-confirm-error","Enter all 6 digits");return;}
+  setLoading("enable-totp-btn",true,"Enable TOTP");
+  const{ok,data}=await api("/auth/totp/enable",{method:"POST",body:JSON.stringify({code})});
+  setLoading("enable-totp-btn",false,"Enable TOTP");
+  if(!ok){showError("totp-confirm-error",data.error||"Invalid code");return;}
+  toast("Authenticator enabled","success"); userProfile.totp_enabled=true; updateTotpUI(true);
+};
+
+window.disableTotp = async function() {
+  const pw=document.getElementById("disable-pw").value, code=getOtpValue("#disable-totp-row");
+  if(!pw){showError("disable-pw-error","Required");return;} if(code.length!==6){showError("disable-totp-error","Required");return;}
+  setLoading("disable-totp-btn",true,"Disable TOTP");
+  const{ok,data}=await api("/auth/totp/disable",{method:"POST",body:JSON.stringify({password:pw,code})});
+  setLoading("disable-totp-btn",false,"Disable TOTP");
+  if(!ok){showError("disable-pw-error",data.error||"Failed");return;}
+  toast("Authenticator disabled"); userProfile.totp_enabled=false; updateTotpUI(false);
+};
+
+async function loadSessions() {
+  const{ok,data}=await api("/auth/sessions");
+  if(!ok)return;
+  const ICONS={mobile:"📱",tablet:"📟",desktop:"💻",web:"🌐"};
+  document.getElementById("sessions-list").innerHTML=(data.sessions||[]).map(s=>`
+    <div class="session-item">
+      <div style="display:flex;align-items:center;gap:0.625rem">
+        <span style="font-size:1.25rem">${ICONS[s.type]||"💻"}</span>
+        <div><div style="font-size:0.875rem;font-weight:500">${s.name||s.type}</div><div style="font-size:0.75rem;color:var(--text-muted)">${s.location||""} · ${s.last_seen?new Date(s.last_seen).toLocaleDateString("en-IN"):""}</div></div>
+      </div>
+      ${s.current?'<span class="badge badge-success">Current</span>':`<button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="endSession('${s.session_id}')">End</button>`}
+    </div>`).join("");
+}
+
+window.endSession = async function(id) {
+  await api("/auth/sessions/end",{method:"POST",body:JSON.stringify({session_id:id})});
+  loadSessions(); toast("Session ended");
+};
+window.endAllSessions = async function() {
+  await api("/auth/sessions/end-all",{method:"POST"});
+  loadSessions(); toast("All other sessions ended");
+};
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

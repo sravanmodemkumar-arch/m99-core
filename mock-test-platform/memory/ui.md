@@ -99,34 +99,30 @@ Zero distraction. Zero confusion. Instant feedback. Works on ₹8000 phones.
 - Real-time updates — no save needed to preview
 - Publish → writes to KV → live instantly, no deploy
 
-## Auth Screens (25 total — web + mobile)
-| # | Screen |
-|---|---|
-| 0 | Landing (pre-auth, dynamic theme+layout+content) |
-| 1 | Splash |
-| 2 | Welcome |
-| 3 | Login (dynamic identifiers + password + Google) |
-| 4 | OTP Verify (shared) |
-| 5 | TOTP Verify |
-| 6 | Register Step 1 (name, phone, email, password, DOB, gender) |
-| 7 | Register Step 2 (state, city, pincode, address) |
-| 8 | Register Step 3 (category, module fields) |
-| 9 | Register OTP |
-| 10 | Social Complete (phone + missing after Google) |
-| 11 | First Login (admin-created, set password) |
-| 12 | TOTP Setup (QR + confirm) |
-| 13 | Forgot Password (dynamic per module) |
-| 14 | Reset Password |
-| 15 | Profile (view) |
-| 16 | Edit Profile |
-| 17 | Security (password, phone, TOTP) |
-| 18 | Change Identifier |
-| 19 | Delete Account |
-| 20 | Settings |
-| 21 | Notifications |
-| 22 | App Info |
-| 23 | My Subscriptions |
-| 24 | Help |
+## Auth Screens (18 total — merged, no standalone OTP/TOTP pages)
+OTP + TOTP are always inline steps — never separate pages.
+Re-auth (pw / pw+OTP / pw+TOTP) driven by module config, inline before sensitive actions.
+
+| # | Screen | Key inline steps |
+|---|---|---|
+| 0 | Landing | dynamic theme+layout+content, CTA buttons |
+| 1 | Splash | auto-redirect |
+| 2 | Welcome | 3-slide, skip |
+| 3 | Login | pw → OTP? → TOTP? |
+| 4 | Register Step 1 | name/phone/email/pw/DOB/gender/terms |
+| 5 | Register Step 2 | pincode auto-fill, address |
+| 6 | Register Step 3 | category + module fields + OTP inline |
+| 7 | Social Complete | phone + fields + OTP inline |
+| 8 | First Login | set password (admin-created) |
+| 9 | Forgot Password | identifier → OTP/email → new pw (all inline) |
+| 10 | Home | module picker, skeleton, avatar |
+| 11 | Profile | ALL fields view — dynamic per module |
+| 12 | Edit Profile | ALL fields + re-auth gate (pw/pw+OTP/pw+TOTP) |
+| 13 | Security | change pw/phone/email/TOTP — each with inline re-auth |
+| 14 | Delete Account | confirm + pw + OTP + TOTP (all enabled) |
+| 15 | Settings | notifications + app info + mode toggle + language |
+| 16 | My Subscriptions | modules, expiry, tier |
+| 17 | Help | FAQ accordion + contact |
 
 ## Admin Panel Screens
 | Screen | Description |
