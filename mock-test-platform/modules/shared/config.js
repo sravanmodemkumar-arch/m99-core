@@ -20,6 +20,7 @@ export const DEFAULTS = {
   auth_base:    _defaults.auth_base,
   admin_base:   _defaults.admin_base,
   exam_base:    _defaults.exam_base,
+  user_base:    _defaults.user_base,
   cdn_manifest: _defaults.cdn_manifest,
 };
 

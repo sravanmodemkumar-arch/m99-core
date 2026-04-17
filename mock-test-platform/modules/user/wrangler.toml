@@ -1,0 +1,11 @@
+name = "mtp-user"
+main = "backend/worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_USER_KV_ID"
+preview_id = "REPLACE_WITH_USER_KV_PREVIEW_ID"
+
+[vars]
+# JWT_SECRET set via: wrangler secret put JWT_SECRET

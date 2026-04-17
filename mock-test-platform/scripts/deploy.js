@@ -81,6 +81,7 @@ function deployCf() {
     { name: "auth",        dir: path.join(ROOT, "modules/auth"),                toml: "wrangler.toml" },
     { name: "exam-engine", dir: path.join(ROOT, "modules/exam-engine/backend"), toml: "wrangler.toml" },
     { name: "admin",       dir: path.join(ROOT, "modules/admin/backend"),       toml: "wrangler.toml" },
+    { name: "user",        dir: path.join(ROOT, "modules/user"),                toml: "wrangler.toml" },
     { name: "gateway",     dir: path.join(ROOT, "platform/gateway"),            toml: "wrangler.toml" },
   ];
 

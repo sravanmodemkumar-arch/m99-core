@@ -24,4 +24,12 @@ export const MODULES = [
     apiPrefix: "/admin",
     home:      "/modules/admin/fe/web/dashboard.html",
   },
+  {
+    id:        "user",
+    name:      "My Account",
+    icon:      "👤",
+    port:      8790,
+    apiPrefix: "/user",
+    home:      "/modules/user/fe/web/profile.html",
+  },
 ];

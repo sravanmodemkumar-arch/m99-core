@@ -84,6 +84,13 @@ mock-test-platform/
 │   │       │               ← src/navigation/AppNavigator.js (auth-aware initial route)
 │   │       └── desktop/    ← main.js (Electron), server.js (local HTMX HTTP server),
 │   │                           sync.js (CDN delta), preload.js, app-config.json
+│   ├── user/               ← COMPLETE (port 8790)
+│   │   ├── backend/        ← worker.js (me, subscription, history, analytics), jwt.js
+│   │   ├── wrangler.toml
+│   │   └── fe/
+│   │       ├── web/        ← profile.html, history.html, analytics.html, subscription.html
+│   │       ├── mobile/     ← ProfileScreen, HistoryScreen, AnalyticsScreen, SubscriptionScreen + UserNavigator
+│   │       └── desktop/    ← main.js, server.js (static+proxy), preload.js
 │   └── app-shell/          ← placeholder (empty)
 ├── scripts/
 │   ├── devserver.js        ← start all workers in dev

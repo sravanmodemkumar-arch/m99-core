@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Plan</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{background:#f0f2f7;font-family:system-ui,sans-serif;margin:0;}</style>
+</head>
+<body>
+<script>
+const API   = window._API_PREFIX || "/user";
+const token = localStorage.getItem("auth_token");
+if (!token) location.href = "/modules/auth/fe/web/login.html";
+
+async function api(path) {
+  const r = await fetch(API + path, { headers: { Authorization: `Bearer ${token}` } });
+  if (r.status === 401) { localStorage.clear(); location.href = "/modules/auth/fe/web/login.html"; }
+  return r.json();
+}
+
+function fmtDate(ts) {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+}
+
+async function init() {
+  const d = await api("/subscription");
+  const sub = d.subscription;
+  const exams = d.allowed_exams || [];
+
+  if (!sub) {
+    document.getElementById("status-card").innerHTML = `
+      <div class="text-center py-8">
+        <div class="text-4xl mb-3">🎟️</div>
+        <p class="font-black text-[#1a2a4a] text-lg">No Active Plan</p>
+        <p class="text-sm text-[#8a9ab7] mt-2">Contact your institute to activate a plan.</p>
+      </div>`;
+    return;
+  }
+
+  const active = sub.active;
+  document.getElementById("status-card").innerHTML = `
+    <div class="flex items-center gap-4 mb-4">
+      <div class="text-4xl">${active ? "✅" : "⌛"}</div>
+      <div>
+        <p class="font-black text-[#1a2a4a] text-lg">${sub.plan || "Standard Plan"}</p>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}">
+          ${active ? "Active" : "Expired"}
+        </span>
+      </div>
+    </div>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between"><span class="text-[#5c6b8a] font-semibold">Granted</span><span class="font-bold">${fmtDate(sub.granted_at)}</span></div>
+      <div class="flex justify-between"><span class="text-[#5c6b8a] font-semibold">Expires</span><span class="font-bold">${fmtDate(sub.expires_at)}</span></div>
+      <div class="flex justify-between"><span class="text-[#5c6b8a] font-semibold">Exams included</span><span class="font-bold">${exams.length}</span></div>
+    </div>`;
+
+  if (exams.length) {
+    document.getElementById("exams-list").innerHTML = exams.map(id => `
+      <div class="bg-white border border-[#e0e4ed] rounded-xl px-4 py-3 flex justify-between items-center">
+        <span class="text-sm font-bold text-[#1a2a4a]">${id}</span>
+        <a href="/modules/exam-engine/fe/web/home.html" class="text-xs text-[#1565c0] font-bold">Go →</a>
+      </div>`).join("");
+  } else {
+    document.getElementById("exams-section").style.display = "none";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+
+<nav class="bg-[#1a237e] text-white px-4 py-3 flex items-center gap-3">
+  <a href="profile.html" class="opacity-70 hover:opacity-100 text-sm">← Profile</a>
+  <span class="text-lg font-black">🎟️ My Plan</span>
+</nav>
+
+<div class="max-w-lg mx-auto p-4 space-y-4">
+
+  <div id="status-card" class="bg-white rounded-2xl p-6 shadow-sm">
+    <div class="flex justify-center py-8"><div class="w-8 h-8 border-2 border-[#1a237e] border-t-transparent rounded-full animate-spin"></div></div>
+  </div>
+
+  <div id="exams-section">
+    <p class="text-xs font-black uppercase tracking-widest text-[#5c6b8a] px-1 mb-2">Included Exams</p>
+    <div id="exams-list" class="space-y-2"></div>
+  </div>
+
+</div>
+</body>
+</html>

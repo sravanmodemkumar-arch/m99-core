@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attempt History</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{background:#f0f2f7;font-family:system-ui,sans-serif;margin:0;}</style>
+</head>
+<body>
+<script>
+const API   = window._API_PREFIX || "/user";
+const token = localStorage.getItem("auth_token");
+if (!token) location.href = "/modules/auth/fe/web/login.html";
+
+let page = 1, total = 0, loading = false;
+
+async function api(path) {
+  const r = await fetch(API + path, { headers: { Authorization: `Bearer ${token}` } });
+  if (r.status === 401) { localStorage.clear(); location.href = "/modules/auth/fe/web/login.html"; }
+  return r.json();
+}
+
+async function load(reset = false) {
+  if (loading) return;
+  if (reset) { page = 1; document.getElementById("list").innerHTML = ""; }
+  loading = true;
+  const exam = document.getElementById("exam-filter").value;
+  const q    = exam ? `&exam_id=${exam}` : "";
+  const data = await api(`/history?page=${page}&limit=20${q}`);
+  total = data.total;
+  render(data.results, reset);
+  document.getElementById("load-more").style.display = page * 20 < total ? "flex" : "none";
+  loading = false;
+}
+
+function render(items, reset) {
+  const list = document.getElementById("list");
+  if (reset) list.innerHTML = "";
+  if (!items.length && page === 1) {
+    list.innerHTML = `<div class="text-center py-16 text-[#aaa] text-sm">No attempts yet</div>`;
+    return;
+  }
+  for (const h of items) {
+    const score   = h.score ?? null;
+    const date    = h.submitted_at ? new Date(h.submitted_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : "—";
+    const scoreTxt = score !== null ? (score >= 0 ? "+" : "") + score.toFixed(3).replace(/\.?0+$/, "") : "—";
+    const color   = score === null ? "#8a9ab7" : score >= 0 ? "#2e7d32" : "#c62828";
+    list.insertAdjacentHTML("beforeend", `
+      <div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
+        <div class="text-2xl">${score !== null && score >= 0 ? "✅" : score !== null ? "❌" : "⏸️"}</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-[#1a2a4a] text-sm truncate">${h.exam_title || h.exam_id}</p>
+          <p class="text-xs text-[#8a9ab7] mt-0.5">${date} · ${h.correct ?? "—"} correct · ${h.wrong ?? "—"} wrong</p>
+        </div>
+        <div class="text-right">
+          <p class="font-black text-base" style="color:${color}">${scoreTxt}</p>
+          <a href="/modules/exam-engine/fe/web/analysis.html?session_id=${h.session_id}" class="text-xs text-[#1565c0] font-bold">Analysis →</a>
+        </div>
+      </div>`);
+  }
+  page++;
+}
+
+document.addEventListener("DOMContentLoaded", () => load(true));
+</script>
+
+<nav class="bg-[#1a237e] text-white px-4 py-3 flex items-center gap-3">
+  <a href="profile.html" class="opacity-70 hover:opacity-100 text-sm">← Profile</a>
+  <span class="text-lg font-black">📋 Attempt History</span>
+</nav>
+
+<div class="max-w-lg mx-auto p-4 space-y-3">
+
+  <!-- Filter -->
+  <div class="bg-white rounded-xl p-3 shadow-sm flex gap-2 items-center">
+    <label class="text-xs font-bold text-[#5c6b8a] shrink-0">Filter by exam</label>
+    <input id="exam-filter" type="text" placeholder="exam id…" oninput="load(true)"
+      class="flex-1 border border-[#e0e4ed] rounded-lg px-3 py-2 text-sm focus:outline-[#1a237e]" />
+  </div>
+
+  <div id="list" class="space-y-2"></div>
+
+  <button id="load-more" onclick="load()" style="display:none"
+    class="w-full flex justify-center items-center gap-2 py-3 bg-white rounded-xl shadow-sm text-sm font-bold text-[#1a237e] hover:bg-[#e8eaf6]">
+    Load more
+  </button>
+
+</div>
+</body>
+</html>

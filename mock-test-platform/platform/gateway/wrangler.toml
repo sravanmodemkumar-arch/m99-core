@@ -28,5 +28,9 @@ service = "mtp-exam-engine"
 binding = "MODULE_ADMIN"
 service = "mtp-admin"
 
+[[services]]
+binding = "MODULE_USER"
+service = "mtp-user"
+
 [vars]
 ENVIRONMENT = "production"

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{background:#f0f2f7;font-family:system-ui,sans-serif;margin:0;}
+  .bar-track{background:#e0e4ed;border-radius:4px;overflow:hidden;height:8px;}
+  .bar-fill{height:100%;border-radius:4px;transition:width .4s;}
+  .trend-dot{width:8px;height:8px;border-radius:50%;background:#1a237e;position:absolute;transform:translate(-50%,-50%);}
+</style>
+</head>
+<body>
+<script>
+const API   = window._API_PREFIX || "/user";
+const token = localStorage.getItem("auth_token");
+if (!token) location.href = "/modules/auth/fe/web/login.html";
+
+async function api(path) {
+  const r = await fetch(API + path, { headers: { Authorization: `Bearer ${token}` } });
+  if (r.status === 401) { localStorage.clear(); location.href = "/modules/auth/fe/web/login.html"; }
+  return r.json();
+}
+
+function fmt(s) {
+  if (s === null || s === undefined) return "—";
+  return (s >= 0 ? "+" : "") + Number(s).toFixed(3).replace(/\.?0+$/, "");
+}
+
+function renderOverview(d) {
+  document.getElementById("attempts").textContent = d.attempts;
+  document.getElementById("best").textContent     = fmt(d.best_score);
+  document.getElementById("avg").textContent      = fmt(d.avg_score);
+  document.getElementById("exams").textContent    = d.by_exam?.length ?? 0;
+}
+
+function renderByExam(byExam) {
+  const el = document.getElementById("by-exam");
+  if (!byExam?.length) { el.innerHTML = `<p class="text-sm text-[#aaa] text-center py-6">No data yet</p>`; return; }
+  const max = Math.max(...byExam.map(e => Math.abs(e.best_score ?? 0)), 1);
+  el.innerHTML = byExam.map(e => {
+    const pct  = Math.round(Math.min(100, (Math.abs(e.best_score ?? 0) / max) * 100));
+    const col  = (e.best_score ?? 0) >= 0 ? "#2e7d32" : "#c62828";
+    return `
+      <div class="mb-4">
+        <div class="flex justify-between text-xs font-bold mb-1">
+          <span class="text-[#1a2a4a] truncate max-w-[60%]">${e.exam_title}</span>
+          <span>${e.attempts} attempts · best <span style="color:${col}">${fmt(e.best_score)}</span></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>`;
+  }).join("");
+}
+
+function renderTrend(trend) {
+  const el = document.getElementById("trend-chart");
+  if (!trend?.length) { el.innerHTML = `<p class="text-sm text-[#aaa] text-center py-6">Need more attempts</p>`; return; }
+  const scores = trend.map(t => t.score);
+  const min = Math.min(...scores), max = Math.max(...scores);
+  const range = max - min || 1;
+  const W = el.clientWidth || 300, H = 80;
+  const pts = trend.map((t, i) => {
+    const x = (i / (trend.length - 1 || 1)) * (W - 20) + 10;
+    const y = H - 10 - ((t.score - min) / range) * (H - 20);
+    return `${x},${y}`;
+  });
+  el.innerHTML = `
+    <svg width="${W}" height="${H}" style="overflow:visible">
+      <polyline points="${pts.join(" ")}" fill="none" stroke="#1a237e" stroke-width="2" stroke-linejoin="round"/>
+      ${trend.map((t, i) => {
+        const [x, y] = pts[i].split(",");
+        const col = t.score >= 0 ? "#2e7d32" : "#c62828";
+        return `<circle cx="${x}" cy="${y}" r="4" fill="${col}"/>
+                <text x="${x}" y="${+y - 8}" text-anchor="middle" font-size="10" fill="${col}" font-weight="bold">${fmt(t.score)}</text>`;
+      }).join("")}
+    </svg>`;
+}
+
+async function init() {
+  const d = await api("/analytics");
+  renderOverview(d);
+  renderByExam(d.by_exam);
+  renderTrend(d.trend);
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+
+<nav class="bg-[#1a237e] text-white px-4 py-3 flex items-center gap-3">
+  <a href="profile.html" class="opacity-70 hover:opacity-100 text-sm">← Profile</a>
+  <span class="text-lg font-black">📊 Analytics</span>
+</nav>
+
+<div class="max-w-lg mx-auto p-4 space-y-4">
+
+  <!-- Overview stats -->
+  <div class="grid grid-cols-2 gap-3">
+    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-[#1565c0]">
+      <div class="text-2xl font-black text-[#1565c0]" id="attempts">—</div>
+      <div class="text-xs font-bold text-[#8a9ab7] mt-1">Total Attempts</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-[#2e7d32]">
+      <div class="text-2xl font-black text-[#2e7d32]" id="best">—</div>
+      <div class="text-xs font-bold text-[#8a9ab7] mt-1">Best Score</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-[#6a1b9a]">
+      <div class="text-2xl font-black text-[#6a1b9a]" id="avg">—</div>
+      <div class="text-xs font-bold text-[#8a9ab7] mt-1">Avg Score</div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-[#e65100]">
+      <div class="text-2xl font-black text-[#e65100]" id="exams">—</div>
+      <div class="text-xs font-bold text-[#8a9ab7] mt-1">Exams Attempted</div>
+    </div>
+  </div>
+
+  <!-- Score trend -->
+  <div class="bg-white rounded-2xl p-5 shadow-sm">
+    <p class="text-xs font-black uppercase tracking-widest text-[#5c6b8a] mb-4">Score Trend (last 10)</p>
+    <div id="trend-chart" class="w-full h-20"></div>
+  </div>
+
+  <!-- Per-exam breakdown -->
+  <div class="bg-white rounded-2xl p-5 shadow-sm">
+    <p class="text-xs font-black uppercase tracking-widest text-[#5c6b8a] mb-4">Per-Exam Performance</p>
+    <div id="by-exam"></div>
+  </div>
+
+</div>
+</body>
+</html>

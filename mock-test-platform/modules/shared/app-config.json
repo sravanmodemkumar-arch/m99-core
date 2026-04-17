@@ -3,5 +3,6 @@
   "auth_base":    "http://localhost:8787",
   "admin_base":   "http://localhost:8789",
   "exam_base":    "http://localhost:8788",
+  "user_base":    "http://localhost:8790",
   "cdn_manifest": "http://localhost:8788/exam-engine/manifest.json"
 }
