@@ -1,0 +1,18 @@
+<!--
+  HTMX shared component: OTP Input Row
+  Usage:  <div hx-get="/auth/components/otp-input?id=login-otp" hx-trigger="load" hx-swap="outerHTML"></div>
+  Params: ?id=<row-id>  ?label=<label text>  ?error_id=<error div id>
+  Or inject via components.js: injectOtpInput(container, { id, label, errorId })
+-->
+<div class="field" data-component="otp-input">
+  <label data-otp-label></label>
+  <div class="otp-row" data-otp-row>
+    <input type="tel" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+    <input type="tel" maxlength="1" inputmode="numeric">
+    <input type="tel" maxlength="1" inputmode="numeric">
+    <input type="tel" maxlength="1" inputmode="numeric">
+    <input type="tel" maxlength="1" inputmode="numeric">
+    <input type="tel" maxlength="1" inputmode="numeric">
+  </div>
+  <div class="error" data-otp-error></div>
+</div>

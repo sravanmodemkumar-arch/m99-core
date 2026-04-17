@@ -42,6 +42,12 @@
 - Forgot Password: identifier → OTP/email → new pw (all inline, one page)
 - All content dynamic — loaded from KV auth_config per module
 
+## Platform Delivery (locked)
+- ALL platforms (web, mobile, desktop) serve static assets from CDN
+- No page-load data fetching rule — pages are static, no mandatory API call on load
+- API calls happen only on user actions: login, save, submit, OTP send, etc.
+- `boot()` / config loading from `/auth/config` is the only background call (theme + module config)
+
 ## UI Rules (every session)
 - Ultra pro level — high-stakes exam, stressed students, ₹8000 phones
 - Use design system from memory/ui.md — no deviations

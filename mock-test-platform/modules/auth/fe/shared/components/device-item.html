@@ -1,0 +1,15 @@
+<!--
+  HTMX shared component: Active Device / Session Row
+  Used in security.html → sessions section. Data injected by components.js renderDeviceItem(session).
+-->
+<div class="device-item" data-component="device-item">
+  <div class="device-icon" data-device-icon></div>
+  <div class="device-info">
+    <div class="device-name" data-device-name></div>
+    <div class="device-meta" data-device-meta></div>
+  </div>
+  <div class="device-actions">
+    <span class="badge badge-success" data-device-current style="display:none">This device</span>
+    <button type="button" class="btn btn-danger btn-sm" data-device-end style="display:none">End</button>
+  </div>
+</div>
