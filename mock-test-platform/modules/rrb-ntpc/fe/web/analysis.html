@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis</title>
+<script src="/modules/exam-engine/fe/desktop/desktop-adapter.js" onerror="void 0"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;color:#1a1a2e}
+
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Header */
+.hdr{background:linear-gradient(90deg,#0d47a1,#1565c0);color:#fff;height:52px;display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,0.22)}
+.hdr-left,.hdr-right{display:flex;gap:8px;align-items:center;min-width:0}
+.hdr-center{flex:1;text-align:center}
+.hdr-title{font-size:15px;font-weight:800;letter-spacing:0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:11px;color:rgba(255,255,255,0.65);margin-top:1px}
+.hbtn{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.12);color:#fff;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+.hbtn:hover{background:rgba(255,255,255,0.22)}
+
+/* Score band */
+.score-band{background:linear-gradient(135deg,#0d1b4b,#1565c0);padding:0;flex-shrink:0;border-bottom:3px solid rgba(0,0,0,0.25);display:flex}
+.score-tiles{display:flex;flex:1;overflow:hidden}
+.stile{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;border-right:1px solid rgba(255,255,255,0.1)}
+.stile:last-child{border-right:none}
+.stile-v{font-size:clamp(18px,2vw,28px);font-weight:900;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.stile-l{font-size:9px;font-weight:700;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.stile.c .stile-v{color:#a5d6a7}
+.stile.w .stile-v{color:#ef9a9a}
+.stile.sk .stile-v{color:#b0bec5}
+.stile.pct .stile-v{color:#fff176}
+
+/* Tab bar */
+.tab-bar{background:#fff;display:flex;align-items:stretch;border-bottom:2px solid #e0e4ed;flex-shrink:0;padding:0 20px;gap:4px}
+.tab-btn{padding:12px 22px;font-size:13px;font-weight:700;color:#5c6b8a;border:none;background:none;cursor:pointer;white-space:nowrap;transition:color 0.15s;border-bottom:3px solid transparent;margin-bottom:-2px;display:flex;align-items:center;gap:7px}
+.tab-btn:hover{color:#1565c0}
+.tab-btn.active{color:#1565c0;border-bottom-color:#1565c0}
+.tab-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:#e3f2fd;color:#1565c0;line-height:1.4}
+.tab-btn.active .tab-badge{background:#1565c0;color:#fff}
+
+/* Tab body */
+.tab-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.tab-pane{display:none;flex:1;overflow-y:auto;min-height:0;flex-direction:column}
+.tab-pane.active{display:flex}
+.pane-body{padding:18px 20px 28px;display:flex;flex-direction:column;gap:18px;max-width:1300px;width:100%;margin:0 auto}
+
+/* Section heading */
+.sec-heading{font-size:11px;font-weight:800;color:#5c6b8a;text-transform:uppercase;letter-spacing:0.09em;padding-bottom:8px;border-bottom:2px solid #e0e4ed;display:flex;align-items:center;gap:8px}
+.sec-heading::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;background:#1565c0}
+
+/* Cards */
+.card{background:#fff;border-radius:12px;border:1px solid #e0e4ed;box-shadow:0 2px 8px rgba(0,0,0,0.05);padding:20px}
+.card-title{font-size:13px;font-weight:800;color:#1a2a4a;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+
+/* Stat chip */
+.stat-chip{background:#fff;border-radius:10px;border:1px solid #e0e4ed;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.stat-icon.blue{background:#e3f2fd;color:#1565c0}
+.stat-icon.green{background:#e8f5e9;color:#2e7d32}
+.stat-icon.red{background:#ffebee;color:#c62828}
+.stat-icon.purple{background:#f3e5f5;color:#7b1fa2}
+.stat-icon.orange{background:#fff3e0;color:#e65100}
+.stat-val{font-size:20px;font-weight:900;color:#1a2a4a;line-height:1}
+.stat-lbl{font-size:11px;font-weight:600;color:#8a9ab7;margin-top:2px}
+
+/* Subject bar rows */
+.subj-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f7}
+.subj-row:last-child{border-bottom:none}
+.subj-rank{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0}
+.subj-name{min-width:130px;flex-shrink:0;font-size:13px;font-weight:700;color:#1a2a4a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subj-bars{flex:1;display:flex;flex-direction:column;gap:4px}
+.subj-bar-row{display:flex;align-items:center;gap:6px}
+.subj-bar-lbl{font-size:9px;font-weight:700;color:#aaa;width:44px;text-transform:uppercase;flex-shrink:0}
+.subj-bar-track{flex:1;height:7px;background:#f0f2f5;border-radius:4px;overflow:hidden}
+.subj-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.subj-bar-val{font-size:11px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+.subj-stats{display:flex;gap:10px;flex-shrink:0}
+.subj-stat{display:flex;flex-direction:column;align-items:center;min-width:30px}
+.subj-stat-v{font-size:14px;font-weight:900;line-height:1}
+.subj-stat.c .subj-stat-v{color:#2e7d32}
+.subj-stat.w .subj-stat-v{color:#c62828}
+.subj-stat.s .subj-stat-v{color:#90a4ae}
+.subj-stat-l{font-size:8px;font-weight:700;color:#ccc;text-transform:uppercase;margin-top:1px}
+.subj-badge{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;flex-shrink:0}
+.verdict-strong{background:#e8f5e9;color:#2e7d32}
+.verdict-moderate{background:#fff8e1;color:#f57f17}
+.verdict-weak{background:#ffebee;color:#c62828}
+
+/* Topic grid */
+.topic-grid{display:flex;flex-direction:column;gap:6px}
+.topic-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;background:#f8f9ff;border:1px solid #e8edf6}
+.topic-name{font-size:12px;font-weight:700;color:#1a2a4a;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topic-acc{font-size:12px;font-weight:900}
+.topic-bar-wrap{flex:0 0 120px}
+.topic-bar-track{height:6px;background:#e0e4ed;border-radius:3px;overflow:hidden}
+.topic-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.topic-counts{font-size:10px;font-weight:700;color:#aaa;min-width:70px;text-align:right;flex-shrink:0}
+
+/* Time insights */
+.time-insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.time-q-list{display:flex;flex-direction:column;gap:6px}
+.time-q-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid #e8edf6;background:#f8f9ff;cursor:pointer;transition:background 0.12s}
+.time-q-row:hover{background:#e8f0fe}
+.time-q-num{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0}
+.time-q-num.correct{background:#e8f5e9;color:#2e7d32}
+.time-q-num.wrong  {background:#ffebee;color:#c62828}
+.time-q-num.skipped{background:#fff8e1;color:#f57f17}
+.time-q-meta{flex:1;min-width:0}
+.time-q-sec{font-size:10px;font-weight:700;color:#8a9ab7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.time-q-t{font-size:13px;font-weight:900;flex-shrink:0}
+.time-q-t.slow{color:#c62828}
+.time-q-t.fast{color:#2e7d32}
+
+/* Wrong question cards */
+.wrong-q-list{display:flex;flex-direction:column;gap:16px}
+.wrong-q-card{background:#fff;border-radius:12px;border:1px solid #e0e4ed;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.05)}
+.wqc-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fff8f8;border-bottom:1px solid #ffe0e0}
+.wqc-num{width:30px;height:30px;border-radius:8px;background:#ffebee;color:#c62828;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0}
+.wqc-meta{flex:1;min-width:0}
+.wqc-title{font-size:13px;font-weight:800;color:#c62828}
+.wqc-sub{font-size:11px;font-weight:600;color:#8a9ab7;margin-top:1px;display:flex;gap:8px;flex-wrap:wrap}
+.wqc-time{font-size:11px;font-weight:700;color:#7b1fa2}
+.wqc-body{padding:14px 16px}
+.wqc-question{font-size:14px;line-height:1.7;color:#1a2a4a;margin-bottom:14px}
+.wqc-options{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.wqc-opt{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-radius:8px;border:1.5px solid #e8edf6;font-size:13px}
+.wqc-opt.opt-yours{background:#ffebee;border-color:#ef9a9a}
+.wqc-opt.opt-correct{background:#e8f5e9;border-color:#a5d6a7}
+.wqc-opt-key{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;background:#f0f2f5;color:#5c6b8a}
+.wqc-opt.opt-yours .wqc-opt-key{background:#ef9a9a;color:#fff}
+.wqc-opt.opt-correct .wqc-opt-key{background:#a5d6a7;color:#fff}
+.wqc-opt-text{flex:1;line-height:1.5}
+.wqc-verdict-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:#f8f9ff;border-radius:8px;flex-wrap:wrap}
+.wqc-ans-badge{font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}
+.wqc-ans-badge.y{color:#c62828}.wqc-ans-badge.c{color:#2e7d32}
+
+/* Skipped section */
+.skipped-grid{display:flex;flex-wrap:wrap;gap:8px}
+.skip-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:#fff8e1;border:1.5px solid #ffe082;cursor:pointer;transition:background 0.12s}
+.skip-chip:hover{background:#fff3cd}
+.skip-chip-num{font-size:12px;font-weight:900;color:#f57f17}
+.skip-chip-sec{font-size:10px;font-weight:600;color:#aaa}
+
+/* ── ALL TIME TAB ── */
+.trend-bar-chart{display:flex;align-items:flex-end;gap:4px;height:120px;padding:0 4px}
+.trend-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;height:100%;justify-content:flex-end}
+.trend-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height 1s ease;cursor:pointer;position:relative}
+.trend-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:#1a2a4a;color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;white-space:nowrap;z-index:10}
+.trend-bar-lbl{font-size:9px;font-weight:600;color:#aaa;text-align:center;line-height:1.2}
+.trend-score{font-size:9px;font-weight:800;color:#1565c0;white-space:nowrap}
+
+.hist-table{width:100%;border-collapse:collapse;font-size:13px}
+.hist-table thead th{background:#f8f9ff;padding:9px 14px;text-align:left;font-size:10px;font-weight:800;color:#8a9ab7;text-transform:uppercase;letter-spacing:0.07em;border-bottom:2px solid #e0e4ed}
+.hist-table tbody tr{border-bottom:1px solid #f0f2f7;cursor:pointer;transition:background 0.1s}
+.hist-table tbody tr:hover{background:#f4f8ff}
+.hist-table td{padding:10px 14px;vertical-align:middle}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:22px;border-radius:999px;font-size:11px;font-weight:800;padding:0 7px}
+.rank-badge.top3{background:#fff8e1;color:#f57f17}
+.rank-badge.norm{background:#e3f2fd;color:#1565c0}
+
+/* Subject improvement */
+.subj-impr-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f7}
+.subj-impr-row:last-child{border-bottom:none}
+.subj-impr-name{font-size:13px;font-weight:700;color:#1a2a4a;flex:0 0 140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subj-impr-val{font-size:14px;font-weight:900;flex-shrink:0;min-width:48px;text-align:right}
+.subj-impr-trend{font-size:11px;font-weight:800;flex-shrink:0;padding:2px 8px;border-radius:999px}
+.trend-up{background:#e8f5e9;color:#2e7d32}
+.trend-dn{background:#ffebee;color:#c62828}
+.trend-flat{background:#f5f5f5;color:#90a4ae}
+.subj-impr-bar-wrap{flex:1}
+.subj-impr-bar-track{height:7px;background:#f0f2f5;border-radius:4px;overflow:hidden}
+.subj-impr-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+
+/* ── qb-* rich content (body-renderer output) ── */
+.q-render{font-size:14px;line-height:1.75;color:#1a2a4a}
+.q-render p,.qb-para{margin:8px 0;line-height:1.8}
+.qb-label{font-weight:700;margin:12px 0 4px;color:#0d47a1;font-size:1em;display:block}
+.qb-hr{border:none;border-top:1px solid #e0e0e0;margin:12px 0}
+.qb-math{display:inline}
+.qb-math-block{display:block;margin:12px 0;overflow-x:auto;text-align:center}
+.qb-note{background:#e3f2fd;border-left:4px solid #1565c0;border-radius:4px;padding:10px 14px;margin:10px 0;font-size:.9em;color:#0d47a1;line-height:1.7}
+.qb-warn{background:#fff3e0;border-left:4px solid #f57c00;border-radius:4px;padding:10px 14px;margin:10px 0;font-size:.9em;color:#7c4400;line-height:1.7}
+.qb-steps{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.qb-step{display:flex;align-items:flex-start;gap:12px}
+.qb-step-num{min-width:28px;height:28px;border-radius:50%;background:#1565c0;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.qb-step-body{flex:1;line-height:1.7}
+.qb-code{background:#f5f5f5;border:1px solid #e0e0e0;border-radius:5px;padding:12px 16px;font-family:monospace;font-size:.875em;white-space:pre-wrap;overflow-x:auto;margin:10px 0}
+.qb-img-wrap{margin:10px 0}
+.qb-img{max-width:100%;border-radius:5px;display:block}
+.qb-img-caption{font-size:.8em;color:#666;margin-top:5px;text-align:center}
+.qb-svg-wrap{margin:10px 0;overflow-x:auto}
+.qb-svg-wrap svg{max-width:100%;height:auto}
+.qb-tbl-wrap{overflow-x:auto;margin:10px 0}
+.qb-tbl{width:100%;border-collapse:collapse;font-size:.875em}
+.qb-tbl th,.qb-tbl td{border:1px solid #c8c8c8;padding:8px 12px;text-align:left}
+.qb-tbl thead th{background:#e3f2fd;font-weight:700;color:#0d47a1}
+.qb-tbl tbody tr:nth-child(even){background:#f9f9f9}
+.qb-tbl-caption{font-size:.85em;font-weight:600;color:#333;margin-bottom:6px}
+.qb-list{margin:8px 0 8px 22px}
+.qb-list li{margin:5px 0;line-height:1.65}
+.qb-chart{margin:10px 0}
+.qb-chart-title{font-weight:700;font-size:.9em;margin-bottom:8px;color:#1a1a1a}
+.qb-chart-empty{color:#888;font-size:.875em;padding:4px 0}
+.qb-hbar{display:flex;flex-direction:column;gap:8px}
+.qb-hbar-row{display:grid;grid-template-columns:7em 1fr 2.5em;align-items:center;gap:8px;font-size:.8125em}
+.qb-hbar-label{color:#333;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qb-hbar-track{height:1.1em;background:#eee;border-radius:999px;overflow:hidden}
+.qb-hbar-fill{height:100%;border-radius:999px}
+.qb-hbar-val{font-weight:700;text-align:right;color:#333}
+.qb-vbar{display:flex;align-items:flex-end;gap:8px;height:10em;padding-bottom:1.5em}
+.qb-vbar-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end}
+.qb-vbar-val{font-size:.7em;font-weight:700;color:#333;margin-bottom:2px}
+.qb-vbar-track{width:100%;max-width:2.5em;background:#eee;border-radius:4px 4px 0 0;height:80%;display:flex;align-items:flex-end;overflow:hidden}
+.qb-vbar-fill{width:100%;border-radius:4px 4px 0 0}
+.qb-vbar-label{font-size:.675em;color:#666;margin-top:4px;text-align:center;word-break:break-word}
+.qb-pie-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.qb-pie{width:8em;height:8em;border-radius:50%;flex-shrink:0;position:relative}
+.qb-pie-hole{position:absolute;inset:25%;background:#fff;border-radius:50%}
+.qb-pie-legend{display:flex;flex-direction:column;gap:6px}
+.qb-pie-legend-row{display:flex;align-items:center;gap:8px;font-size:.8em;color:#333}
+.qb-pie-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.qb-pie-pct{font-weight:700;margin-left:auto;padding-left:8px}
+.opt-image{max-width:140px;max-height:80px;border-radius:4px;display:block}
+
+/* Footer */
+.res-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:#fff;border-top:2px solid #e0e4ed;flex-shrink:0;gap:12px}
+.f-btn{padding:10px 22px;border-radius:7px;font-size:13px;font-weight:700;border:none;cursor:pointer;min-height:40px;transition:filter 0.15s}
+.f-btn:hover{filter:brightness(0.9)}
+.f-btn.outline{background:#f0f2f5;color:#333;border:1.5px solid #c0c8d8}
+.f-btn.blue{background:#1565c0;color:#fff}
+
+/* Loading skeleton */
+.skeleton{background:linear-gradient(90deg,#f0f2f5 25%,#e8edf6 50%,#f0f2f5 75%);background-size:400px;border-radius:6px;animation:shimmer 1.4s infinite linear}
+@keyframes shimmer{0%{background-position:-400px}100%{background-position:400px}}
+
+.empty-block{padding:40px;text-align:center;color:#aaa}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.empty-msg{font-size:13px;font-weight:600}
+
+@media(max-width:900px){.grid-2,.time-insight-grid{grid-template-columns:1fr}.subj-name{min-width:90px}}
+@media(max-width:640px){.tab-btn{padding:10px 12px;font-size:12px}.grid-3{grid-template-columns:1fr 1fr}.hbtn{padding:5px 10px;font-size:11px}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <button class="hbtn" onclick="goBack()">← Back</button>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-title" id="hdr-title">Analysis</div>
+      <div class="hdr-sub" id="hdr-sub">Loading…</div>
+    </div>
+    <div class="hdr-right">
+      <button class="hbtn" onclick="goHome()">🏠 Home</button>
+    </div>
+  </div>
+
+  <!-- Score band -->
+  <div class="score-band">
+    <div class="score-tiles">
+      <div class="stile"><div class="stile-v" id="st-score">—</div><div class="stile-l">Score</div></div>
+      <div class="stile c"><div class="stile-v" id="st-c">—</div><div class="stile-l">Correct</div></div>
+      <div class="stile w"><div class="stile-v" id="st-w">—</div><div class="stile-l">Wrong</div></div>
+      <div class="stile sk"><div class="stile-v" id="st-s">—</div><div class="stile-l">Skipped</div></div>
+      <div class="stile"><div class="stile-v" id="st-t">—</div><div class="stile-l">Total Qs</div></div>
+      <div class="stile pct"><div class="stile-v" id="st-pct">—</div><div class="stile-l">Accuracy</div></div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('thisexam',this)">
+      📋 This Exam <span class="tab-badge" id="tbadge-this">—</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('alltime',this)">
+      📈 All Time <span class="tab-badge" id="tbadge-all">—</span>
+    </button>
+  </div>
+
+  <!-- Tab body -->
+  <div class="tab-body">
+
+    <!-- ── TAB: THIS EXAM ── -->
+    <div class="tab-pane active" id="tab-thisexam">
+      <div class="pane-body">
+
+        <!-- Quick stats row -->
+        <div id="this-stats-row" class="grid-3"></div>
+
+        <!-- Subject performance -->
+        <div class="sec-heading">Subject Performance</div>
+        <div class="card">
+          <div id="subj-perf-rows">
+            <div class="skeleton" style="height:60px;margin-bottom:8px"></div>
+            <div class="skeleton" style="height:60px;margin-bottom:8px"></div>
+          </div>
+        </div>
+
+        <!-- Topic breakdown -->
+        <div id="topic-section" style="display:none">
+          <div class="sec-heading">Topic Breakdown</div>
+          <div class="card">
+            <div class="topic-grid" id="topic-grid"></div>
+          </div>
+        </div>
+
+        <!-- Time insights -->
+        <div id="time-section" style="display:none">
+          <div class="sec-heading">Time Insights</div>
+          <div class="time-insight-grid">
+            <div class="card">
+              <div class="card-title">🐢 Slowest Questions <span style="font-size:11px;font-weight:600;color:#aaa;margin-left:4px">(may need more practice)</span></div>
+              <div class="time-q-list" id="slowest-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">⚡ Fastest Questions <span style="font-size:11px;font-weight:600;color:#aaa;margin-left:4px">(quick answers)</span></div>
+              <div class="time-q-list" id="fastest-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Score breakdown card -->
+        <div class="sec-heading">Score Breakdown</div>
+        <div class="card">
+          <div class="card-title">📊 Marks Distribution</div>
+          <div id="marks-breakdown"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TAB: ALL TIME ── -->
+    <div class="tab-pane" id="tab-alltime">
+      <div class="pane-body">
+
+        <!-- All-time stats -->
+        <div class="grid-3" id="alltime-stats-row">
+          <div class="skeleton" style="height:70px;border-radius:10px"></div>
+          <div class="skeleton" style="height:70px;border-radius:10px"></div>
+          <div class="skeleton" style="height:70px;border-radius:10px"></div>
+        </div>
+
+        <!-- Score trend -->
+        <div class="sec-heading">Score Trend</div>
+        <div class="card">
+          <div class="card-title">📈 Score over last attempts</div>
+          <div class="trend-bar-chart" id="trend-chart" style="min-height:120px">
+            <div style="color:#aaa;font-size:13px;margin:auto">Loading history…</div>
+          </div>
+        </div>
+
+        <!-- Subject improvement -->
+        <div class="sec-heading">Subject-wise Accuracy</div>
+        <div class="card">
+          <div id="subj-impr-rows">
+            <div class="skeleton" style="height:48px;margin-bottom:8px"></div>
+            <div class="skeleton" style="height:48px;margin-bottom:8px"></div>
+          </div>
+        </div>
+
+        <!-- Attempt history table -->
+        <div class="sec-heading">Attempt History</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table class="hist-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Date</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Skipped</th><th>Accuracy</th><th>Rank</th>
+                </tr>
+              </thead>
+              <tbody id="hist-tbody">
+                <tr><td colspan="8"><div class="empty-block"><div class="empty-icon">📭</div><div class="empty-msg">Loading…</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end tab-body -->
+
+  <!-- Footer -->
+  <div class="res-footer">
+    <button class="f-btn outline" onclick="goBack()">← Back to Result</button>
+    <div style="font-size:11px;color:#aaa;font-weight:500" id="f-meta"></div>
+    <button class="f-btn blue" onclick="goHome()">🏠 Home</button>
+  </div>
+
+</div>
+
+<script type="module">
+import { boot, requireAuth, api } from "/modules/auth/fe/web/app.js";
+
+
+const _p        = new URLSearchParams(location.search);
+const SID       = _p.get("session_id") || "";
+const SCORE     = parseFloat(_p.get("score")    || "0");
+const CORRECT   = parseInt(_p.get("correct")    || "0");
+const WRONG     = parseInt(_p.get("wrong")      || "0");
+const SKIPPED   = parseInt(_p.get("skipped")    || "0");
+const TOTAL     = parseInt(_p.get("total")      || "0");
+const PCT       = parseFloat(_p.get("pct")      || "0");
+const ELAPSED_S = parseInt(_p.get("elapsed_s")  || "0");
+const BACK_URL  = _p.get("back_url")             || "./result.html";
+const HOME_URL  = _p.get("home_url")             || "./";
+const LABEL     = _p.get("label")               || "Exam";
+const API_PFX   = _p.get("api_prefix")           || "/exam";
+
+const COLORS = ["#1565c0","#6a1b9a","#2e7d32","#e65100","#0277bd","#ad1457","#00838f","#558b2f"];
+
+function fmt(s) {
+  if (!s && s !== 0) return "—";
+  const m = Math.floor(s / 60), sec = s % 60;
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+function fmtDate(d) {
+  try { return new Date(d).toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"2-digit"}); } catch(e){ return d; }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  if (!requireAuth()) return;
+  await boot();
+
+  document.getElementById("hdr-title").textContent = LABEL + " — Analysis";
+  document.getElementById("hdr-sub").textContent   = `Session ${SID.slice(-8)} · ${fmt(ELAPSED_S)}`;
+  document.getElementById("f-meta").textContent    = `${TOTAL} questions · ${fmt(ELAPSED_S)} · ${LABEL}`;
+
+  const sign = SCORE >= 0 ? "+" : "";
+  document.getElementById("st-score").textContent = `${sign}${SCORE.toFixed(2)}`;
+  document.getElementById("st-c").textContent  = CORRECT;
+  document.getElementById("st-w").textContent  = WRONG;
+  document.getElementById("st-s").textContent  = SKIPPED;
+  document.getElementById("st-t").textContent  = TOTAL;
+  document.getElementById("st-pct").textContent = `${PCT}%`;
+
+  const raw = sessionStorage.getItem(`result_${SID}`);
+  if (raw) {
+    const data = JSON.parse(raw);
+    buildThisExam(data);
+  } else {
+    document.getElementById("subj-perf-rows").innerHTML = `<div class="empty-block"><div class="empty-icon">⚠️</div><div class="empty-msg">No session data — re-take exam to see analysis</div></div>`;
+  }
+
+  // All-time loads in parallel
+  loadAllTime();
+}
+
+// ── THIS EXAM ─────────────────────────────────────────────────────────────────
+function buildThisExam(data) {
+  const defs    = data.section_defs || [];
+  const sections = data.sections    || {};
+  const timings  = data.timings     || {};
+  const ansKey   = data.answer_key  || {};
+  const responses= data.responses   || {};
+  const questions= data.questions   || [];
+
+  document.getElementById("tbadge-this").textContent = `${TOTAL} Qs`;
+
+  // ── Quick stats
+  const attempted = CORRECT + WRONG;
+  const attemptPct = TOTAL ? Math.round((attempted / TOTAL) * 100) : 0;
+  const avgTime   = TOTAL ? Math.round(ELAPSED_S / TOTAL) : 0;
+  document.getElementById("this-stats-row").innerHTML = `
+    <div class="stat-chip"><div class="stat-icon green">✓</div><div><div class="stat-val">${CORRECT}</div><div class="stat-lbl">Correct (${Math.round(CORRECT/TOTAL*100)||0}%)</div></div></div>
+    <div class="stat-chip"><div class="stat-icon red">✗</div><div><div class="stat-val">${WRONG}</div><div class="stat-lbl">Wrong (${Math.round(WRONG/TOTAL*100)||0}%)</div></div></div>
+    <div class="stat-chip"><div class="stat-icon purple">⏱</div><div><div class="stat-val">${fmt(avgTime)}</div><div class="stat-lbl">Avg per Question</div></div></div>
+  `;
+
+  // ── Subject performance rows
+  if (defs.length) {
+    const maxAcc = 100;
+    document.getElementById("subj-perf-rows").innerHTML = defs.map((def, i) => {
+      const d   = sections[def.id] || { correct:0, wrong:0, skipped:0, rawScaled:0 };
+      const att = d.correct + d.wrong;
+      const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+      const sc  = (d.rawScaled / 1000).toFixed(2);
+      const col = COLORS[i % COLORS.length];
+      const secTime = Object.entries(timings)
+        .filter(([qid]) => { const q = questions.find(q => q.id === qid); return q?.section === def.id; })
+        .reduce((s, [, t]) => s + t, 0);
+      const verdict = acc >= 70 ? "Strong" : acc >= 40 ? "Moderate" : "Weak";
+      const vCls   = acc >= 70 ? "verdict-strong" : acc >= 40 ? "verdict-moderate" : "verdict-weak";
+      const totalInSec = questions.filter(q => q.section === def.id).length || 0;
+      return `
+        <div class="subj-row">
+          <div class="subj-rank" style="background:${col}20;color:${col}">${i+1}</div>
+          <div class="subj-name" title="${def.label}">${def.label}</div>
+          <div class="subj-bars">
+            <div class="subj-bar-row">
+              <div class="subj-bar-lbl">Accuracy</div>
+              <div class="subj-bar-track"><div class="subj-bar-fill" data-w="${acc}" style="width:0%;background:${col}"></div></div>
+              <div class="subj-bar-val" style="color:${col}">${acc}%</div>
+            </div>
+            ${secTime > 0 ? `<div class="subj-bar-row">
+              <div class="subj-bar-lbl">Time</div>
+              <div class="subj-bar-track"><div class="subj-bar-fill" data-w="${Math.min(100,Math.round(secTime/ELAPSED_S*100))}" style="width:0%;background:#7b1fa2"></div></div>
+              <div class="subj-bar-val" style="color:#7b1fa2">${fmt(secTime)}</div>
+            </div>` : ""}
+          </div>
+          <div class="subj-stats">
+            <div class="subj-stat c"><div class="subj-stat-v">${d.correct}</div><div class="subj-stat-l">✓</div></div>
+            <div class="subj-stat w"><div class="subj-stat-v">${d.wrong}</div><div class="subj-stat-l">✗</div></div>
+            <div class="subj-stat s"><div class="subj-stat-v">${d.skipped}</div><div class="subj-stat-l">—</div></div>
+          </div>
+          <div class="subj-badge ${vCls}">${verdict}</div>
+        </div>`;
+    }).join("");
+    setTimeout(() => {
+      document.querySelectorAll(".subj-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+    }, 80);
+  } else {
+    document.getElementById("subj-perf-rows").innerHTML = `<div class="empty-block"><div class="empty-icon">📭</div><div class="empty-msg">No section data</div></div>`;
+  }
+
+  // ── Topic breakdown
+  const topicMap = {};
+  for (const q of questions) {
+    if (!q.topic) continue;
+    if (!topicMap[q.topic]) topicMap[q.topic] = { correct:0, wrong:0, skipped:0 };
+    const resp = responses[q.id];
+    const correct = typeof ansKey[q.id] === "object" ? ansKey[q.id].answer : ansKey[q.id];
+    if (!resp?.attempted) topicMap[q.topic].skipped++;
+    else if (resp.chosen === correct) topicMap[q.topic].correct++;
+    else topicMap[q.topic].wrong++;
+  }
+  const topics = Object.entries(topicMap);
+  if (topics.length) {
+    document.getElementById("topic-section").style.display = "";
+    document.getElementById("topic-grid").innerHTML = topics
+      .sort((a, b) => {
+        const accA = (a[1].correct + a[1].wrong) > 0 ? a[1].correct / (a[1].correct + a[1].wrong) : 0;
+        const accB = (b[1].correct + b[1].wrong) > 0 ? b[1].correct / (b[1].correct + b[1].wrong) : 0;
+        return accA - accB;
+      })
+      .map(([topic, t]) => {
+        const att = t.correct + t.wrong;
+        const acc = att > 0 ? Math.round((t.correct / att) * 100) : 0;
+        const col = acc >= 70 ? "#2e7d32" : acc >= 40 ? "#f57f17" : "#c62828";
+        return `
+          <div class="topic-row">
+            <div class="topic-name" title="${topic}">${topic}</div>
+            <div class="topic-bar-wrap">
+              <div class="topic-bar-track"><div class="topic-bar-fill" data-w="${acc}" style="width:0%;background:${col}"></div></div>
+            </div>
+            <div class="topic-acc" style="color:${col}">${acc}%</div>
+            <div class="topic-counts">✓${t.correct} ✗${t.wrong} —${t.skipped}</div>
+          </div>`;
+      }).join("");
+    setTimeout(() => {
+      document.querySelectorAll(".topic-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+    }, 80);
+  }
+
+  // ── Time insights
+  const timedRows = Object.entries(timings)
+    .map(([qid, t]) => {
+      const resp = responses[qid];
+      const correct = typeof ansKey[qid] === "object" ? ansKey[qid].answer : ansKey[qid];
+      const verdict = !resp?.attempted ? "skipped" : resp.chosen === correct ? "correct" : "wrong";
+      const q = questions.find(q => q.id === qid);
+      const idx = Object.keys(ansKey).indexOf(qid) + 1;
+      return { qid, t, verdict, sec: defs.find(d => d.id === q?.section)?.label || "", idx };
+    })
+    .filter(r => r.t > 0)
+    .sort((a, b) => b.t - a.t);
+
+  if (timedRows.length >= 2) {
+    document.getElementById("time-section").style.display = "";
+    const slowest = timedRows.slice(0, 5);
+    const fastest = [...timedRows].sort((a, b) => a.t - b.t).slice(0, 5);
+    document.getElementById("slowest-list").innerHTML = slowest.map(r => `
+      <div class="time-q-row">
+        <div class="time-q-num ${r.verdict}">Q${r.idx}</div>
+        <div class="time-q-meta"><div class="time-q-sec">${r.sec || "General"} · ${r.verdict}</div></div>
+        <div class="time-q-t slow">${fmt(r.t)}</div>
+      </div>`).join("");
+    document.getElementById("fastest-list").innerHTML = fastest.map(r => `
+      <div class="time-q-row">
+        <div class="time-q-num ${r.verdict}">Q${r.idx}</div>
+        <div class="time-q-meta"><div class="time-q-sec">${r.sec || "General"} · ${r.verdict}</div></div>
+        <div class="time-q-t fast">${fmt(r.t)}</div>
+      </div>`).join("");
+  }
+
+  // ── Marks breakdown (analytics, no question text)
+  let posMarks = 0, negMarks = 0;
+  for (const [qid, correctRaw] of Object.entries(ansKey)) {
+    const correct = typeof correctRaw === "object" ? correctRaw.answer : correctRaw;
+    const resp = responses[qid];
+    if (resp?.attempted) {
+      if (resp.chosen === correct) posMarks += 1;
+      else negMarks += 0.33;
+    }
+  }
+  const netScore = posMarks - negMarks;
+  const maxPossible = Object.keys(ansKey).length;
+  document.getElementById("marks-breakdown").innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+      <div style="background:#e8f5e9;border-radius:10px;padding:14px 16px;text-align:center">
+        <div style="font-size:24px;font-weight:900;color:#2e7d32">+${posMarks}</div>
+        <div style="font-size:11px;font-weight:700;color:#2e7d32;margin-top:3px">Positive Marks</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px">${CORRECT} correct × 1</div>
+      </div>
+      <div style="background:#ffebee;border-radius:10px;padding:14px 16px;text-align:center">
+        <div style="font-size:24px;font-weight:900;color:#c62828">−${negMarks.toFixed(2)}</div>
+        <div style="font-size:11px;font-weight:700;color:#c62828;margin-top:3px">Negative Marks</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px">${WRONG} wrong × −0.33</div>
+      </div>
+      <div style="background:#e3f2fd;border-radius:10px;padding:14px 16px;text-align:center">
+        <div style="font-size:24px;font-weight:900;color:#1565c0">${netScore >= 0 ? "+" : ""}${netScore.toFixed(2)}</div>
+        <div style="font-size:11px;font-weight:700;color:#1565c0;margin-top:3px">Net Score</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px">out of ${maxPossible}</div>
+      </div>
+      <div style="background:#f3e5f5;border-radius:10px;padding:14px 16px;text-align:center">
+        <div style="font-size:24px;font-weight:900;color:#7b1fa2">${SKIPPED}</div>
+        <div style="font-size:11px;font-weight:700;color:#7b1fa2;margin-top:3px">Skipped</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px">${maxPossible - CORRECT - WRONG - SKIPPED >= 0 ? "" : ""}no penalty</div>
+      </div>
+    </div>`;
+}
+
+// ── ALL TIME ──────────────────────────────────────────────────────────────────
+async function loadAllTime() {
+  const [statsRes, histRes] = await Promise.all([
+    api(`${API_PFX}/stats`).catch(() => ({ ok: false })),
+    api(`${API_PFX}/history?page=1&limit=20`).catch(() => ({ ok: false })),
+  ]);
+
+  // Stats overview
+  if (statsRes.ok) {
+    const s = statsRes.data;
+    const attempts = s.total_attempts ?? s.attempts ?? 0;
+    const best     = s.best_score != null ? `+${s.best_score.toFixed(2)}` : "—";
+    const avg      = s.avg_score  != null ? s.avg_score.toFixed(2)  : "—";
+    const rank     = s.rank       != null ? `#${s.rank}` : "—";
+    document.getElementById("tbadge-all").textContent = `${attempts} attempts`;
+    document.getElementById("alltime-stats-row").innerHTML = `
+      <div class="stat-chip"><div class="stat-icon blue">📝</div><div><div class="stat-val">${attempts}</div><div class="stat-lbl">Total Attempts</div></div></div>
+      <div class="stat-chip"><div class="stat-icon green">🏆</div><div><div class="stat-val">${best}</div><div class="stat-lbl">Best Score</div></div></div>
+      <div class="stat-chip"><div class="stat-icon purple">📊</div><div><div class="stat-val">${avg}</div><div class="stat-lbl">Avg Score</div></div></div>
+    `;
+  } else {
+    document.getElementById("alltime-stats-row").innerHTML = `<div class="empty-block" style="grid-column:1/-1"><div class="empty-msg">Could not load stats</div></div>`;
+  }
+
+  // History
+  if (histRes.ok && histRes.data.results?.length) {
+    const results = histRes.data.results;
+    renderTrendChart(results);
+    renderHistTable(results);
+    renderSubjectImprovement(results);
+  } else {
+    document.getElementById("trend-chart").innerHTML = `<div style="color:#aaa;font-size:13px;margin:auto;text-align:center">No history yet — complete more tests!</div>`;
+    document.getElementById("hist-tbody").innerHTML  = `<tr><td colspan="8"><div class="empty-block"><div class="empty-icon">📭</div><div class="empty-msg">No attempts yet</div></div></td></tr>`;
+    document.getElementById("subj-impr-rows").innerHTML = `<div class="empty-block"><div class="empty-msg">No history data</div></div>`;
+    document.getElementById("tbadge-all").textContent = "0 attempts";
+  }
+}
+
+function renderTrendChart(results) {
+  const rev = [...results].reverse(); // oldest first
+  const scores = rev.map(r => r.score || 0);
+  const max = Math.max(...scores.map(Math.abs), 1);
+  const chart = document.getElementById("trend-chart");
+  chart.innerHTML = rev.map((r, i) => {
+    const sc   = r.score || 0;
+    const pct  = Math.max(4, Math.round((Math.abs(sc) / max) * 90));
+    const col  = sc > 0 ? "#1565c0" : sc < 0 ? "#c62828" : "#90a4ae";
+    const date = fmtDate(r.submitted_at);
+    const tip  = `${date}: ${sc >= 0 ? "+" : ""}${sc.toFixed ? sc.toFixed(2) : sc}`;
+    return `
+      <div class="trend-bar-col">
+        <div class="trend-score">${sc >= 0 ? "+" : ""}${sc.toFixed ? sc.toFixed(1) : sc}</div>
+        <div class="trend-bar" style="height:${pct}%;background:${col};opacity:${i === rev.length - 1 ? "1" : "0.65"}"
+          data-tip="${tip}" title="${tip}"></div>
+        <div class="trend-bar-lbl">${date}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderHistTable(results) {
+  document.getElementById("hist-tbody").innerHTML = results.map((r, i) => {
+    const acc = r.total_qs ? Math.round(((r.correct || 0) / r.total_qs) * 100) : 0;
+    const rankCls = r.rank && r.rank <= 3 ? "top3" : "norm";
+    return `
+      <tr>
+        <td style="font-weight:700;color:#5c6b8a">${i + 1}</td>
+        <td>${fmtDate(r.submitted_at)}</td>
+        <td style="font-weight:900;color:${(r.score||0)>=0?"#1565c0":"#c62828"}">${(r.score||0)>=0?"+":""}${(r.score||0).toFixed?r.score.toFixed(2):r.score}</td>
+        <td style="color:#2e7d32;font-weight:700">${r.correct ?? "—"}</td>
+        <td style="color:#c62828;font-weight:700">${r.wrong ?? "—"}</td>
+        <td style="color:#90a4ae;font-weight:700">${r.skipped ?? "—"}</td>
+        <td style="font-weight:700">${acc}%</td>
+        <td>${r.rank != null ? `<span class="rank-badge ${rankCls}">#${r.rank}</span>` : "—"}</td>
+      </tr>`;
+  }).join("");
+}
+
+function renderSubjectImprovement(results) {
+  // Aggregate accuracy per section across all attempts
+  const secMap = {};
+  for (const r of results) {
+    if (!r.sections) continue;
+    for (const [sid, s] of Object.entries(r.sections)) {
+      if (!secMap[sid]) secMap[sid] = { total_correct:0, total_att:0, label: sid };
+      secMap[sid].total_correct += s.correct || 0;
+      secMap[sid].total_att     += (s.correct || 0) + (s.wrong || 0);
+      secMap[sid].label = s.label || sid;
+    }
+  }
+  // Match with defs labels if available
+  const raw = sessionStorage.getItem(`result_${SID}`);
+  if (raw) {
+    const defs = JSON.parse(raw).section_defs || [];
+    for (const d of defs) if (secMap[d.id]) secMap[d.id].label = d.label;
+  }
+  const entries = Object.values(secMap);
+  if (!entries.length) {
+    document.getElementById("subj-impr-rows").innerHTML = `<div class="empty-block"><div class="empty-msg">No section data in history</div></div>`;
+    return;
+  }
+  const maxAcc = 100;
+  document.getElementById("subj-impr-rows").innerHTML = entries.map((s, i) => {
+    const acc = s.total_att > 0 ? Math.round((s.total_correct / s.total_att) * 100) : 0;
+    const col = COLORS[i % COLORS.length];
+    const verdict = acc >= 70 ? "Strong" : acc >= 40 ? "Moderate" : "Weak";
+    const vCls   = acc >= 70 ? "verdict-strong" : acc >= 40 ? "verdict-moderate" : "verdict-weak";
+    return `
+      <div class="subj-impr-row">
+        <div class="subj-impr-name" title="${s.label}">${s.label}</div>
+        <div class="subj-impr-bar-wrap">
+          <div class="subj-impr-bar-track">
+            <div class="subj-impr-bar-fill" data-w="${acc}" style="width:0%;background:${col}"></div>
+          </div>
+        </div>
+        <div class="subj-impr-val" style="color:${col}">${acc}%</div>
+        <div class="subj-impr-trend ${vCls}">${verdict}</div>
+      </div>`;
+  }).join("");
+  setTimeout(() => {
+    document.querySelectorAll(".subj-impr-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+  }, 80);
+}
+
+
+// ── Globals ───────────────────────────────────────────────────────────────────
+window.switchTab = function(id, btn) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById(`tab-${id}`).classList.add("active");
+  if (id === "alltime") {
+    setTimeout(() => {
+      document.querySelectorAll(".subj-impr-bar-fill, .subj-bar-fill, .topic-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+    }, 50);
+  }
+};
+
+window.goBack = () => { window.location.href = BACK_URL; };
+window.goHome = () => { window.location.href = HOME_URL; };
+
+init();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" });
+</script>
+</body>
+</html>

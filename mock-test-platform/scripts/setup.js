@@ -159,6 +159,7 @@ const adminKvId       = createKvNamespace("KV", "mtp-admin-kv");
 const userKvId        = createKvNamespace("KV", "mtp-user-kv");
 const rrbKvId         = createKvNamespace("KV", "mtp-rrb-kv");
 const rrbGdKvId       = createKvNamespace("KV", "mtp-rrb-group-d-kv");
+const rrbNtpcKvId     = createKvNamespace("KV", "mtp-rrb-ntpc-kv");
 
 // 2. Patch wrangler.toml files
 console.log("\n▶ Step 2/6: Patch wrangler.toml files");
@@ -169,6 +170,7 @@ patchToml(path.join(ROOT, "modules/admin/backend/wrangler.toml"),  "REPLACE_WITH
 patchToml(path.join(ROOT, "modules/user/wrangler.toml"),           "REPLACE_WITH_USER_KV_ID",     userKvId);
 patchToml(path.join(ROOT, "modules/rrb/wrangler.toml"),            "REPLACE_WITH_RRB_KV_ID",      rrbKvId);
 patchToml(path.join(ROOT, "modules/rrb-group-d/wrangler.toml"),    "REPLACE_WITH_RRB_GD_KV_ID",   rrbGdKvId);
+patchToml(path.join(ROOT, "modules/rrb-ntpc/wrangler.toml"),       "REPLACE_WITH_RRB_NTPC_KV_ID", rrbNtpcKvId);
 
 // 3. R2 bucket
 console.log("\n▶ Step 3/6: Create R2 bucket");
@@ -176,7 +178,7 @@ createR2Bucket(R2_BUCKET);
 
 // 4. Wrangler secrets (JWT_SECRET on each worker)
 console.log("\n▶ Step 4/6: Set Wrangler secrets");
-for (const worker of ["mtp-auth", "mtp-exam-engine", "mtp-admin", "mtp-user", "mtp-rrb", "mtp-rrb-group-d"]) {
+for (const worker of ["mtp-auth", "mtp-exam-engine", "mtp-admin", "mtp-user", "mtp-rrb", "mtp-rrb-group-d", "mtp-rrb-ntpc"]) {
   setWranglerSecret(worker, "JWT_SECRET", JWT_SECRET);
 }
 

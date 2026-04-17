@@ -26,12 +26,17 @@ export default function RRBHomeScreen({ navigation }) {
     finally { setLoading(false); setRefreshing(false); }
   }
 
+  const MODULE_SCREENS = {
+    "rrb-group-d": "RRBGroupDHome",
+    "rrb-ntpc":    "RRBNTPCHome",
+  };
+
   function openModule(m) {
     if (m.status !== "active") {
       Alert.alert("Coming Soon", `${m.name} will be available soon.`); return;
     }
-    // Navigate to the specific RRB sub-module's home screen
-    navigation.navigate("RRBExam", { moduleId: m.id, apiPrefix: m.api_prefix });
+    const screen = MODULE_SCREENS[m.id] || "RRBGroupDHome";
+    navigation.navigate(screen);
   }
 
   function renderItem({ item: m }) {

@@ -84,6 +84,7 @@ function deployCf() {
     { name: "user",        dir: path.join(ROOT, "modules/user"),                toml: "wrangler.toml" },
     { name: "rrb",         dir: path.join(ROOT, "modules/rrb"),                 toml: "wrangler.toml" },
     { name: "rrb-group-d", dir: path.join(ROOT, "modules/rrb-group-d"),        toml: "wrangler.toml" },
+    { name: "rrb-ntpc",   dir: path.join(ROOT, "modules/rrb-ntpc"),           toml: "wrangler.toml" },
     { name: "gateway",     dir: path.join(ROOT, "platform/gateway"),            toml: "wrangler.toml" },
   ];
 
@@ -144,7 +145,8 @@ function seedData(workerUrls) {
       cfg.cdn_manifest = `${workerUrls["exam-engine"]}/exam-engine/manifest.json`;
     }
     if (workerUrls["rrb"])         cfg.rrb_base    = workerUrls["rrb"];
-    if (workerUrls["rrb-group-d"]) cfg.rrb_gd_base = workerUrls["rrb-group-d"];
+    if (workerUrls["rrb-group-d"]) cfg.rrb_gd_base   = workerUrls["rrb-group-d"];
+    if (workerUrls["rrb-ntpc"])    cfg.rrb_ntpc_base = workerUrls["rrb-ntpc"];
     fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
     console.log("  Updated modules/shared/app-config.json with deployed URLs.");
   }

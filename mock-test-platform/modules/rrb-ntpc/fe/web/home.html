@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RRB Group D Mock Tests</title>
+<title>RRB NTPC Mock Tests</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: Arial, sans-serif; font-size: 14px; background: #f0f2f5; }
@@ -157,7 +157,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; font-size: 14px; back
 <body>
 
 <header class="header">
-  <div class="header-brand">📋 RRB Group D Mock Tests</div>
+  <div class="header-brand">🚆 RRB NTPC Mock Tests</div>
   <div class="header-right">
     <span class="header-name" id="hdr-name"></span>
     <div class="header-avatar" id="hdr-avatar">U</div>
@@ -167,7 +167,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; font-size: 14px; back
 
 <div class="content">
 
-  <!-- Stats row (loaded from /rrb-gd/stats) -->
+  <!-- Stats row (loaded from /rrb-ntpc/stats) -->
   <div class="stats-row" id="stats-row" style="display:none">
     <div class="stat-card">
       <div class="stat-label">Total Attempts</div>
@@ -274,7 +274,7 @@ function startExam(examId, label, mode) {
     label:      label || examId,
     back_url:   "./home.html",
     home_url:   "./home.html",
-    api_prefix: "/rrb-gd",
+    api_prefix: "/rrb-ntpc",
     result_url: "./result.html",
   });
   if (mode === "practice") params.set("practice", "1");
@@ -305,8 +305,8 @@ async function init() {
 
   // Load exams + stats in parallel
   const [examsRes, statsRes] = await Promise.all([
-    apiFetch("/rrb-gd/exams"),
-    apiFetch("/rrb-gd/stats"),
+    apiFetch("/rrb-ntpc/exams"),
+    apiFetch("/rrb-ntpc/stats"),
   ]);
 
   renderExams(examsRes.ok ? (examsRes.data.exams || []) : []);

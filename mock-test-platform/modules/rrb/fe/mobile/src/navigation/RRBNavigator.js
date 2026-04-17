@@ -13,6 +13,12 @@ import GDExamScreen     from "../../../../../rrb-group-d/fe/mobile/src/screens/E
 import GDResultScreen   from "../../../../../rrb-group-d/fe/mobile/src/screens/ResultScreen";
 import GDAnalysisScreen from "../../../../../rrb-group-d/fe/mobile/src/screens/AnalysisScreen";
 
+// RRB NTPC screens
+import NTPCHomeScreen     from "../../../../../rrb-ntpc/fe/mobile/src/screens/HomeScreen";
+import NTPCExamScreen     from "../../../../../rrb-ntpc/fe/mobile/src/screens/ExamScreen";
+import NTPCResultScreen   from "../../../../../rrb-ntpc/fe/mobile/src/screens/ResultScreen";
+import NTPCAnalysisScreen from "../../../../../rrb-ntpc/fe/mobile/src/screens/AnalysisScreen";
+
 const Stack = createStackNavigator();
 
 export default function RRBNavigator() {
@@ -37,11 +43,16 @@ export default function RRBNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
         <Stack.Screen name="Login"          component={LoginScreen}      />
         <Stack.Screen name="RRBHome"        component={RRBHomeScreen}    />
-        {/* RRB Group D flow — RRBHomeScreen navigates here with moduleId="rrb-group-d" */}
-        <Stack.Screen name="RRBExam"        component={GDHomeScreen}     />
+        {/* Group D flow */}
+        <Stack.Screen name="RRBGroupDHome"  component={GDHomeScreen}     />
         <Stack.Screen name="Exam"           component={GDExamScreen}     />
         <Stack.Screen name="Result"         component={GDResultScreen}   />
         <Stack.Screen name="Analysis"       component={GDAnalysisScreen} />
+        {/* NTPC flow */}
+        <Stack.Screen name="RRBNTPCHome"    component={NTPCHomeScreen}     />
+        <Stack.Screen name="NTPCExam"       component={NTPCExamScreen}     />
+        <Stack.Screen name="NTPCResult"     component={NTPCResultScreen}   />
+        <Stack.Screen name="NTPCAnalysis"   component={NTPCAnalysisScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

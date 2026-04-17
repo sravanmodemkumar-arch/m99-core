@@ -48,7 +48,7 @@ const RRB_MODULES = [
     full_name:  "Railway Recruitment Board — NTPC (Non-Technical Popular Categories)",
     icon:       "🚆",
     api_prefix: "/rrb-ntpc",
-    status:     "coming_soon",
+    status:     "active",
     vacancies:  "35,281",
     exam_date:  null,
     topics:     ["Mathematics", "General Intelligence & Reasoning", "General Awareness"],
