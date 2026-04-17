@@ -4,6 +4,9 @@ export { otpAutoAdvance, getOtpValue } from "../shared/otp-dom.js";
 export { detectIdentifier } from "../shared/validators.js";
 export { renderOtpInput, renderPasswordField, renderReauthGate, renderProgressSteps, renderModuleCard, renderFaqItem, renderDeviceItem, renderEmptyState, startResendTimer } from "../shared/components.js";
 
+// When running inside Electron, desktop-adapter.js is injected via <script> in each HTML file.
+// The adapter bridges window.electronAuth ↔ localStorage so this file needs no changes.
+
 const API = "";
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
@@ -13,7 +16,15 @@ export async function boot() {
   const mode = _resolveMode(cfg);
   applyTheme(cfg.theme || cfg.custom_theme?.name || DEFAULT_THEME, mode);
   _injectModeToggle(cfg, mode);
+  _applyDesktopBranding(cfg);
   return cfg;
+}
+
+function _applyDesktopBranding(cfg) {
+  const aside = document.getElementById("aside-title");
+  if (aside && cfg.name) aside.textContent = cfg.name;
+  const sub = document.getElementById("aside-subtitle");
+  if (sub && cfg.tagline) sub.textContent = cfg.tagline;
 }
 
 async function loadConfig() {
