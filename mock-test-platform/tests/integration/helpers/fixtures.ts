@@ -12,13 +12,13 @@ export const TEST_EXAM_ID = "rrb-test-exam";
 
 /** Minimal exam config — 2 questions per section (8 total), shuffle off */
 export const TEST_EXAM_CONFIG = {
-  module_id:    "rrb-group-d",
-  title:        "RRB Test Exam",
+  module_id:    "exam-engine",
+  title:        "Mock Test Exam",
   duration_s:   300,
   total_qs:     8,
   shuffle_qs:   false,
   shuffle_opts: false,
-  bundle_prefix: "bundles/rrb-group-d",
+  bundle_prefix: "bundles/exam-engine",
   sections: [
     { id: "math",      label: "Math",      count: 2, order: 1 },
     { id: "reasoning", label: "Reasoning", count: 2, order: 2 },
@@ -103,7 +103,7 @@ export async function makeEnv(opts: { seedBob?: boolean } = {}): Promise<TestEnv
   }
 
   // Seed exam config override in KV
-  kv.seed(`exam_config:${TEST_TENANT}:rrb-group-d`, TEST_EXAM_CONFIG);
+  kv.seed(`exam_config:${TEST_TENANT}:exam-engine`, TEST_EXAM_CONFIG);
 
   // Seed question bank in R2
   const bankKey = `${TEST_EXAM_CONFIG.bundle_prefix}/${TEST_EXAM_ID}/bank.json`;

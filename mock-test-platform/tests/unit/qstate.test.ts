@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   Q, initState, goTo, selectOption, clearOption, toggleMark,
   tick, summary, buildResponses, serialize, deserialize,
-} from "../../modules/rrb-group-d/fe/shared/qstate.js";
-import type { ExamState } from "../../modules/rrb-group-d/fe/shared/qstate.js";
+} from "../../modules/exam-engine/fe/shared/qstate.js";
+import type { ExamState } from "../../modules/exam-engine/fe/shared/qstate.js";
 
 const qs2 = [
   { id: "q1", section: "math" },

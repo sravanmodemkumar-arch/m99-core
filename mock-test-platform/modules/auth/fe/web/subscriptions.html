@@ -64,7 +64,7 @@
 
 <script type="module">
 import { boot, api, requireAuth } from "./app.js";
-const MODULE_ICONS = { "rrb-group-d":"🚂", default:"📋" };
+// No hardcoded module lookup — icon comes from the subscription record itself (set by server from registry)
 
 async function init() {
   await boot();
@@ -101,7 +101,7 @@ function renderSubs(subs) {
       <div class="sub-card ${isActive ? "active" : "expired"}">
         <div class="sub-header">
           <div style="display:flex;align-items:center">
-            <span class="sub-icon">${MODULE_ICONS[s.module_id] || MODULE_ICONS.default}</span>
+            <span class="sub-icon">${s.module_icon || "📋"}</span>
             <div>
               <div class="sub-name">${s.module_name || s.module_id}</div>
               <div class="sub-id">${s.module_id}</div>

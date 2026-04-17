@@ -7,7 +7,7 @@ export default defineConfig({
     environment: "node",
     coverage: {
       provider: "v8",
-      include:  ["../modules/rrb-group-d/fe/shared/*.ts"],
+      include:  ["../modules/exam-engine/fe/shared/*.ts"],
     },
   },
 });

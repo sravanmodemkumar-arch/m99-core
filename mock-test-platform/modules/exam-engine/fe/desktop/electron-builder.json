@@ -6,13 +6,11 @@
   },
   "files": [
     "main.js",
+    "server.js",
+    "sync.js",
     "preload.js",
-    "desktop-adapter.js",
-    "package.json",
-    "../web/**/*",
-    "../shared/**/*",
-    "../../../../modules/auth/fe/web/**/*",
-    "../../../../modules/exam-engine/fe/shared/**/*"
+    "app-config.json",
+    "package.json"
   ],
   "win": {
     "target": "nsis",
@@ -27,7 +25,7 @@
     "icon": "assets/icon.png"
   },
   "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true
+    "oneClick": true,
+    "perMachine": false
   }
 }

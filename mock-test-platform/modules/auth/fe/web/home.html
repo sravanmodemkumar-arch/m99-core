@@ -96,22 +96,18 @@
 </main>
 
 <script>
-const MODULE_ICONS = { "rrb-group-d": "🚂", "default": "📋" };
-const MODULE_DESCS = { "rrb-group-d": "Railway Recruitment Board · Group D", "default": "Mock Test" };
-
 function init() {
   const token = localStorage.getItem("auth_token");
-  if (!token) { window.location.href = "/web/login.html"; return; }
+  if (!token) { window.location.href = "/modules/auth/fe/web/login.html"; return; }
 
-  const modules = JSON.parse(localStorage.getItem("modules") || "[]");
-  const phone = localStorage.getItem("phone") || "";
-  const uid = localStorage.getItem("uid") || "";
+  const cached = JSON.parse(localStorage.getItem("modules") || "[]");
+  const phone  = localStorage.getItem("phone") || "";
 
-  // Avatar initials from phone
   const initial = phone ? phone.slice(-4, -3) : "U";
   document.getElementById("user-avatar").textContent = initial;
 
-  renderModules(modules);
+  // Render from cache immediately, then refresh from API
+  if (cached.length) renderModules(cached);
   loadProfile(token);
 }
 
@@ -123,8 +119,7 @@ async function loadProfile(token) {
     localStorage.setItem("modules", JSON.stringify(data.modules));
     renderModules(data.modules);
     if (data.phone) {
-      const initial = data.phone.slice(-4, -3);
-      document.getElementById("user-avatar").textContent = initial;
+      document.getElementById("user-avatar").textContent = data.phone.slice(-4, -3);
     }
   } catch {}
 }
@@ -135,23 +130,21 @@ function renderModules(modules) {
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📭</div><div style="font-weight:600;margin-bottom:0.5rem">No active subscription</div><div style="font-size:0.875rem">Contact your institute for access</div></div>`;
     return;
   }
+  // m.icon and m.home come from the API (server reads registry.js) — no client-side lookup
   grid.innerHTML = modules.map(m => `
-    <div class="module-card" onclick="openModule('${m.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openModule('${m.id}')">
-      <div class="module-icon">${MODULE_ICONS[m.id] || MODULE_ICONS.default}</div>
+    <div class="module-card" onclick="location.href='${m.home || `/modules/${m.id}/fe/web/home.html`}'"
+         role="button" tabindex="0"
+         onkeydown="if(event.key==='Enter')location.href='${m.home || `/modules/${m.id}/fe/web/home.html`}'">
+      <div class="module-icon">${m.icon || "📋"}</div>
       <div class="module-name">${m.name || m.id}</div>
-      <div class="module-desc">${MODULE_DESCS[m.id] || MODULE_DESCS.default}</div>
       <span class="module-badge">Start Test →</span>
     </div>
   `).join("");
 }
 
-function openModule(id) {
-  window.location.href = `/web/${id}/`;
-}
-
 function logout() {
   localStorage.clear();
-  window.location.href = "/web/login.html";
+  window.location.href = "/modules/auth/fe/web/login.html";
 }
 
 document.addEventListener("DOMContentLoaded", init);

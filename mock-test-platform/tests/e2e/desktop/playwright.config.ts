@@ -4,8 +4,8 @@ import { defineConfig } from "@playwright/test";
  * Desktop E2E requires Electron installed.
  * Run: npm run test:desktop
  *
- * Each test uses _electron.launch() targeting the rrb-group-d desktop app.
- * Requires: npm install in fe/desktop before running.
+ * Each test uses _electron.launch() targeting the exam-engine desktop app.
+ * Requires: npm install in modules/exam-engine/fe/desktop before running.
  */
 export default defineConfig({
   testDir:  ".",

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Dashboard</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<script type="module">
+import { initAdminShell, adminApi } from "../shared/admin-shell.js";
+
+const me = await initAdminShell({ title: "Dashboard" });
+const body = document.getElementById("page-body");
+
+body.innerHTML = `
+  <div class="stats-grid" id="stats-grid">
+    <div class="loading-row" style="grid-column:1/-1"><div class="spin"></div> Loading…</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card">
+      <div class="card-header">Recent Activity</div>
+      <div class="card-body" id="activity-list">
+        <div class="loading-row"><div class="spin"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Quick Actions</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+        <a href="./exams.html" class="btn btn-primary">+ New Exam</a>
+        <a href="./questions.html" class="btn btn-secondary">+ New Question</a>
+        <a href="./bulk-import.html" class="btn btn-secondary">📥 Bulk Import</a>
+        <a href="./bundles.html" class="btn btn-secondary">📦 Manage Bundles</a>
+        <a href="./users.html" class="btn btn-secondary">👥 Manage Users</a>
+      </div>
+    </div>
+  </div>`;
+
+const [overviewRes, examsRes] = await Promise.all([
+  adminApi("/reports/overview"),
+  adminApi("/exams"),
+]);
+
+const sg = document.getElementById("stats-grid");
+if (overviewRes.ok) {
+  const d = overviewRes.data;
+  const exams = examsRes.ok ? (examsRes.data.exams || []) : [];
+  const published = exams.filter(e => e.status === "published").length;
+  sg.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Exams</div><div class="stat-value">${exams.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Published</div><div class="stat-value">${published}</div></div>
+    <div class="stat-card"><div class="stat-label">Drafts</div><div class="stat-value">${exams.length - published}</div></div>
+    <div class="stat-card"><div class="stat-label">Role</div><div class="stat-value" style="font-size:16px">${me.role}</div></div>`;
+} else {
+  sg.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Could not load stats</div>`;
+}
+
+const al = document.getElementById("activity-list");
+if (examsRes.ok) {
+  const recent = (examsRes.data.exams || []).slice(0, 8);
+  al.innerHTML = recent.length ? recent.map(e => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5">
+      <span class="badge ${e.status === 'published' ? 'badge-green' : 'badge-gray'}">${e.status}</span>
+      <span style="flex:1;font-size:13px">${e.title}</span>
+      <span style="font-size:11px;color:#aaa">${e.total_qs || 0}Q</span>
+    </div>`).join("") : `<div class="empty-state"><div>No exams yet</div></div>`;
+} else {
+  al.innerHTML = `<div class="empty-state">Could not load</div>`;
+}
+</script>
+</body>
+</html>

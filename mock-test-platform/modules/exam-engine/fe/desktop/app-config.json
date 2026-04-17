@@ -1,0 +1,4 @@
+{
+  "api_base":     "https://api.yourplatform.com",
+  "cdn_manifest": "https://cdn.yourplatform.com/exam-engine/manifest.json"
+}

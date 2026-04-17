@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Questions</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<script type="module">
+import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
+
+await initAdminShell({ title: "Questions" });
+
+document.getElementById("topbar-actions").innerHTML = `
+  <a href="./question-editor.html" class="btn btn-primary">+ New Question</a>
+  <a href="./bulk-import.html" class="btn btn-secondary">📥 Bulk Import</a>`;
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `
+  <div class="card">
+    <div class="card-body" style="padding-bottom:0">
+      <div class="search-bar">
+        <input id="q-search" class="search-input" placeholder="Search by preview text…" oninput="debounceSearch()">
+        <select id="q-subject" class="form-control" style="width:160px" onchange="loadQuestions(1)">
+          <option value="">All Subjects</option>
+        </select>
+        <select id="q-type" class="form-control" style="width:130px" onchange="loadQuestions(1)">
+          <option value="">All Types</option>
+          <option value="S">MCQ Single</option>
+          <option value="M">MCQ Multi</option>
+          <option value="N">Numerical</option>
+          <option value="T">True/False</option>
+          <option value="P">Passage</option>
+          <option value="MA">Match</option>
+          <option value="AR">Assert-Reason</option>
+          <option value="SC">Statements</option>
+          <option value="FI">Fill Blank</option>
+          <option value="SA">Short Ans</option>
+          <option value="LA">Long Ans</option>
+          <option value="DI">Data Interp</option>
+          <option value="GR">Graph</option>
+          <option value="CB">Caselet</option>
+          <option value="CD">Code</option>
+          <option value="EX">Experiment</option>
+          <option value="IM">Image</option>
+          <option value="AU">Audio</option>
+          <option value="SI">Sequence</option>
+        </select>
+        <select id="q-lang" class="form-control" style="width:110px" onchange="loadQuestions(1)">
+          <option value="">All Langs</option>
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="te">Telugu</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:0;padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:80px">QID</th>
+            <th style="width:60px">Type</th>
+            <th>Preview</th>
+            <th>Subject</th>
+            <th>Topic</th>
+            <th style="width:60px">Lang</th>
+            <th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="q-tbody"><tr><td colspan="7" class="loading-row"><div class="spin"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div id="q-pagination"></div>
+    </div>
+  </div>`;
+
+const TYPE_LABELS = { S:"MCQ-S",M:"MCQ-M",N:"Num",T:"T/F",P:"Pass",MA:"Match",AR:"A-R",SC:"Stmt",FI:"Fill",SA:"ShortA",LA:"LongA",DI:"DI",GR:"Graph",CB:"Case",CD:"Code",EX:"Expt",IM:"Img",AU:"Audio",SI:"Seq" };
+const TYPE_COLORS = { S:"badge-blue",M:"badge-purple",N:"badge-orange",T:"badge-yellow",P:"badge-gray" };
+
+let page = 1;
+let searchTimer;
+
+window.debounceSearch = function() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadQuestions(1), 350);
+};
+
+async function loadSubjects() {
+  const r = await adminApi("/subjects");
+  if (!r.ok) return;
+  const sel = document.getElementById("q-subject");
+  (r.data.subjects || []).forEach(s => {
+    const o = document.createElement("option");
+    o.value = s.id; o.textContent = s.label;
+    sel.appendChild(o);
+  });
+}
+
+window.loadQuestions = async function(p = page) {
+  page = p;
+  const tbody = document.getElementById("q-tbody");
+  tbody.innerHTML = `<tr><td colspan="7" class="loading-row"><div class="spin"></div></td></tr>`;
+  const params = new URLSearchParams({
+    page,
+    limit: 50,
+    q:       document.getElementById("q-search").value.trim(),
+    subject: document.getElementById("q-subject").value,
+    type:    document.getElementById("q-type").value,
+    lang:    document.getElementById("q-lang").value,
+  });
+  const r = await adminApi(`/questions?${params}`);
+  if (!r.ok) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#888">Failed to load</td></tr>`; return; }
+  const { questions = [], total = 0, limit = 50 } = r.data;
+  if (!questions.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">❓</div><div class="empty-title">No questions found</div></div></td></tr>`;
+    document.getElementById("q-pagination").innerHTML = "";
+    return;
+  }
+  tbody.innerHTML = questions.map(q => `
+    <tr>
+      <td><code style="font-size:11px;color:#555">${q.qid}</code></td>
+      <td><span class="badge ${TYPE_COLORS[q.type] || 'badge-gray'}">${TYPE_LABELS[q.type] || q.type}</span></td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${q.preview || "—"}</td>
+      <td style="font-size:12px">${q.subject || "—"}</td>
+      <td style="font-size:12px">${q.topic || "—"}</td>
+      <td><span class="badge badge-gray">${q.lang || "en"}</span></td>
+      <td class="td-actions">
+        <a href="./question-editor.html?qid=${q.qid}" class="btn btn-secondary btn-xs">Edit</a>
+        <button class="btn btn-danger btn-xs" onclick="deleteQ('${q.qid}')">Del</button>
+      </td>
+    </tr>`).join("");
+
+  // Pagination
+  const totalPages = Math.ceil(total / limit);
+  const pg = document.getElementById("q-pagination");
+  if (totalPages <= 1) { pg.innerHTML = ""; return; }
+  pg.innerHTML = `<div class="pagination">
+    <button class="page-btn" ${page<=1?"disabled":""} onclick="loadQuestions(${page-1})">‹</button>
+    <span style="padding:5px 10px;font-size:12px;color:#888">${page} / ${totalPages}</span>
+    <button class="page-btn" ${page>=totalPages?"disabled":""} onclick="loadQuestions(${page+1})">›</button>
+  </div>`;
+};
+
+window.deleteQ = async function(qid) {
+  if (!confirm(`Delete question ${qid}?`)) return;
+  const r = await adminApi(`/questions/${qid}`, { method: "DELETE" });
+  if (r.ok) { toast("Deleted", "success"); loadQuestions(page); }
+  else toast(r.data.error || "Delete failed", "error");
+};
+
+await Promise.all([loadSubjects(), loadQuestions(1)]);
+</script>
+</body>
+</html>

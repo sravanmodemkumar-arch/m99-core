@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Bulk Import</title>
+<link rel="stylesheet" href="../shared/admin.css">
+<style>
+.drop-zone { border: 2px dashed #b0bec5; border-radius: 10px; padding: 40px; text-align: center; cursor: pointer; transition: all .15s; }
+.drop-zone.dragover { border-color: #1565c0; background: #e3f2fd; }
+.result-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f2f5; font-size: 12px; }
+</style>
+</head>
+<body>
+<script type="module">
+import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
+await initAdminShell({ title: "Bulk Import" });
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div class="card">
+    <div class="card-header">Import Questions</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:#555;margin-bottom:16px">Upload a JSON array of question objects. Each question must have <code>type</code> and either <code>text</code> or <code>body</code>.</p>
+
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div style="font-size:32px;margin-bottom:8px">📥</div>
+        <div style="font-weight:700;color:#333">Drop JSON / CSV file here</div>
+        <div style="font-size:12px;color:#888;margin-top:4px">or click to browse</div>
+      </div>
+      <input type="file" id="file-input" accept=".json,.csv" style="display:none" onchange="onFileSelect(event)">
+
+      <div style="margin-top:16px">
+        <div class="form-group">
+          <label class="form-label">Or paste JSON array</label>
+          <textarea id="json-input" class="form-control" rows="8" placeholder='[{"type":"S","text":"Question?","options":[{"key":"A","text":"Option A"},...],"answer":"A","subject":"Math"}]'></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="doImport()" id="import-btn">Import Questions</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Results <span id="result-summary" style="font-size:12px;font-weight:400;color:#888"></span></div>
+    <div class="card-body" style="max-height:500px;overflow-y:auto">
+      <div id="result-list"><div class="empty-state"><div>Import results will appear here</div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:20px">
+  <div class="card-header">JSON Schema Reference</div>
+  <div class="card-body">
+    <pre class="code-preview">[
+  {
+    "type": "S",               // Required — see type codes
+    "text": "What is 2+2?",    // Short-form question text
+    "body": [                  // Rich body blocks (optional, overrides text)
+      { "t": "tx", "v": "What is 2+2?" },
+      { "t": "img", "v": "https://example.com/img.png" }
+    ],
+    "options": [               // Required for S/M/T/MA/AR/SC/SI
+      { "key": "A", "text": "3" },
+      { "key": "B", "text": "4" },
+      { "key": "C", "text": "5" }
+    ],
+    "answer": "B",             // Key for S, comma-list for M, null for N/SA/LA
+    "subject": "Mathematics",  // Optional taxonomy
+    "topic": "Arithmetic",
+    "lang": "en",              // en/hi/te
+    "difficulty": "easy",      // easy/medium/hard
+    "youtube_id": "dQw4...",   // Solution video
+    "explanation": "2+2=4"
+  }
+]</pre>
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px">
+      ${["S=MCQ Single","M=MCQ Multi","N=Numerical","T=True/False","P=Passage","MA=Match","AR=Assert-Reason","SC=Statements","SI=Sequence","FI=Fill Blank","SA=Short Ans","LA=Long Ans","DI=Data Interp","GR=Graph","CB=Caselet","CD=Code","EX=Experiment","IM=Image","AU=Audio"].map(x=>`<span class="badge badge-gray">${x}</span>`).join("")}
+    </div>
+  </div>
+</div>`;
+
+// Drag and drop
+const dz = document.getElementById("drop-zone");
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("dragover"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("dragover"); const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+
+window.onFileSelect = function(e) { const f = e.target.files[0]; if (f) readFile(f); };
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = evt => {
+    let content = evt.target.result;
+    if (file.name.endsWith(".csv")) {
+      content = csvToJson(content);
+    }
+    document.getElementById("json-input").value = content;
+    toast(`File loaded: ${file.name}`, "success");
+  };
+  reader.readAsText(file);
+}
+
+function csvToJson(csv) {
+  const lines  = csv.trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,""));
+  const rows   = lines.slice(1).map(line => {
+    const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g,""));
+    const obj  = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+    // Auto-convert options A,B,C,D columns
+    const opts = [];
+    ["A","B","C","D","E"].forEach(k => { if (obj[k]) { opts.push({ key: k, text: obj[k] }); delete obj[k]; } });
+    if (opts.length) obj.options = opts;
+    return obj;
+  });
+  return JSON.stringify(rows, null, 2);
+}
+
+window.doImport = async function() {
+  const raw = document.getElementById("json-input").value.trim();
+  if (!raw) { toast("No data to import","error"); return; }
+  let questions;
+  try { questions = JSON.parse(raw); } catch { toast("Invalid JSON","error"); return; }
+  if (!Array.isArray(questions)) { toast("Must be a JSON array","error"); return; }
+
+  const btn = document.getElementById("import-btn");
+  btn.disabled = true; btn.textContent = `Importing ${questions.length}…`;
+
+  const r = await adminApi("/questions/bulk", { method: "POST", body: { questions } });
+  btn.disabled = false; btn.textContent = "Import Questions";
+
+  const rl = document.getElementById("result-list");
+  if (r.ok) {
+    const { created=0, updated=0, errors=[] } = r.data;
+    document.getElementById("result-summary").textContent = `${created} created · ${updated} updated · ${errors.length} errors`;
+    toast(`Done: ${created} created, ${updated} updated`, errors.length ? "warning" : "success");
+    rl.innerHTML = [
+      `<div class="result-row"><span class="badge badge-green">Created</span> ${created} questions</div>`,
+      `<div class="result-row"><span class="badge badge-blue">Updated</span> ${updated} questions</div>`,
+      ...errors.map(e => `<div class="result-row"><span class="badge badge-red">Error</span> ${e.qid||"?"} — ${Array.isArray(e.errors)?e.errors.join(", "):e.error||""}</div>`),
+    ].join("");
+  } else {
+    toast(r.data.error||"Import failed","error");
+    rl.innerHTML = `<div class="result-row"><span class="badge badge-red">Error</span> ${r.data.error||"Request failed"}</div>`;
+  }
+};
+</script>
+</body>
+</html>

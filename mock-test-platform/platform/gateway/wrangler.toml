@@ -21,8 +21,12 @@ binding = "MODULE_AUTH"
 service = "mtp-auth"
 
 [[services]]
-binding = "MODULE_RRB_GROUP_D"
-service = "mtp-rrb-group-d"
+binding = "MODULE_EXAM_ENGINE"
+service = "mtp-exam-engine"
+
+[[services]]
+binding = "MODULE_ADMIN"
+service = "mtp-admin"
 
 [vars]
 ENVIRONMENT = "production"

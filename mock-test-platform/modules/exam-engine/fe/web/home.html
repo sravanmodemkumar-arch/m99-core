@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mock Tests</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: Arial, sans-serif; font-size: 14px; background: #f0f2f5; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: #1565c0; color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 56px; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.header-brand { font-size: 18px; font-weight: 800; letter-spacing: .02em; }
+.header-right  { display: flex; align-items: center; gap: 12px; }
+.header-name   { font-size: 13px; opacity: .9; }
+.header-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; overflow: hidden;
+}
+.header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.btn-logout {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: #fff; border-radius: 6px; padding: 5px 12px;
+  font-size: 12px; cursor: pointer; transition: background .15s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.25); }
+
+/* ── Content ─────────────────────────────────────────────────────────────── */
+.content { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+.section-title {
+  font-size: 20px; font-weight: 800; color: #1a237e; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after {
+  content: ""; flex: 1; height: 2px; background: linear-gradient(to right, #1565c0 0%, transparent 80%);
+}
+
+/* ── Exam grid ───────────────────────────────────────────────────────────── */
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.exam-card {
+  background: #fff; border-radius: 12px;
+  border: 1.5px solid #e3e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  padding: 20px; display: flex; flex-direction: column; gap: 12px;
+  transition: box-shadow .2s, transform .15s;
+}
+.exam-card:hover { box-shadow: 0 6px 20px rgba(21,101,192,.15); transform: translateY(-2px); }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.card-title { font-size: 15px; font-weight: 700; color: #1a237e; line-height: 1.4; flex: 1; }
+
+.badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+.badge-full   { background: #e3f2fd; color: #1565c0; }
+.badge-sectional { background: #fce4ec; color: #c62828; }
+.badge-topic  { background: #e8f5e9; color: #2e7d32; }
+.badge-practice { background: #fff3e0; color: #e65100; }
+
+.card-meta {
+  display: flex; gap: 16px; flex-wrap: wrap;
+}
+.meta-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: #555;
+}
+.meta-icon { font-size: 14px; }
+
+.card-subjects {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.subject-tag {
+  font-size: 11px; background: #f3f4f6; color: #374151;
+  padding: 2px 8px; border-radius: 12px; border: 1px solid #e5e7eb;
+}
+
+.card-footer { display: flex; gap: 10px; margin-top: auto; padding-top: 4px; }
+
+.btn-start {
+  flex: 1; background: #1565c0; color: #fff;
+  border: none; border-radius: 8px; padding: 10px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background .15s;
+}
+.btn-start:hover { background: #0d47a1; }
+
+.btn-practice {
+  background: #fff; color: #1565c0;
+  border: 1.5px solid #1565c0; border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: background .15s;
+  white-space: nowrap;
+}
+.btn-practice:hover { background: #e3f2fd; }
+
+/* ── Stats bar ───────────────────────────────────────────────────────────── */
+.stats-row {
+  display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap;
+}
+.stat-card {
+  background: #fff; border-radius: 10px; border: 1.5px solid #e3e8f0;
+  padding: 14px 20px; flex: 1; min-width: 140px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.stat-label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: .04em; }
+.stat-value { font-size: 22px; font-weight: 800; color: #1a237e; }
+.stat-sub   { font-size: 11px; color: #888; }
+
+/* ── Empty / Loading ─────────────────────────────────────────────────────── */
+.empty-state {
+  grid-column: 1 / -1; text-align: center; padding: 64px 24px;
+  color: #888;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-title { font-size: 16px; font-weight: 700; color: #555; margin-bottom: 6px; }
+
+.loading-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 60px; color: #888; grid-column: 1 / -1;
+}
+.spin {
+  width: 24px; height: 24px; border: 3px solid #e0e0e0;
+  border-top-color: #1565c0; border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Quick stats link ────────────────────────────────────────────────────── */
+.view-history {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #1565c0; font-size: 13px; font-weight: 600; text-decoration: none;
+  padding: 6px 0; border-bottom: 2px solid transparent;
+  transition: border-color .15s;
+}
+.view-history:hover { border-bottom-color: #1565c0; }
+
+@media (max-width: 600px) {
+  .content { padding: 20px 16px; }
+  .stats-row { gap: 10px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-value { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">📋 Mock Tests</div>
+  <div class="header-right">
+    <span class="header-name" id="hdr-name"></span>
+    <div class="header-avatar" id="hdr-avatar">U</div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Stats row (loaded from /exam/stats) -->
+  <div class="stats-row" id="stats-row" style="display:none">
+    <div class="stat-card">
+      <div class="stat-label">Total Attempts</div>
+      <div class="stat-value" id="stat-attempts">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Best Score</div>
+      <div class="stat-value" id="stat-best">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Accuracy</div>
+      <div class="stat-value" id="stat-acc">—</div>
+    </div>
+    <div class="stat-card" style="flex:0;align-items:center;justify-content:center">
+      <a class="view-history" href="./analysis.html">📈 View Analysis</a>
+    </div>
+  </div>
+
+  <!-- Exam grid -->
+  <div class="section-title">Available Exams</div>
+  <div class="exam-grid" id="exam-grid">
+    <div class="loading-row"><div class="spin"></div> Loading exams…</div>
+  </div>
+
+</div>
+
+<script>
+const TOKEN    = localStorage.getItem("auth_token");
+const API      = "";   // same origin via devserver proxy
+
+function requireAuth() {
+  if (!TOKEN) { window.location.href = "/modules/auth/fe/web/login.html"; return false; }
+  return true;
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "/modules/auth/fe/web/login.html";
+}
+
+async function apiFetch(path) {
+  const res = await fetch(path, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  return { ok: res.ok, data: await res.json().catch(() => ({})) };
+}
+
+function _fmtDuration(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+
+function _badgeClass(type) {
+  return { full: "badge-full", sectional: "badge-sectional", topic: "badge-topic", practice: "badge-practice" }[type] || "badge-full";
+}
+
+function _badgeLabel(type) {
+  return { full: "Full Mock", sectional: "Sectional", topic: "Topic Test", practice: "Practice" }[type] || type || "Mock";
+}
+
+function renderExams(exams) {
+  const grid = document.getElementById("exam-grid");
+
+  if (!exams.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">No exams available yet</div>
+        <div>Check back soon or contact your administrator</div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = exams.map(e => {
+    const subjects = (e.subjects || e.sections?.map(s => s.label) || []).slice(0, 4);
+    const subjectsHtml = subjects.length
+      ? subjects.map(s => `<span class="subject-tag">${s}</span>`).join("") : "";
+
+    return `
+    <div class="exam-card">
+      <div class="card-top">
+        <div class="card-title">${e.title}</div>
+        <span class="badge ${_badgeClass(e.type)}">${_badgeLabel(e.type)}</span>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><span class="meta-icon">❓</span>${e.total_qs} Questions</div>
+        <div class="meta-item"><span class="meta-icon">⏱</span>${_fmtDuration(e.duration_s)}</div>
+        ${e.marks ? `<div class="meta-item"><span class="meta-icon">🏆</span>${e.marks} Marks</div>` : ""}
+      </div>
+      ${subjectsHtml ? `<div class="card-subjects">${subjectsHtml}</div>` : ""}
+      <div class="card-footer">
+        <button class="btn-start" onclick="startExam('${e.id}','${(e.title||"").replace(/'/g,"\\'")}')">
+          Start Test →
+        </button>
+        <button class="btn-practice" onclick="startExam('${e.id}','${(e.title||"").replace(/'/g,"\\'")}','practice')">
+          Practice
+        </button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function startExam(examId, label, mode) {
+  const params = new URLSearchParams({
+    exam_id:    examId,
+    label:      label || examId,
+    back_url:   "./home.html",
+    home_url:   "./home.html",
+    api_prefix: "/exam",
+    result_url: "./result.html",
+  });
+  if (mode === "practice") params.set("practice", "1");
+  window.location.href = `./exam.html?${params}`;
+}
+
+function renderStats(stats) {
+  if (!stats || stats.total_attempts === 0) return;
+  document.getElementById("stats-row").style.display = "";
+  document.getElementById("stat-attempts").textContent = stats.total_attempts;
+  document.getElementById("stat-best").textContent     = stats.best_score !== null ? stats.best_score : "—";
+  document.getElementById("stat-acc").textContent      = stats.avg_accuracy !== null ? `${stats.avg_accuracy}%` : "—";
+}
+
+async function init() {
+  if (!requireAuth()) return;
+
+  // Avatar + name
+  const name  = localStorage.getItem("name") || localStorage.getItem("phone") || "";
+  const photo = localStorage.getItem("avatar_url") || "";
+  document.getElementById("hdr-name").textContent = name;
+  const av = document.getElementById("hdr-avatar");
+  if (photo) {
+    av.innerHTML = `<img src="${photo}" alt="${name}" onerror="this.parentElement.textContent='${name.slice(0,1).toUpperCase() || 'U'}'">`;
+  } else {
+    av.textContent = name.slice(0, 1).toUpperCase() || "U";
+  }
+
+  // Load exams + stats in parallel
+  const [examsRes, statsRes] = await Promise.all([
+    apiFetch("/exam/exams"),
+    apiFetch("/exam/stats"),
+  ]);
+
+  renderExams(examsRes.ok ? (examsRes.data.exams || []) : []);
+  if (statsRes.ok) renderStats(statsRes.data);
+}
+
+init();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js", { scope: "./" }).then(reg => {
+    // Trigger CDN sync after SW is active
+    const sw = reg.active || reg.waiting || reg.installing;
+    const CDN_MANIFEST = "";  // set to your manifest URL
+    if (sw && CDN_MANIFEST) sw.postMessage({ type: "CDN_SYNC", manifestUrl: CDN_MANIFEST });
+    navigator.serviceWorker.addEventListener("message", e => {
+      if (e.data?.type === "CDN_SYNC_DONE" && e.data.updated > 0)
+        console.log("[sw] CDN updated", e.data.updated, "files");
+    });
+  });
+}
+</script>
+</body>
+</html>

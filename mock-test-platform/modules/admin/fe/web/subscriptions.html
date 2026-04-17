@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Subscriptions</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<div id="sub-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">Grant Subscription <button class="modal-close" onclick="closeSubModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">User UID *</label><input id="sub-uid" class="form-control" placeholder="uid_…"></div>
+      <div class="form-group">
+        <label class="form-label">Plan</label>
+        <select id="sub-plan" class="form-control"><option value="basic">Basic</option><option value="premium">Premium</option><option value="pro">Pro</option><option value="unlimited">Unlimited</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Expires At (ISO date, blank = never)</label><input id="sub-expires" class="form-control" type="date"></div>
+      <div class="form-group"><label class="form-label">Allowed Exam IDs (comma-separated, blank = all)</label><input id="sub-exams" class="form-control" placeholder="exam_abc,exam_xyz"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSubModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="grantSub()">Grant</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
+await initAdminShell({ title: "Subscriptions" });
+document.getElementById("topbar-actions").innerHTML = `<button class="btn btn-primary" onclick="openSubModal()">+ Grant Subscription</button>`;
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `
+  <div class="card">
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>UID</th><th>Plan</th><th>Expires</th><th>Exams</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody id="sub-tbody"><tr><td colspan="5" class="loading-row"><div class="spin"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div id="sub-pagination"></div>
+    </div>
+  </div>`;
+
+let page = 1;
+window.loadSubs = async function(p = page) {
+  page = p;
+  const tbody = document.getElementById("sub-tbody");
+  tbody.innerHTML = `<tr><td colspan="5" class="loading-row"><div class="spin"></div></td></tr>`;
+  const r = await adminApi(`/subscriptions?page=${page}&limit=20`);
+  if (!r.ok) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#888">Failed</td></tr>`; return; }
+  const { subscriptions = [], total = 0, limit = 20 } = r.data;
+  if (!subscriptions.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">No subscriptions</div></div></td></tr>`;
+    return;
+  }
+  const _exp = e => e ? new Date(e).toLocaleDateString() : "Never";
+  tbody.innerHTML = subscriptions.map(s => `
+    <tr>
+      <td><code style="font-size:11px">${s.uid}</code></td>
+      <td><span class="badge badge-blue">${s.plan || "basic"}</span></td>
+      <td style="font-size:12px">${_exp(s.expires_at)}</td>
+      <td style="font-size:12px">${s.exams?.length ? s.exams.join(", ") : "All"}</td>
+      <td class="td-actions">
+        <button class="btn btn-danger btn-xs" onclick="revoke('${s.uid}')">Revoke</button>
+      </td>
+    </tr>`).join("");
+  const pg = document.getElementById("sub-pagination");
+  const totalPages = Math.ceil(total/limit);
+  pg.innerHTML = totalPages <= 1 ? "" : `<div class="pagination">
+    <button class="page-btn" ${page<=1?"disabled":""} onclick="loadSubs(${page-1})">‹</button>
+    <span style="padding:5px 10px;font-size:12px;color:#888">${page}/${totalPages}</span>
+    <button class="page-btn" ${page>=totalPages?"disabled":""} onclick="loadSubs(${page+1})">›</button>
+  </div>`;
+};
+
+window.openSubModal = function() {
+  document.getElementById("sub-uid").value = "";
+  document.getElementById("sub-plan").value = "basic";
+  document.getElementById("sub-expires").value = "";
+  document.getElementById("sub-exams").value = "";
+  document.getElementById("sub-modal").classList.remove("hidden");
+};
+window.closeSubModal = function() { document.getElementById("sub-modal").classList.add("hidden"); };
+window.grantSub = async function() {
+  const uid  = document.getElementById("sub-uid").value.trim();
+  if (!uid) { toast("UID required","error"); return; }
+  const expiresRaw = document.getElementById("sub-expires").value;
+  const examsRaw   = document.getElementById("sub-exams").value;
+  const body = {
+    uid,
+    plan:       document.getElementById("sub-plan").value,
+    expires_at: expiresRaw ? new Date(expiresRaw).getTime() : null,
+    exams:      examsRaw ? examsRaw.split(",").map(s=>s.trim()).filter(Boolean) : [],
+  };
+  const r = await adminApi("/subscriptions", { method: "POST", body });
+  if (r.ok) { toast("Subscription granted","success"); closeSubModal(); loadSubs(1); }
+  else toast(r.data.error||"Failed","error");
+};
+window.revoke = async function(uid) {
+  if (!confirm(`Revoke subscription for ${uid}?`)) return;
+  const r = await adminApi(`/subscriptions/${uid}`, { method: "DELETE" });
+  if (r.ok) { toast("Revoked","success"); loadSubs(page); }
+  else toast(r.data.error||"Failed","error");
+};
+
+await loadSubs(1);
+</script>
+</body>
+</html>

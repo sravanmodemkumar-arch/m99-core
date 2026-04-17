@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Tenants</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<div id="tenant-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><span id="t-modal-title">New Tenant</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="t-edit-id">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tenant ID *</label><input id="t-id" class="form-control" placeholder="acme"></div>
+        <div class="form-group"><label class="form-label">Name *</label><input id="t-name" class="form-control" placeholder="Acme Test Prep"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tier</label>
+          <select id="t-tier" class="form-control"><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Modules (comma-separated)</label><input id="t-modules" class="form-control" value="exam-engine"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTenant()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
+const me = await initAdminShell({ title: "Tenants (Super Admin)" });
+if (me?.role !== "super_admin") {
+  document.getElementById("page-body").innerHTML = `<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-title">Super Admin Only</div></div>`;
+} else {
+  document.getElementById("topbar-actions").innerHTML = `<button class="btn btn-primary" onclick="openCreate()">+ New Tenant</button>`;
+  document.getElementById("page-body").innerHTML = `
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tenant ID</th><th>Name</th><th>Tier</th><th>Modules</th><th style="text-align:right">Actions</th></tr></thead>
+            <tbody id="tenants-tbody"><tr><td colspan="5" class="loading-row"><div class="spin"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  loadTenants();
+}
+
+window.loadTenants = async function() {
+  const tbody = document.getElementById("tenants-tbody");
+  if (!tbody) return;
+  const r = await adminApi("/tenants");
+  if (!r.ok) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#888">Failed to load</td></tr>`; return; }
+  const tenants = r.data.tenants || [];
+  if (!tenants.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🏢</div><div class="empty-title">No tenants</div></div></td></tr>`;
+    return;
+  }
+  const TIER_COLORS = { free:"badge-gray",starter:"badge-blue",pro:"badge-purple",enterprise:"badge-orange" };
+  tbody.innerHTML = tenants.map(t => `
+    <tr>
+      <td><code style="font-size:11px">${t.tenant_id}</code></td>
+      <td style="font-weight:600">${t.name}</td>
+      <td><span class="badge ${TIER_COLORS[t.tier]||'badge-gray'}">${t.tier}</span></td>
+      <td style="font-size:12px">${(t.modules||[]).join(", ")}</td>
+      <td class="td-actions">
+        <button class="btn btn-secondary btn-xs" onclick="editTenant('${t.tenant_id}','${(t.name||'').replace(/'/g,"\\'")}','${t.tier||'free'}','${(t.modules||[]).join(',')}')">Edit</button>
+      </td>
+    </tr>`).join("");
+};
+
+window.openCreate = function() {
+  document.getElementById("t-modal-title").textContent = "New Tenant";
+  document.getElementById("t-edit-id").value = "";
+  document.getElementById("t-id").value = "";
+  document.getElementById("t-id").readOnly = false;
+  document.getElementById("t-name").value = "";
+  document.getElementById("t-tier").value = "free";
+  document.getElementById("t-modules").value = "exam-engine";
+  document.getElementById("tenant-modal").classList.remove("hidden");
+};
+window.editTenant = function(id, name, tier, modules) {
+  document.getElementById("t-modal-title").textContent = "Edit Tenant";
+  document.getElementById("t-edit-id").value = id;
+  document.getElementById("t-id").value = id;
+  document.getElementById("t-id").readOnly = true;
+  document.getElementById("t-name").value = name;
+  document.getElementById("t-tier").value = tier;
+  document.getElementById("t-modules").value = modules;
+  document.getElementById("tenant-modal").classList.remove("hidden");
+};
+window.closeModal = function() { document.getElementById("tenant-modal").classList.add("hidden"); };
+window.saveTenant = async function() {
+  const editId = document.getElementById("t-edit-id").value;
+  const id     = document.getElementById("t-id").value.trim();
+  const name   = document.getElementById("t-name").value.trim();
+  if (!id || !name) { toast("Tenant ID and Name required","error"); return; }
+  const body = {
+    tenant_id: id, name,
+    tier:      document.getElementById("t-tier").value,
+    modules:   document.getElementById("t-modules").value.split(",").map(s=>s.trim()).filter(Boolean),
+  };
+  const r = editId
+    ? await adminApi(`/tenants/${editId}`, { method: "PUT", body })
+    : await adminApi("/tenants", { method: "POST", body });
+  if (r.ok) { toast(editId?"Updated":"Created","success"); closeModal(); loadTenants(); }
+  else toast(r.data.error||"Failed","error");
+};
+</script>
+</body>
+</html>

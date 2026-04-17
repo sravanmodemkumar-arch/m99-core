@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Exams</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<!-- Create/Edit Modal -->
+<div id="exam-modal" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span id="modal-title">New Exam</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Title *</label><input id="f-title" class="form-control" placeholder="e.g. RRB Group D Full Mock 1"></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select id="f-type" class="form-control">
+            <option value="full">Full Mock</option><option value="sectional">Sectional</option>
+            <option value="topic">Topic Test</option><option value="practice">Practice</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row form-row-3">
+        <div class="form-group"><label class="form-label">Duration (seconds)</label><input id="f-duration" class="form-control" type="number" value="3600" min="60"></div>
+        <div class="form-group"><label class="form-label">Total Marks</label><input id="f-marks" class="form-control" type="number" placeholder="Optional"></div>
+        <div class="form-group"><label class="form-label">Module ID</label><input id="f-module" class="form-control" value="exam-engine"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Correct Marks</label><input id="f-correct" class="form-control" type="number" value="1" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Wrong Marks</label><input id="f-wrong" class="form-control" type="number" value="-0.333" step="0.001"></div>
+      </div>
+      <div style="display:flex;gap:16px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input id="f-shuffle-qs" type="checkbox" checked> Shuffle questions
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input id="f-shuffle-opts" type="checkbox" checked> Shuffle options
+        </label>
+      </div>
+      <div style="margin-top:20px">
+        <div style="font-size:13px;font-weight:700;color:#1a237e;margin-bottom:10px">Sections</div>
+        <div id="sections-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addSection()">+ Add Section</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExam()">Save Exam</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initAdminShell, adminApi, toast, showModal, hideModal } from "../shared/admin-shell.js";
+
+await initAdminShell({ title: "Exams" });
+
+document.getElementById("topbar-actions").innerHTML = `<button class="btn btn-primary" onclick="openCreate()">+ New Exam</button>`;
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `
+  <div class="card">
+    <div class="card-header">All Exams <span id="exam-count" style="font-size:12px;font-weight:400;color:#888"></span></div>
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Title</th><th>Type</th><th>Questions</th><th>Duration</th><th>Status</th><th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="exams-tbody"><tr><td colspan="6" class="loading-row"><div class="spin"></div> Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+let exams = [];
+
+async function loadExams() {
+  const r = await adminApi("/exams");
+  exams = r.ok ? (r.data.exams || []) : [];
+  document.getElementById("exam-count").textContent = `(${exams.length})`;
+  const tbody = document.getElementById("exams-tbody");
+  if (!exams.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No exams yet</div></div></td></tr>`;
+    return;
+  }
+  const _dur = s => { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? `${h}h ${m}m` : `${m}m`; };
+  const _badge = s => s === "published" ? "badge-green" : s === "draft" ? "badge-gray" : "badge-orange";
+  tbody.innerHTML = exams.map(e => `
+    <tr>
+      <td style="font-weight:600">${e.title}</td>
+      <td><span class="badge badge-blue">${e.type || "full"}</span></td>
+      <td>${e.total_qs || 0}</td>
+      <td>${_dur(e.duration_s || 3600)}</td>
+      <td><span class="badge ${_badge(e.status || 'draft')}">${e.status || "draft"}</span></td>
+      <td class="td-actions">
+        <button class="btn btn-secondary btn-xs" onclick="editExam('${e.id}')">Edit</button>
+        <button class="btn btn-success btn-xs" onclick="publishExam('${e.id}','${e.title.replace(/'/g,"\\'")}')">Publish</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteExam('${e.id}','${e.title.replace(/'/g,"\\'")}')">Delete</button>
+      </td>
+    </tr>`).join("");
+}
+
+await loadExams();
+
+let sectionCount = 0;
+
+window.openCreate = function() {
+  document.getElementById("modal-title").textContent = "New Exam";
+  document.getElementById("f-id").value = "";
+  document.getElementById("f-title").value = "";
+  document.getElementById("f-type").value = "full";
+  document.getElementById("f-duration").value = "3600";
+  document.getElementById("f-marks").value = "";
+  document.getElementById("f-module").value = "exam-engine";
+  document.getElementById("f-correct").value = "1";
+  document.getElementById("f-wrong").value = "-0.333";
+  document.getElementById("f-shuffle-qs").checked = true;
+  document.getElementById("f-shuffle-opts").checked = true;
+  document.getElementById("sections-list").innerHTML = "";
+  sectionCount = 0;
+  addSection();
+  document.getElementById("exam-modal").classList.remove("hidden");
+};
+
+window.editExam = async function(id) {
+  const r = await adminApi(`/exams/${id}`);
+  if (!r.ok) { toast("Failed to load exam", "error"); return; }
+  const e = r.data.exam;
+  document.getElementById("modal-title").textContent = "Edit Exam";
+  document.getElementById("f-id").value = e.id;
+  document.getElementById("f-title").value = e.title;
+  document.getElementById("f-type").value = e.type || "full";
+  document.getElementById("f-duration").value = e.duration_s || 3600;
+  document.getElementById("f-marks").value = e.marks || "";
+  document.getElementById("f-module").value = e.module_id || "exam-engine";
+  document.getElementById("f-correct").value = e.marking?.correct ?? 1;
+  document.getElementById("f-wrong").value = e.marking?.wrong ?? -0.333;
+  document.getElementById("f-shuffle-qs").checked = e.shuffle_qs !== false;
+  document.getElementById("f-shuffle-opts").checked = e.shuffle_opts !== false;
+  const sl = document.getElementById("sections-list");
+  sl.innerHTML = "";
+  sectionCount = 0;
+  (e.sections || []).forEach(s => addSection(s));
+  document.getElementById("exam-modal").classList.remove("hidden");
+};
+
+window.addSection = function(s = null) {
+  sectionCount++;
+  const i = sectionCount;
+  const sl = document.getElementById("sections-list");
+  const div = document.createElement("div");
+  div.id = `section-${i}`;
+  div.style = "background:#f8f9fc;border:1.5px solid #e3e8f0;border-radius:8px;padding:14px;margin-bottom:10px";
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-size:12px;font-weight:700;color:#555">Section ${i}</span>
+      <button class="btn btn-danger btn-xs" onclick="document.getElementById('section-${i}').remove()">Remove</button>
+    </div>
+    <div class="form-row form-row-3">
+      <div class="form-group"><label class="form-label">Section ID</label><input class="form-control sec-id" value="${s?.id || `sec${i}`}"></div>
+      <div class="form-group"><label class="form-label">Label</label><input class="form-control sec-label" value="${s?.label || `Section ${i}`}"></div>
+      <div class="form-group"><label class="form-label">Count (0 = all)</label><input class="form-control sec-count" type="number" value="${s?.count || 0}" min="0"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Question IDs (one per line or comma-separated)</label>
+      <textarea class="form-control sec-qids" rows="3">${(s?.question_ids || []).join("\n")}</textarea>
+    </div>`;
+  sl.appendChild(div);
+};
+
+window.closeModal = function() {
+  document.getElementById("exam-modal").classList.add("hidden");
+};
+
+window.saveExam = async function() {
+  const id     = document.getElementById("f-id").value.trim();
+  const title  = document.getElementById("f-title").value.trim();
+  if (!title) { toast("Title is required", "error"); return; }
+
+  const sections = Array.from(document.getElementById("sections-list").children).map(div => ({
+    id:           div.querySelector(".sec-id").value.trim(),
+    label:        div.querySelector(".sec-label").value.trim(),
+    count:        parseInt(div.querySelector(".sec-count").value) || 0,
+    question_ids: div.querySelector(".sec-qids").value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean),
+  }));
+
+  const body = {
+    title,
+    type:         document.getElementById("f-type").value,
+    duration_s:   parseInt(document.getElementById("f-duration").value) || 3600,
+    marks:        parseInt(document.getElementById("f-marks").value) || null,
+    module_id:    document.getElementById("f-module").value.trim(),
+    marking:      { correct: parseFloat(document.getElementById("f-correct").value) || 1, wrong: parseFloat(document.getElementById("f-wrong").value) || -0.333, skipped: 0 },
+    shuffle_qs:   document.getElementById("f-shuffle-qs").checked,
+    shuffle_opts: document.getElementById("f-shuffle-opts").checked,
+    sections,
+  };
+
+  const r = id
+    ? await adminApi(`/exams/${id}`, { method: "PUT", body })
+    : await adminApi("/exams", { method: "POST", body });
+
+  if (r.ok) {
+    toast(id ? "Exam updated" : "Exam created", "success");
+    closeModal();
+    loadExams();
+  } else {
+    toast(r.data.error || "Failed to save", "error");
+  }
+};
+
+window.publishExam = async function(id, title) {
+  if (!confirm(`Publish "${title}"? This will rebuild the question bank from assigned question IDs.`)) return;
+  const r = await adminApi(`/exams/${id}/publish`, { method: "POST" });
+  if (r.ok) {
+    toast(`Published: ${r.data.total_qs} questions`, "success");
+    loadExams();
+  } else {
+    toast(r.data.error || "Publish failed", "error");
+  }
+};
+
+window.deleteExam = async function(id, title) {
+  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  const r = await adminApi(`/exams/${id}`, { method: "DELETE" });
+  if (r.ok) { toast("Exam deleted", "success"); loadExams(); }
+  else toast(r.data.error || "Delete failed", "error");
+};
+</script>
+</body>
+</html>

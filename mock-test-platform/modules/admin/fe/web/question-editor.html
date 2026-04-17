@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Question Editor</title>
+<link rel="stylesheet" href="../shared/admin.css">
+<style>
+.editor-layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+.preview-box { background: #fff; border: 1.5px solid #e3e8f0; border-radius: 10px; padding: 20px; position: sticky; top: 0; max-height: calc(100vh - 100px); overflow-y: auto; }
+.preview-title { font-size: 13px; font-weight: 700; color: #1a237e; margin-bottom: 12px; }
+.option-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.option-key { width: 32px; height: 32px; border-radius: 50%; background: #e3f2fd; color: #1565c0; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.option-key.correct { background: #e8f5e9; color: #2e7d32; }
+.body-block { background: #f8f9fc; border: 1.5px solid #e3e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.body-block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.body-type-label { font-size: 11px; font-weight: 700; background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 12px; }
+</style>
+</head>
+<body>
+<script type="module">
+import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
+
+const qid = new URLSearchParams(location.search).get("qid");
+await initAdminShell({ title: qid ? `Edit ${qid}` : "New Question" });
+
+document.getElementById("topbar-actions").innerHTML = `
+  <a href="./questions.html" class="btn btn-secondary btn-sm">← Back</a>
+  <button class="btn btn-primary" onclick="saveQuestion()">Save Question</button>`;
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `
+<div class="editor-layout">
+  <div>
+    <!-- Metadata -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Question Metadata</div>
+      <div class="card-body">
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label class="form-label">Type *</label>
+            <select id="f-type" class="form-control" onchange="onTypeChange()">
+              <optgroup label="MCQ"><option value="S">S — MCQ Single Correct</option><option value="M">M — MCQ Multiple Correct</option><option value="T">T — True / False</option></optgroup>
+              <optgroup label="Written"><option value="N">N — Numerical</option><option value="SA">SA — Short Answer</option><option value="LA">LA — Long Answer</option><option value="FI">FI — Fill in the Blank</option></optgroup>
+              <optgroup label="Complex"><option value="P">P — Passage / Comprehension</option><option value="MA">MA — Match the Following</option><option value="AR">AR — Assertion-Reason</option><option value="SC">SC — Statement Based</option><option value="SI">SI — Sequence / Ordering</option><option value="CB">CB — Caselet / Case Based</option></optgroup>
+              <optgroup label="Rich"><option value="DI">DI — Data Interpretation</option><option value="GR">GR — Graph Reading</option><option value="CD">CD — Code Snippet</option><option value="IM">IM — Image Based</option><option value="AU">AU — Audio Based</option><option value="EX">EX — Experiment Based</option></optgroup>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Subject</label><input id="f-subject" class="form-control" placeholder="Mathematics"></div>
+          <div class="form-group"><label class="form-label">Topic</label><input id="f-topic" class="form-control" placeholder="Algebra"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Language</label>
+            <select id="f-lang" class="form-control"><option value="en">English</option><option value="hi">Hindi</option><option value="te">Telugu</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">YouTube ID (optional)</label><input id="f-yt" class="form-control" placeholder="dQw4w9WgXcQ"></div>
+        </div>
+        <div class="form-group" id="difficulty-group">
+          <label class="form-label">Difficulty</label>
+          <select id="f-difficulty" class="form-control"><option value="">—</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Body blocks -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        Question Body (blocks)
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-xs" onclick="addBlock('tx')">+ Text</button>
+          <button class="btn btn-secondary btn-xs" onclick="addBlock('mx')">+ MathML</button>
+          <button class="btn btn-secondary btn-xs" onclick="addBlock('img')">+ Image</button>
+          <button class="btn btn-secondary btn-xs" onclick="addBlock('cod')">+ Code</button>
+          <button class="btn btn-secondary btn-xs" onclick="addBlock('tbl')">+ Table</button>
+        </div>
+      </div>
+      <div class="card-body"><div id="body-blocks"></div></div>
+    </div>
+
+    <!-- Options (MCQ types) -->
+    <div class="card" id="options-card" style="margin-bottom:16px">
+      <div class="card-header">
+        Options
+        <button class="btn btn-secondary btn-xs" onclick="addOption()">+ Option</button>
+      </div>
+      <div class="card-body"><div id="options-list"></div></div>
+    </div>
+
+    <!-- Answer Key -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Answer Key</div>
+      <div class="card-body">
+        <div id="answer-section">
+          <div class="form-group"><label class="form-label">Correct Option Key(s) — comma-separated for multi</label><input id="f-answer" class="form-control" placeholder="A  or  A,C"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Explanation (optional)</label><textarea id="f-explanation" class="form-control" rows="3" placeholder="Solution explanation…"></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Preview -->
+  <div class="preview-box">
+    <div class="preview-title">Live Preview</div>
+    <div id="preview-content"><em style="color:#aaa;font-size:12px">Start typing to see preview…</em></div>
+  </div>
+</div>`;
+
+let blockCount = 0;
+let optionKeys = ["A","B","C","D","E","F","G","H"];
+let optionCount = 0;
+
+// ── Type change ──────────────────────────────────────────────────────────────
+window.onTypeChange = function() {
+  const t = document.getElementById("f-type").value;
+  const oc = document.getElementById("options-card");
+  const hasOpts = ["S","M","T","MA","AR","SC","SI","CB"].includes(t);
+  oc.style.display = hasOpts ? "" : "none";
+  updatePreview();
+};
+
+// ── Body blocks ──────────────────────────────────────────────────────────────
+window.addBlock = function(type) {
+  blockCount++;
+  const id = `block-${blockCount}`;
+  const labels = { tx:"Text",mx:"MathML / LaTeX",img:"Image URL",cod:"Code",tbl:"Table HTML",mxb:"Math Block" };
+  const placeholder = type === "tx" ? "Question text…" : type === "mx" ? "\\frac{a}{b}" : type === "img" ? "https://…/img.png" : type === "cod" ? "def f(x):\n    return x**2" : "<table>…</table>";
+  const tag = ["tx","mx","mxb"].includes(type) ? "input" : "textarea";
+  const rows = type === "cod" ? ' rows="5"' : ' rows="3"';
+  const container = document.getElementById("body-blocks");
+  const div = document.createElement("div");
+  div.id = id; div.className = "body-block";
+  div.innerHTML = `
+    <div class="body-block-header">
+      <span class="body-type-label">${labels[type] || type}</span>
+      <button class="btn btn-danger btn-xs" onclick="document.getElementById('${id}').remove();updatePreview()">✕</button>
+    </div>
+    ${tag === "input"
+      ? `<input class="form-control block-val" data-type="${type}" placeholder="${placeholder}" oninput="updatePreview()">`
+      : `<textarea class="form-control block-val" data-type="${type}" placeholder="${placeholder}"${rows} oninput="updatePreview()"></textarea>`}`;
+  container.appendChild(div);
+};
+
+// ── Options ──────────────────────────────────────────────────────────────────
+window.addOption = function(o = null) {
+  const key = o?.key || optionKeys[optionCount] || String.fromCharCode(65 + optionCount);
+  optionCount++;
+  const id = `opt-${optionCount}`;
+  const list = document.getElementById("options-list");
+  const div = document.createElement("div");
+  div.id = id; div.className = "option-row";
+  div.innerHTML = `
+    <div class="option-key" id="key-${id}">${key}</div>
+    <input class="form-control opt-key" value="${key}" style="width:50px;text-align:center" oninput="updatePreview()">
+    <input class="form-control opt-text" value="${o?.text||o?.body?.[0]?.v||''}" placeholder="Option text…" style="flex:1" oninput="updatePreview()">
+    <button class="btn btn-danger btn-xs" onclick="document.getElementById('${id}').remove();updatePreview()">✕</button>`;
+  list.appendChild(div);
+  updatePreview();
+};
+
+// ── Preview ──────────────────────────────────────────────────────────────────
+window.updatePreview = function() {
+  const preview = document.getElementById("preview-content");
+  const blocks  = Array.from(document.querySelectorAll(".block-val"));
+  let html = "";
+  for (const b of blocks) {
+    const t = b.dataset.type;
+    const v = b.value;
+    if (!v) continue;
+    if (t === "tx")  html += `<p style="margin-bottom:8px">${v}</p>`;
+    else if (t === "mx" || t === "mxb") html += `<p style="font-family:monospace;background:#f0f2f5;padding:4px 8px;border-radius:4px;margin-bottom:8px">${v}</p>`;
+    else if (t === "img") html += `<img src="${v}" style="max-width:100%;border-radius:6px;margin-bottom:8px" onerror="this.style.display='none'">`;
+    else if (t === "cod") html += `<pre class="code-preview" style="margin-bottom:8px">${v}</pre>`;
+    else html += `<div style="margin-bottom:8px">${v}</div>`;
+  }
+  const opts = Array.from(document.querySelectorAll(".option-row"));
+  if (opts.length) {
+    html += `<div style="margin-top:12px">`;
+    opts.forEach(row => {
+      const key  = row.querySelector(".opt-key")?.value || "";
+      const text = row.querySelector(".opt-text")?.value || "";
+      html += `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><div style="width:28px;height:28px;border-radius:50%;background:#e3f2fd;color:#1565c0;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${key}</div><span style="font-size:13px">${text}</span></div>`;
+    });
+    html += `</div>`;
+    const ans = document.getElementById("f-answer")?.value;
+    if (ans) html += `<div style="margin-top:10px;padding:8px;background:#e8f5e9;border-radius:6px;font-size:12px;font-weight:700;color:#2e7d32">Answer: ${ans}</div>`;
+  }
+  preview.innerHTML = html || `<em style="color:#aaa;font-size:12px">Start typing…</em>`;
+};
+
+// ── Save ─────────────────────────────────────────────────────────────────────
+window.saveQuestion = async function() {
+  const type = document.getElementById("f-type").value;
+  const blocks = Array.from(document.querySelectorAll(".block-val")).map(b => ({ t: b.dataset.type, v: b.value })).filter(b => b.v);
+  if (!blocks.length) { toast("Question body is empty", "error"); return; }
+
+  const options = Array.from(document.querySelectorAll(".option-row")).map(row => ({
+    key:  row.querySelector(".opt-key")?.value || "",
+    text: row.querySelector(".opt-text")?.value || "",
+    body: [{ t: "tx", v: row.querySelector(".opt-text")?.value || "" }],
+  })).filter(o => o.key);
+
+  const question = {
+    type,
+    subject:      document.getElementById("f-subject").value.trim() || null,
+    topic:        document.getElementById("f-topic").value.trim() || null,
+    lang:         document.getElementById("f-lang").value,
+    youtube_id:   document.getElementById("f-yt").value.trim() || null,
+    difficulty:   document.getElementById("f-difficulty").value || null,
+    body:         blocks,
+    text:         blocks.find(b => b.t === "tx")?.v || null,
+    options:      options.length ? options : undefined,
+    answer:       document.getElementById("f-answer")?.value.trim() || null,
+    explanation:  document.getElementById("f-explanation").value.trim() || null,
+  };
+
+  const r = qid
+    ? await adminApi(`/questions/${qid}`, { method: "PUT", body: question })
+    : await adminApi("/questions", { method: "POST", body: question });
+
+  if (r.ok) {
+    toast(qid ? "Question updated" : "Question created", "success");
+    if (!qid) window.location.href = `./question-editor.html?qid=${r.data.question.qid}`;
+  } else {
+    toast(r.data.error || "Save failed", "error");
+  }
+};
+
+// ── Load existing ─────────────────────────────────────────────────────────────
+if (qid) {
+  const r = await adminApi(`/questions/${qid}`);
+  if (r.ok) {
+    const q = r.data.question;
+    document.getElementById("f-type").value = q.type || "S";
+    document.getElementById("f-subject").value = q.subject || "";
+    document.getElementById("f-topic").value = q.topic || "";
+    document.getElementById("f-lang").value = q.lang || "en";
+    document.getElementById("f-yt").value = q.youtube_id || "";
+    document.getElementById("f-difficulty").value = q.difficulty || "";
+    document.getElementById("f-answer").value = Array.isArray(q.answer) ? q.answer.join(",") : (q.answer || "");
+    document.getElementById("f-explanation").value = q.explanation || "";
+    (q.body || []).forEach(b => { addBlock(b.t); const inputs = document.querySelectorAll(".block-val"); inputs[inputs.length-1].value = b.v; });
+    (q.options || []).forEach(o => addOption(o));
+    onTypeChange();
+    updatePreview();
+  }
+} else {
+  addBlock("tx");
+  addOption(); addOption(); addOption(); addOption();
+  onTypeChange();
+}
+
+document.addEventListener("input", updatePreview);
+</script>
+</body>
+</html>

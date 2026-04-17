@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Reports</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<script type="module">
+import { initAdminShell, adminApi } from "../shared/admin-shell.js";
+await initAdminShell({ title: "Reports & Analytics" });
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `
+  <div class="stats-grid" id="overview-stats">
+    <div class="loading-row" style="grid-column:1/-1"><div class="spin"></div></div>
+  </div>
+
+  <div class="card" style="margin-top:4px">
+    <div class="card-header">Per-Exam Report</div>
+    <div class="card-body">
+      <div class="search-bar" style="margin-bottom:0">
+        <select id="exam-select" class="form-control" style="flex:1" onchange="loadExamReport()">
+          <option value="">Select an exam…</option>
+        </select>
+      </div>
+    </div>
+    <div id="exam-report" style="padding:0 20px 20px"></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-header">Note on Analytics</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:#555;line-height:1.6">
+        Full analytics (per-user breakdowns, score distributions, subject-wise accuracy) are processed by the
+        <strong>Admin Lambda</strong> from EPS payloads in R2. After the Lambda processes <code>eps/pending/*.json</code>
+        files into the PostgreSQL results database, richer reports will be available via the Lambda API endpoint.
+      </p>
+    </div>
+  </div>`;
+
+const [overviewRes, examsRes] = await Promise.all([
+  adminApi("/reports/overview"),
+  adminApi("/exams"),
+]);
+
+const sg = document.getElementById("overview-stats");
+if (overviewRes.ok) {
+  const d = overviewRes.data;
+  const exams = examsRes.ok ? (examsRes.data.exams || []) : [];
+  const published = exams.filter(e => e.status === "published").length;
+  const totalQs   = exams.reduce((a, e) => a + (e.total_qs || 0), 0);
+  sg.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Exams</div><div class="stat-value">${exams.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Published</div><div class="stat-value">${published}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Questions</div><div class="stat-value">${totalQs}</div></div>
+    <div class="stat-card"><div class="stat-label">Subjects</div><div class="stat-value">—</div><div class="stat-sub">Load subjects page</div></div>`;
+} else {
+  sg.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Could not load overview</div>`;
+}
+
+// Populate exam select
+if (examsRes.ok) {
+  const sel = document.getElementById("exam-select");
+  (examsRes.data.exams || []).forEach(e => {
+    const o = document.createElement("option");
+    o.value = e.id; o.textContent = `${e.title} (${e.status})`;
+    sel.appendChild(o);
+  });
+}
+
+window.loadExamReport = async function() {
+  const id = document.getElementById("exam-select").value;
+  const div = document.getElementById("exam-report");
+  if (!id) { div.innerHTML = ""; return; }
+  div.innerHTML = `<div class="loading-row"><div class="spin"></div></div>`;
+  const r = await adminApi(`/reports/exam/${id}`);
+  if (!r.ok) { div.innerHTML = `<p style="color:#888;font-size:13px">Failed to load report</p>`; return; }
+  const e = r.data.exam;
+  div.innerHTML = `
+    <div class="stats-grid" style="padding-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Questions</div><div class="stat-value">${e.total_qs||0}</div></div>
+      <div class="stat-card"><div class="stat-label">Duration</div><div class="stat-value" style="font-size:18px">${Math.floor((e.duration_s||3600)/60)}m</div></div>
+      <div class="stat-card"><div class="stat-label">Type</div><div class="stat-value" style="font-size:18px">${e.type||"full"}</div></div>
+      <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="font-size:18px">${e.status||"draft"}</div></div>
+    </div>
+    ${r.data.note ? `<p style="font-size:12px;color:#888;font-style:italic">${r.data.note}</p>` : ""}`;
+};
+</script>
+</body>
+</html>

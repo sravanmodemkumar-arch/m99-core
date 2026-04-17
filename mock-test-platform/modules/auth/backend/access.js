@@ -1,16 +1,21 @@
+import { MODULES } from "../../registry.js";
+
+// Keyed by id for O(1) lookup
+const REGISTRY = Object.fromEntries(MODULES.map(m => [m.id, m]));
+
 /**
- * Module access registry.
- * Auth knows only: "this tenant has these module IDs."
- * Exam logic lives in the module worker — auth never touches it.
+ * Given a tenant's module id list, return full metadata for each known module.
+ * Returns: [{ id, name, icon, home }]
+ * The `home` URL is returned so the FE can navigate without any hardcoded lookup.
  */
-
-export const MODULE_REGISTRY = {
-  "rrb-group-d": { name: "RRB Group D", icon: "train" },
-  // add new modules here — 1 line each
-};
-
 export function filterModules(tenantModules) {
   return tenantModules
-    .filter((id) => MODULE_REGISTRY[id])
-    .map((id) => ({ id, ...MODULE_REGISTRY[id] }));
+    .filter(id => REGISTRY[id])
+    .map(id => {
+      const { port, ...rest } = REGISTRY[id]; // strip server-only field
+      return rest;                             // { id, name, icon, home }
+    });
 }
+
+/** All module ids known to this platform — used to seed defaultTenant in dev. */
+export const ALL_MODULE_IDS = MODULES.map(m => m.id);

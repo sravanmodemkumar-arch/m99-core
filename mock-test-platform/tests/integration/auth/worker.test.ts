@@ -6,7 +6,7 @@ const TEST_PHONE     = "9876543210";
 const TEST_TENANT_ID = "test-tenant";
 const JWT_SECRET     = "test-jwt-secret-32-chars-minimum!";
 
-const TEST_TENANT = { modules: ["rrb-group-d"], tier: "standard" };
+const TEST_TENANT = { modules: ["exam-engine"], tier: "standard" };
 
 interface AuthEnv {
   KV: MockKV;
@@ -107,11 +107,11 @@ describe("POST /auth/otp/verify", () => {
     expect(Array.isArray(data.modules)).toBe(true);
   });
 
-  it("modules contain rrb-group-d from tenant config", async () => {
+  it("modules contain exam-engine from tenant config", async () => {
     const otp = await seedOtp();
     const res = await worker.fetch(makeReq("POST", "/auth/otp/verify", { phone: TEST_PHONE, otp }), env);
     const { modules } = await res.json() as { modules: Array<{ id: string }> };
-    expect(modules.some(m => m.id === "rrb-group-d")).toBe(true);
+    expect(modules.some(m => m.id === "exam-engine")).toBe(true);
   });
 
   it("wrong OTP → 401", async () => {

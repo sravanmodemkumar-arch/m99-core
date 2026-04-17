@@ -49,7 +49,7 @@ const WRANGLER_DIR = "modules/auth";
 function kvPut(key, value, ttl) {
   const preview = IS_PROD ? "" : "--preview";
   const expiry  = ttl ? `--expiration-ttl ${ttl}` : "";
-  const cmd = `wrangler kv key put "${key}" "${value}" --binding ${KV_BINDING} ${preview} ${expiry}`.trim();
+  const cmd = `npx wrangler kv key put "${key}" "${value}" --binding ${KV_BINDING} ${preview} ${expiry}`.trim();
   console.log(`  PUT ${key} = ${value}`);
   execSync(cmd, { cwd: WRANGLER_DIR, stdio: "inherit" });
 }

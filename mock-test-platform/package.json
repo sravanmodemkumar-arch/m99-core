@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev:auth":    "wrangler dev --config modules/auth/wrangler.toml --local --port 8787 --inspector-port 9229",
-    "dev:rrb":     "wrangler dev --config modules/rrb-group-d/wrangler.toml --local --port 8788 --inspector-port 9230",
+    "dev:exam":    "wrangler dev --config modules/exam-engine/backend/wrangler.toml --local --port 8788 --inspector-port 9230",
+    "dev:admin":   "wrangler dev --config modules/admin/backend/wrangler.toml --local --port 8789 --inspector-port 9231",
     "dev:server":  "node scripts/devserver.js",
-    "dev":         "concurrently -n auth,rrb,web -c cyan,magenta,green \"npm run dev:auth\" \"npm run dev:rrb\" \"npm run dev:server\"",
+    "dev":         "concurrently -n auth,exam,admin,web -c cyan,magenta,yellow,green \"npm run dev:auth\" \"npm run dev:exam\" \"npm run dev:admin\" \"npm run dev:server\"",
     "seed:dev":    "node scripts/seed-admin.js --env dev",
     "seed:r2":     "node scripts/seed-r2-local.js",
     "test":        "cd tests && npx vitest run",

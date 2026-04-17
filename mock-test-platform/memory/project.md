@@ -28,7 +28,7 @@ Cost: ₹5–10/user/yr → ₹0.10 at scale
 ## v1 Active / Stub
 | Service | Status | Activate when |
 |---|---|---|
-| gateway, auth, rrb-group-d | ACTIVE | — |
+| gateway, auth, exam-engine, admin | ACTIVE | — |
 | TPS, BS, EPS | ACTIVE | — |
 | TGM | STUB | >20 tenants OR >50k users |
 | TMS | STUB | first tier migration |
@@ -52,39 +52,54 @@ mock-test-platform/
 │       ├── content/bs/     ← ACTIVE
 │       ├── content/eps/    ← ACTIVE
 │       ├── content/cgs/    ← STUB
+│       ├── admin/          ← handler.py (bulk import, bundle rebuild, EPS events)
 │       ├── migrations/
 │       ├── template.yaml
 │       └── requirements.txt
 ├── modules/
+│   ├── registry.js         ← single source of truth: all modules (id, name, port, apiPrefix, home)
 │   ├── auth/               ← COMPLETE (backend + web 15 screens + mobile 15 screens + desktop)
 │   │   ├── backend/        ← worker.js, otp.js, jwt.js, access.js, config.js
 │   │   ├── wrangler.toml
 │   │   └── fe/
 │   │       ├── web/        ← 15 HTML screens
 │   │       ├── mobile/     ← 15 screens (React Native, plain JS)
-│   │       ├── desktop/    ← desktop-adapter.js, main.js, preload.js, desktop.css
+│   │       ├── desktop/    ← main.js, preload.js, desktop.css
 │   │       └── shared/     ← api.js, base.css, components.js, themes.js (25×2), landing-layouts.js (25)
-│   ├── app-shell/          ← placeholder (empty)
-│   └── rrb-group-d/        ← COMPLETE — exam module template
-│       ├── backend/        ← worker.js, config.js, marking.js, tsf.js
-│       ├── wrangler.toml
-│       └── fe/
-│           ├── shared/     ← scoring.ts+js, qstate.ts+js, useQstate.ts+js (TS=source, JS=esbuild output)
-│           │               ← package.json with build:shared + typecheck scripts
-│           ├── web/        ← exam.html, result.html, home.html, analysis.html
-│           ├── mobile/     ← ExamScreen.js, ResultScreen.js, HomeScreen.js (React Native)
-│           │               ← api.ts (TypeScript boundary), Navigator.tsx
-│           └── desktop/    ← main.js, preload.js, package.json (Electron)
-└── tests/                  ← COMPLETE — 115 tests all green
-    ├── unit/               ← scoring (22 tests), qstate (37 tests)
+│   ├── admin/              ← COMPLETE (port 8789)
+│   │   ├── backend/        ← worker.js (35 routes), wrangler.toml
+│   │   └── fe/
+│   │       ├── shared/     ← admin.css, admin-shell.js (sidebar+topbar+toast+modal)
+│   │       └── web/        ← 12 pages: dashboard, exams, questions, question-editor,
+│   │                           subjects, bulk-import, bundles, users, subscriptions,
+│   │                           reports, settings, tenants
+│   ├── exam-engine/        ← COMPLETE — replaces rrb-group-d as active exam module
+│   │   ├── backend/        ← worker.js (start/sync/submit/resume/stats/history/bundle)
+│   │   ├── wrangler.toml
+│   │   └── fe/
+│   │       ├── shared/     ← scoring.js, qstate.js, exam.css, body-renderer.js
+│   │       ├── web/        ← home.html, exam.html, result.html, analysis.html, sw.js (PWA)
+│   │       ├── mobile/     ← LoginScreen, HomeScreen, ExamScreen, ResultScreen, AnalysisScreen
+│   │       │               ← src/utils/api.js, sync.js (CDN delta)
+│   │       │               ← src/navigation/AppNavigator.js (auth-aware initial route)
+│   │       └── desktop/    ← main.js (Electron), server.js (local HTMX HTTP server),
+│   │                           sync.js (CDN delta), preload.js, app-config.json
+│   └── app-shell/          ← placeholder (empty)
+├── scripts/
+│   ├── devserver.js        ← start all workers in dev
+│   ├── seed-admin.js       ← seed super_admin + product_admin into KV
+│   ├── seed-exam-data.js   ← seed 40 questions, 2 exams, catalogue, R2 banks, subscription
+│   ├── seed-r2-local.js    ← upload bank JSON files to local R2
+│   └── gen-cdn-manifest.js ← build manifest.json from published R2 exams (run post-publish)
+└── tests/                  ← unit + integration + e2e (exam-engine worker tests updated)
+    ├── unit/               ← scoring, qstate
     ├── integration/
-    │   ├── auth/           ← worker.test.ts (23 tests)
-    │   └── rrb-group-d/    ← worker.test.ts (33 tests)
+    │   └── auth/           ← worker.test.ts
     ├── e2e/
-    │   ├── web/            ← auth.spec.ts (8), exam.spec.ts (14) — Playwright
-    │   ├── mobile/         ← 6 Maestro YAML flows
-    │   └── desktop/        ← exam.spec.ts (7) — Playwright Electron
-    └── package.json        ← vitest + playwright deps
+    │   ├── web/            ← Playwright
+    │   ├── mobile/         ← Maestro YAML
+    │   └── desktop/        ← Playwright Electron
+    └── package.json
 ```
 
 ## TypeScript Boundary Rule
@@ -123,11 +138,15 @@ TypeScript ONLY at shared boundaries — never in leaf nodes:
 | Schema naming | `tenant_{slug}` |
 
 ## Build / v1 Status
-- Branch: `build/v1`
-- All tests: 115 passing (unit + integration + specs written)
+- Branch: `build/v1` (current active build branch)
+- exam-engine module: COMPLETE — backend + web (home/exam/result/analysis + PWA sw.js) + desktop (Electron + local HTMX server) + mobile (Login/Home/Exam/Result/Analysis + CDN sync)
+- admin module: COMPLETE — CF Worker (35 routes) + Lambda handler + 12 web pages + shared CSS/JS shell
+- CDN delta sync: manifest.json pattern — desktop (sync.js files), mobile (utils/sync.js AsyncStorage), web (sw.js message handler)
+- Per-question timing in exam.html: qTimings map, stored in sessionStorage for analysis page
+- Seed scripts: seed-exam-data.js (40 Qs, 2 exams, KV+R2), gen-cdn-manifest.js (post-publish manifest)
+- Tests: exam-engine integration tests updated; rrb-group-d tests removed (module retired)
 - app-shell module: placeholder only (not needed for v1 launch)
-- Vite build for web: not yet (web HTML works without bundler for dev; prod bundling deferred)
-- Next: merge build/v1 → main when ready to deploy
+- Next: admin desktop app + admin mobile app (new branch: build/admin-clients)
 
 ## Adding a New Module
 1. Copy `modules/rrb-group-d/` → `modules/{id}/`

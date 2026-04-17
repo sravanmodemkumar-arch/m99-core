@@ -4,358 +4,886 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Result</title>
-<link rel="stylesheet" href="/modules/exam-engine/fe/shared/exam.css">
 <script src="/modules/exam-engine/fe/desktop/desktop-adapter.js" onerror="void 0"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Arial,sans-serif;background:#f0f2f5}
+html,body{height:100%;margin:0;font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;color:#1a1a2e}
 
-.result-shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+/* ── Shell ── */
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
 /* ── Header ── */
-.res-hdr{
-  background:#1565c0;color:#fff;height:54px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 24px;flex-shrink:0;
-  box-shadow:0 2px 10px rgba(0,0,0,0.25);gap:16px;
+.hdr{
+  background:linear-gradient(90deg,#0d47a1 0%,#1565c0 100%);
+  color:#fff;height:52px;display:flex;align-items:center;
+  padding:0 20px;gap:14px;flex-shrink:0;
+  box-shadow:0 2px 12px rgba(0,0,0,0.22);
 }
-.res-hdr-title{font-size:clamp(14px,1.1vw+5px,18px);font-weight:800;flex:1;text-align:center;letter-spacing:0.01em}
-.hdr-btn{
-  padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;
-  border:1.5px solid rgba(255,255,255,0.45);background:rgba(255,255,255,0.12);
+.hdr-left,.hdr-right{display:flex;gap:8px;align-items:center;min-width:0}
+.hdr-center{flex:1;text-align:center}
+.hdr-title{font-size:15px;font-weight:800;letter-spacing:0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:11px;color:rgba(255,255,255,0.65);margin-top:1px}
+.hbtn{
+  padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;
+  border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.12);
   color:#fff;cursor:pointer;white-space:nowrap;transition:background 0.15s;
 }
-.hdr-btn:hover{background:rgba(255,255,255,0.22)}
-.hdr-btn.purple{background:rgba(106,27,154,0.7);border-color:rgba(206,147,216,0.5)}
+.hbtn:hover{background:rgba(255,255,255,0.22)}
+.hbtn.green{background:rgba(27,94,32,0.75);border-color:rgba(129,199,132,0.5)}
 
 /* ── Score band ── */
 .score-band{
-  background:linear-gradient(135deg,#1a237e 0%,#1565c0 100%);
-  padding:16px 28px;display:flex;align-items:center;gap:24px;
-  flex-shrink:0;border-bottom:3px solid #0d47a1;flex-wrap:wrap;
+  background:linear-gradient(135deg,#0d1b4b 0%,#1565c0 100%);
+  padding:0;flex-shrink:0;border-bottom:3px solid rgba(0,0,0,0.25);
+  display:flex;
 }
-.score-main{display:flex;flex-direction:column;align-items:center;min-width:90px}
-.score-big{
-  font-size:clamp(30px,3vw+10px,50px);font-weight:900;color:#fff;
-  line-height:1;text-shadow:0 2px 8px rgba(0,0,0,0.3);
+.score-tiles{display:flex;flex:1;overflow:hidden}
+.stile{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:12px 8px;border-right:1px solid rgba(255,255,255,0.1);
+  position:relative;transition:background 0.15s;
 }
-.score-sub{font-size:11px;color:#90caf9;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
-.score-div{width:1px;align-self:stretch;background:rgba(255,255,255,0.22);flex-shrink:0}
-.score-chips{display:flex;gap:10px;flex-wrap:wrap}
-.s-chip{
-  display:flex;flex-direction:column;align-items:center;
-  padding:10px 16px;border-radius:10px;min-width:72px;
-}
-.s-chip.c{background:rgba(46,125,50,0.85);border:1px solid rgba(76,175,80,0.5)}
-.s-chip.w{background:rgba(183,28,28,0.85);border:1px solid rgba(229,57,53,0.5)}
-.s-chip.sk{background:rgba(55,71,79,0.75);border:1px solid rgba(120,144,156,0.4)}
-.s-chip.tot{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.28)}
-.chip-v{font-size:clamp(18px,2vw,26px);font-weight:900;color:#fff;line-height:1}
-.chip-l{font-size:10px;color:rgba(255,255,255,0.8);font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em}
-.score-pct{
-  display:flex;flex-direction:column;align-items:center;
-  padding-left:20px;border-left:1px solid rgba(255,255,255,0.22);
-}
-.pct-v{font-size:clamp(22px,2.5vw,34px);font-weight:900;color:#fff}
-.pct-l{font-size:10px;color:#90caf9;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+.stile:last-child{border-right:none}
+.stile-v{font-size:clamp(18px,2vw,28px);font-weight:900;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.stile-l{font-size:9px;font-weight:700;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.stile.c .stile-v{color:#a5d6a7}
+.stile.w .stile-v{color:#ef9a9a}
+.stile.sk .stile-v{color:#b0bec5}
+.stile.pct .stile-v{color:#fff176}
 
-/* ── Main split ── */
-.res-main{flex:1;display:flex;overflow:hidden;min-height:0}
+/* ── Tab bar ── */
+.tab-bar{
+  background:#fff;display:flex;align-items:stretch;
+  border-bottom:2px solid #e0e4ed;flex-shrink:0;padding:0 20px;gap:4px;
+}
+.tab-btn{
+  padding:12px 20px;font-size:13px;font-weight:700;color:#5c6b8a;
+  border:none;background:none;cursor:pointer;position:relative;
+  white-space:nowrap;transition:color 0.15s;border-bottom:3px solid transparent;
+  margin-bottom:-2px;display:flex;align-items:center;gap:7px;
+}
+.tab-btn:hover{color:#1565c0}
+.tab-btn.active{color:#1565c0;border-bottom-color:#1565c0}
+.tab-badge{
+  font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;
+  background:#e3f2fd;color:#1565c0;line-height:1.4;
+}
+.tab-btn.active .tab-badge{background:#1565c0;color:#fff}
 
-/* ── Left: sections ── */
-.res-left{
-  width:clamp(240px,26vw,320px);flex-shrink:0;
-  background:#fff;border-right:2px solid #e0e4ed;
-  display:flex;flex-direction:column;overflow:hidden;
-}
-.panel-hd{
-  padding:12px 18px;background:#f8f9ff;border-bottom:2px solid #e8f0fe;
-  font-size:11px;font-weight:800;color:#1565c0;
-  text-transform:uppercase;letter-spacing:0.07em;flex-shrink:0;
-}
-.sec-scroll{flex:1;overflow-y:auto;padding:12px 12px}
-.sec-card{
-  background:#f8f9ff;border:1px solid #e8edf6;border-radius:10px;
-  padding:13px 13px 11px;margin-bottom:10px;
-}
-.sec-name{font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:9px}
-.sec-stats{display:flex;gap:5px}
-.ss{flex:1;text-align:center;padding:7px 3px;border-radius:7px}
-.ss.c{background:#e8f5e9}.ss.w{background:#ffebee}.ss.s{background:#f5f5f5}
-.ss-v{font-size:clamp(14px,1.3vw,20px);font-weight:900;line-height:1}
-.ss.c .ss-v{color:#2e7d32}.ss.w .ss-v{color:#c62828}.ss.s .ss-v{color:#546e7a}
-.ss-l{font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
-.sec-bar-wrap{height:5px;background:#e8edf6;border-radius:3px;margin-top:10px;overflow:hidden}
-.sec-bar{height:100%;border-radius:3px;transition:width 1s ease}
-.sec-foot{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:#666;font-weight:600}
+/* ── Tab body ── */
+.tab-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.tab-pane{display:none;flex:1;overflow-y:auto;flex-direction:column;min-height:0}
+.tab-pane.active{display:flex}
 
-/* ── Right: answers ── */
-.res-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f0f2f5}
-.filter-bar{
-  display:flex;gap:8px;padding:11px 18px;
-  background:#fff;border-bottom:2px solid #e0e4ed;
-  flex-shrink:0;align-items:center;flex-wrap:wrap;
-}
-.f-count{font-size:12px;color:#aaa;font-weight:600;margin-left:auto}
-.f-chip{
-  padding:6px 16px;border-radius:999px;font-size:12px;font-weight:700;
-  border:2px solid #dde1ea;background:#fff;cursor:pointer;
-  transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;
-}
-.f-chip:hover:not([class*="fa-"]){background:#f0f4ff;border-color:#90caf9}
-.fa-all    {background:#1565c0;color:#fff;border-color:#1565c0}
-.fa-correct{background:#2e7d32;color:#fff;border-color:#2e7d32}
-.fa-wrong  {background:#c62828;color:#fff;border-color:#c62828}
-.fa-skipped{background:#546e7a;color:#fff;border-color:#546e7a}
+/* ══════════════════════════════
+   TAB 0 — OVERVIEW
+══════════════════════════════ */
+.overview-body{padding:18px 20px;display:flex;flex-direction:column;gap:16px;max-width:1400px;width:100%;margin:0 auto}
 
-.ans-scroll{flex:1;overflow-y:auto;padding:10px 14px}
-.ans-hd{
-  display:grid;grid-template-columns:46px 1fr 88px 88px 110px 68px;
-  gap:8px;padding:7px 14px;margin-bottom:4px;
-  font-size:10px;font-weight:800;color:#8a9ab7;
-  text-transform:uppercase;letter-spacing:0.06em;
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.sum-card{
+  background:#fff;border-radius:10px;border:1px solid #e0e4ed;
+  padding:16px 18px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04);
 }
-.ans-row{
-  display:grid;grid-template-columns:46px 1fr 88px 88px 110px 68px;
-  align-items:center;gap:8px;padding:11px 14px;
-  background:#fff;border:1px solid #e8edf6;border-left:4px solid transparent;
-  border-radius:8px;margin-bottom:5px;font-size:13px;
-  transition:box-shadow 0.12s;
+.sum-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sum-card.score-c .sum-icon{background:#e3f2fd;color:#1565c0}
+.sum-card.time-c  .sum-icon{background:#f3e5f5;color:#7b1fa2}
+.sum-card.avg-c   .sum-icon{background:#e8f5e9;color:#2e7d32}
+.sum-card.sess-c  .sum-icon{background:#fff3e0;color:#e65100}
+.sum-info{min-width:0}
+.sum-val{font-size:20px;font-weight:900;color:#1a2a4a;line-height:1}
+.sum-lbl{font-size:11px;font-weight:600;color:#8a9ab7;margin-top:3px}
+
+/* Attempt distribution */
+.distrib-card{background:#fff;border-radius:12px;border:1px solid #e0e4ed;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.distrib-title{font-size:12px;font-weight:800;color:#5c6b8a;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px}
+.distrib-bar{height:20px;border-radius:10px;display:flex;overflow:hidden;background:#f0f2f5;gap:2px}
+.db-seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:flex 1s ease;min-width:0;overflow:hidden;white-space:nowrap}
+.db-seg.c{background:#2e7d32}.db-seg.w{background:#c62828}.db-seg.s{background:#90a4ae}
+.distrib-legend{display:flex;gap:20px;margin-top:12px;flex-wrap:wrap}
+.dl-item{display:flex;align-items:center;gap:7px}
+.dl-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.dl-lbl{font-size:12px;color:#5c6b8a;font-weight:600}
+.dl-val{font-size:13px;font-weight:800;color:#1a2a4a;margin-left:2px}
+.dl-pct{font-size:11px;color:#aaa;font-weight:600}
+
+/* Section performance cards */
+.sec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.sec-card2{
+  background:#fff;border-radius:12px;border:1px solid #e0e4ed;
+  padding:16px 18px;border-left:5px solid #1565c0;
+  box-shadow:0 1px 6px rgba(0,0,0,0.05);
 }
-.ans-row:hover{box-shadow:0 2px 10px rgba(0,0,0,0.07)}
-.ans-row.correct{border-left-color:#2e7d32}
-.ans-row.wrong  {border-left-color:#c62828}
-.ans-row.skipped{border-left-color:#90a4ae}
-.a-num{font-size:13px;font-weight:800;color:#1565c0}
-.a-sec{font-size:11px;color:#777;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.a-chosen{font-size:13px;font-weight:700}
-.a-correct{font-size:13px;font-weight:700;color:#2e7d32}
-.v-c{color:#2e7d32;font-weight:800}.v-w{color:#c62828;font-weight:800}.v-s{color:#90a4ae;font-weight:600}
-.a-marks{font-size:13px;font-weight:800;text-align:right}
+.sc2-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.sc2-name{font-size:14px;font-weight:800;color:#1a2a4a}
+.sc2-score{font-size:16px;font-weight:900;color:#1a2a4a}
+.sc2-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.sc2-stat{text-align:center;padding:8px 4px;border-radius:8px}
+.sc2-stat.c{background:#e8f5e9}.sc2-stat.w{background:#ffebee}.sc2-stat.s{background:#f5f5f5}
+.sc2-stat-v{font-size:18px;font-weight:900;line-height:1}
+.sc2-stat.c .sc2-stat-v{color:#2e7d32}.sc2-stat.w .sc2-stat-v{color:#c62828}.sc2-stat.s .sc2-stat-v{color:#546e7a}
+.sc2-stat-l{font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.04em;margin-top:3px}
+.sc2-bar-track{height:6px;background:#f0f2f5;border-radius:3px;overflow:hidden}
+.sc2-bar-fill{height:100%;border-radius:3px;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+.sc2-footer{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;font-weight:700;color:#8a9ab7}
+.sc2-time{font-size:10px;font-weight:700;color:#8a9ab7;margin-top:6px;border-top:1px solid #f0f2f5;padding-top:6px;display:flex;justify-content:space-between}
+
+/* Time analysis card */
+.time-card{background:#fff;border-radius:12px;border:1px solid #e0e4ed;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.time-card-title{font-size:12px;font-weight:800;color:#5c6b8a;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.time-section-rows{display:flex;flex-direction:column;gap:10px}
+.tsr{display:flex;align-items:center;gap:12px}
+.tsr-name{font-size:13px;font-weight:700;color:#1a2a4a;min-width:140px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tsr-bar-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
+.tsr-bar-track{height:8px;background:#f0f2f5;border-radius:4px;overflow:hidden}
+.tsr-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.tsr-meta{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#aaa}
+.tsr-time{font-size:13px;font-weight:900;color:#7b1fa2;min-width:60px;text-align:right;flex-shrink:0}
+.tsr-avg{font-size:11px;font-weight:600;color:#aaa;text-align:right;flex-shrink:0;min-width:80px}
+
+/* ══════════════════════════════
+   TAB 1 — ANSWER SHEET (GRID)
+══════════════════════════════ */
+.ans-sheet-wrap{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* Left: number grid panel */
+.grid-panel{
+  width:340px;flex-shrink:0;border-right:2px solid #e0e4ed;
+  display:flex;flex-direction:column;background:#fff;overflow:hidden;
+}
+.grid-panel-toolbar{
+  padding:10px 14px;border-bottom:1px solid #e8edf6;flex-shrink:0;
+  display:flex;flex-direction:column;gap:8px;
+}
+.gp-title{font-size:12px;font-weight:800;color:#5c6b8a;text-transform:uppercase;letter-spacing:0.07em}
+.filter-pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{
+  padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;
+  border:2px solid #dde1ea;background:#fff;cursor:pointer;transition:all 0.14s;
+}
+.pill:hover{border-color:#90caf9;background:#f0f4ff}
+.pill.p-all    {background:#1565c0;color:#fff;border-color:#1565c0}
+.pill.p-correct{background:#2e7d32;color:#fff;border-color:#2e7d32}
+.pill.p-wrong  {background:#c62828;color:#fff;border-color:#c62828}
+.pill.p-skipped{background:#546e7a;color:#fff;border-color:#546e7a}
+.grid-scroll{flex:1;overflow-y:auto;padding:12px 14px}
+.sec-group{margin-bottom:18px}
+.sec-group-header{
+  font-size:11px;font-weight:800;color:#5c6b8a;text-transform:uppercase;
+  letter-spacing:0.07em;margin-bottom:8px;padding-bottom:5px;
+  border-bottom:2px solid #e8edf6;display:flex;justify-content:space-between;
+}
+.sec-group-counts{font-size:10px;font-weight:700;color:#aaa;letter-spacing:0;text-transform:none;display:flex;gap:8px}
+.q-num-grid{display:flex;flex-wrap:wrap;gap:5px}
+.qnum{
+  width:34px;height:34px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;cursor:pointer;
+  border:2px solid transparent;transition:transform 0.1s,box-shadow 0.1s;
+  position:relative;
+}
+.qnum:hover{transform:scale(1.12);box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.qnum.active{box-shadow:0 0 0 3px #1565c0,0 2px 8px rgba(21,101,192,0.3);transform:scale(1.1)}
+.qnum.correct {background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7}
+.qnum.wrong   {background:#ffebee;color:#c62828;border-color:#ef9a9a}
+.qnum.skipped {background:#fff8e1;color:#f57f17;border-color:#ffe082}
+.qnum.hidden  {opacity:0.3;pointer-events:none}
+/* time dot under qnum */
+.qnum-time{
+  position:absolute;bottom:-1px;right:-1px;
+  font-size:7px;font-weight:800;color:#fff;
+  background:#7b1fa2;border-radius:3px;padding:0 2px;line-height:14px;
+  white-space:nowrap;
+}
+
+/* Right: explanation panel */
+.expl-panel{
+  flex:1;display:flex;flex-direction:column;background:#f8f9ff;overflow:hidden;
+}
+.expl-empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#aaa;gap:10px;
+}
+.expl-empty-icon{font-size:48px}
+.expl-empty-txt{font-size:15px;font-weight:700}
+.expl-empty-sub{font-size:13px;font-weight:500;color:#bbb;text-align:center;max-width:260px}
+.expl-content{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.expl-header{
+  background:#fff;border-bottom:2px solid #e0e4ed;padding:14px 20px;
+  flex-shrink:0;display:flex;align-items:center;gap:14px;
+}
+.expl-qnum{
+  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;font-weight:900;flex-shrink:0;
+}
+.expl-qnum.correct{background:#e8f5e9;color:#2e7d32}
+.expl-qnum.wrong  {background:#ffebee;color:#c62828}
+.expl-qnum.skipped{background:#fff8e1;color:#f57f17}
+.expl-meta{flex:1;min-width:0}
+.expl-meta-title{font-size:14px;font-weight:800;color:#1a2a4a}
+.expl-meta-sub{font-size:11px;font-weight:600;color:#8a9ab7;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.expl-meta-sub span{display:flex;align-items:center;gap:4px}
+.expl-close{
+  width:32px;height:32px;border-radius:8px;border:none;background:#f0f2f5;
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:#5c6b8a;transition:background 0.12s;flex-shrink:0;
+}
+.expl-close:hover{background:#fee8e7;color:#c62828}
+.expl-ans-row{
+  background:#fff;border-bottom:1px solid #e0e4ed;padding:10px 20px;
+  flex-shrink:0;display:flex;gap:16px;flex-wrap:wrap;
+}
+.ans-chip{
+  display:flex;flex-direction:column;gap:2px;padding:8px 14px;
+  border-radius:8px;border:1px solid #e8edf6;min-width:100px;
+}
+.ans-chip-lbl{font-size:9px;font-weight:800;color:#8a9ab7;text-transform:uppercase;letter-spacing:0.06em}
+.ans-chip-val{font-size:16px;font-weight:900}
+.ans-chip.your-correct .ans-chip-val{color:#2e7d32}
+.ans-chip.your-wrong   .ans-chip-val{color:#c62828}
+.ans-chip.your-skip    .ans-chip-val{color:#f57f17}
+.ans-chip.correct-ans  .ans-chip-val{color:#2e7d32}
+.ans-chip.marks-chip   .ans-chip-val{font-size:14px}
+.ans-chip.marks-pos    .ans-chip-val{color:#2e7d32}
+.ans-chip.marks-neg    .ans-chip-val{color:#c62828}
+.ans-chip.marks-zero   .ans-chip-val{color:#90a4ae}
+.ans-chip.time-chip    .ans-chip-val{color:#7b1fa2;font-size:14px}
+
+/* YouTube embed area */
+.expl-video-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:300px}
+.yt-frame{width:100%;height:100%;border:none;display:block}
+
+/* Subscription gate */
+.sub-gate{
+  position:absolute;inset:0;
+  background:rgba(13,27,75,0.88);
+  backdrop-filter:blur(8px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:30px;z-index:10;
+}
+.sub-gate-icon{font-size:48px}
+.sub-gate-title{font-size:20px;font-weight:900;color:#fff;text-align:center}
+.sub-gate-sub{font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);text-align:center;max-width:280px;line-height:1.5}
+.sub-gate-btn{
+  padding:12px 32px;background:#f9a825;color:#1a1a00;border:none;border-radius:10px;
+  font-size:14px;font-weight:900;cursor:pointer;transition:filter 0.15s;letter-spacing:0.01em;
+}
+.sub-gate-btn:hover{filter:brightness(1.1)}
+.sub-gate-features{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.sub-gate-feat{font-size:12px;font-weight:700;color:rgba(255,255,255,0.8);display:flex;align-items:center;gap:7px}
+.sub-gate-feat::before{content:"✓";color:#a5d6a7;font-weight:900}
+
+/* ══════════════════════════════
+   TAB 2 — SECTIONS
+══════════════════════════════ */
+.sections-body{padding:18px 20px;display:flex;flex-direction:column;gap:0;max-width:1200px;width:100%;margin:0 auto}
+.sec-row{
+  background:#fff;border-radius:0;border-bottom:1px solid #e8edf6;
+  padding:16px 18px;display:flex;align-items:center;gap:16px;
+}
+.sec-row:first-child{border-radius:12px 12px 0 0;border:1px solid #e0e4ed;border-bottom:1px solid #e8edf6}
+.sec-row:last-child {border-radius:0 0 12px 12px;border:1px solid #e0e4ed;border-top:none}
+.sec-row:only-child {border-radius:12px;border:1px solid #e0e4ed}
+.sec-row:not(:first-child):not(:last-child){border-left:1px solid #e0e4ed;border-right:1px solid #e0e4ed}
+.sr-rank{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0}
+.sr-name{flex:0 0 200px;font-size:14px;font-weight:800;color:#1a2a4a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-bar-area{flex:1;min-width:0}
+.sr-bar-labels{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#8a9ab7;margin-bottom:5px}
+.sr-bar-track{height:8px;background:#f0f2f5;border-radius:4px;overflow:hidden}
+.sr-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.sr-stats{display:flex;gap:16px;flex-shrink:0}
+.sr-stat{display:flex;flex-direction:column;align-items:center;min-width:36px}
+.sr-stat-v{font-size:16px;font-weight:900;line-height:1}
+.sr-stat-l{font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+.sr-stat.c .sr-stat-v{color:#2e7d32}
+.sr-stat.w .sr-stat-v{color:#c62828}
+.sr-stat.s .sr-stat-v{color:#90a4ae}
+.sr-score{font-size:15px;font-weight:900;color:#1a2a4a;min-width:64px;text-align:right;flex-shrink:0}
+.sr-acc-badge{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;flex-shrink:0;min-width:52px;text-align:center}
+.sr-time{font-size:11px;font-weight:700;color:#7b1fa2;min-width:60px;text-align:right;flex-shrink:0}
 
 /* ── Footer ── */
 .res-footer{
   display:flex;align-items:center;justify-content:space-between;
-  padding:12px 24px;background:#fff;border-top:2px solid #e0e4ed;
+  padding:10px 20px;background:#fff;border-top:2px solid #e0e4ed;
   flex-shrink:0;gap:12px;
 }
-.f-btn{
-  padding:11px 26px;border-radius:7px;font-size:13px;font-weight:700;
-  border:none;cursor:pointer;min-height:44px;transition:filter 0.15s;
-}
+.f-btn{padding:10px 22px;border-radius:7px;font-size:13px;font-weight:700;border:none;cursor:pointer;min-height:40px;transition:filter 0.15s}
 .f-btn:hover{filter:brightness(0.9)}
-.f-btn.outline{background:#f0f2f5;color:#333;border:2px solid #c8c8c8}
-.f-btn.blue{background:#1565c0;color:#fff}
-.f-btn.purple{background:#6a1b9a;color:#fff}
-.f-meta{font-size:12px;color:#aaa;font-weight:500;text-align:center}
+.f-btn.outline{background:#f0f2f5;color:#333;border:1.5px solid #c0c8d8}
+.f-btn.blue   {background:#1565c0;color:#fff}
+.f-btn.purple {background:#6a1b9a;color:#fff}
+.f-meta{font-size:11px;color:#aaa;font-weight:500;text-align:center}
 
-@media(max-width:767px){
-  .res-left{display:none}
-  .ans-hd,.ans-row{grid-template-columns:36px 1fr 60px 60px 90px 56px;font-size:12px;padding:9px 10px}
-  .score-band{padding:12px 16px;gap:16px}
+.empty-state{padding:60px 24px;text-align:center;color:#aaa}
+.empty-state-icon{font-size:40px;margin-bottom:10px}
+.empty-state-msg{font-size:14px;font-weight:600}
+
+@media(max-width:900px){
+  .grid-panel{width:260px}
+  .tsr-name{min-width:100px}
+  .sr-name{flex:0 0 auto;max-width:120px}
+}
+@media(max-width:640px){
+  .ans-sheet-wrap{flex-direction:column}
+  .grid-panel{width:100%;border-right:none;border-bottom:2px solid #e0e4ed;max-height:45vh}
+  .summary-row{grid-template-columns:1fr 1fr}
+  .tab-btn{padding:10px 12px;font-size:12px}
+  .hbtn{padding:5px 10px;font-size:11px}
 }
 </style>
 </head>
 <body>
-<div class="result-shell">
+<div class="shell">
 
-  <!-- Header -->
-  <div class="res-hdr">
-    <button class="hdr-btn" onclick="goBack()">← Home</button>
-    <div class="res-hdr-title" id="exam-label">Result</div>
-    <button class="hdr-btn purple" onclick="goAnalysis()">Analysis →</button>
+  <!-- ── Header ── -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <button class="hbtn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-title" id="hdr-title">Exam Result</div>
+      <div class="hdr-sub" id="hdr-sub">Loading…</div>
+    </div>
+    <div class="hdr-right">
+      <button class="hbtn green" onclick="goAnalysis()">📊 Analysis</button>
+    </div>
   </div>
 
-  <!-- Score band -->
+  <!-- ── Score band ── -->
   <div class="score-band">
-    <div class="score-main">
-      <div class="score-big" id="score-val">—</div>
-      <div class="score-sub">Score</div>
-    </div>
-    <div class="score-div"></div>
-    <div class="score-chips">
-      <div class="s-chip c"><div class="chip-v" id="chip-c">—</div><div class="chip-l">Correct</div></div>
-      <div class="s-chip w"><div class="chip-v" id="chip-w">—</div><div class="chip-l">Wrong</div></div>
-      <div class="s-chip sk"><div class="chip-v" id="chip-s">—</div><div class="chip-l">Skipped</div></div>
-      <div class="s-chip tot"><div class="chip-v" id="chip-t">—</div><div class="chip-l">Total</div></div>
-    </div>
-    <div class="score-div"></div>
-    <div class="score-pct">
-      <div class="pct-v" id="pct-val">—</div>
-      <div class="pct-l">Accuracy</div>
+    <div class="score-tiles">
+      <div class="stile"><div class="stile-v" id="st-score">—</div><div class="stile-l">Score</div></div>
+      <div class="stile c"><div class="stile-v" id="st-c">—</div><div class="stile-l">Correct</div></div>
+      <div class="stile w"><div class="stile-v" id="st-w">—</div><div class="stile-l">Wrong</div></div>
+      <div class="stile sk"><div class="stile-v" id="st-s">—</div><div class="stile-l">Skipped</div></div>
+      <div class="stile"><div class="stile-v" id="st-t">—</div><div class="stile-l">Total Qs</div></div>
+      <div class="stile pct"><div class="stile-v" id="st-pct">—</div><div class="stile-l">Accuracy</div></div>
     </div>
   </div>
 
-  <!-- Main -->
-  <div class="res-main">
+  <!-- ── Tab bar ── -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">
+      🏠 Overview <span class="tab-badge" id="tbadge-overview"></span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('answers',this)">
+      📋 Answer Sheet <span class="tab-badge" id="tbadge-answers">—</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('sections',this)">
+      📊 Sections <span class="tab-badge" id="tbadge-sections">—</span>
+    </button>
+  </div>
 
-    <!-- Left: section breakdown -->
-    <div class="res-left">
-      <div class="panel-hd">Section Breakdown</div>
-      <div class="sec-scroll" id="sec-list"></div>
-    </div>
+  <!-- ── Tab body ── -->
+  <div class="tab-body">
 
-    <!-- Right: answer review -->
-    <div class="res-right">
-      <div class="filter-bar">
-        <button class="f-chip fa-all"     onclick="setFilter('all',this)">All</button>
-        <button class="f-chip"            onclick="setFilter('correct',this)">✓ Correct</button>
-        <button class="f-chip"            onclick="setFilter('wrong',this)">✗ Wrong</button>
-        <button class="f-chip"            onclick="setFilter('skipped',this)">— Skipped</button>
-        <span class="f-count" id="f-count"></span>
-      </div>
-      <div class="ans-scroll">
-        <div class="ans-hd">
-          <span>#</span><span>Section</span>
-          <span>Your Ans</span><span>Correct</span>
-          <span>Verdict</span><span>Marks</span>
+    <!-- TAB 0: Overview -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="overview-body">
+
+        <div class="summary-row">
+          <div class="sum-card score-c">
+            <div class="sum-icon">🎯</div>
+            <div class="sum-info"><div class="sum-val" id="sum-score">—</div><div class="sum-lbl">Total Score</div></div>
+          </div>
+          <div class="sum-card time-c">
+            <div class="sum-icon">⏱</div>
+            <div class="sum-info"><div class="sum-val" id="sum-time">—</div><div class="sum-lbl">Time Used</div></div>
+          </div>
+          <div class="sum-card avg-c">
+            <div class="sum-icon">⚡</div>
+            <div class="sum-info"><div class="sum-val" id="sum-avg">—</div><div class="sum-lbl">Avg per Question</div></div>
+          </div>
+          <div class="sum-card sess-c">
+            <div class="sum-icon">🔖</div>
+            <div class="sum-info"><div class="sum-val" id="sum-sess">—</div><div class="sum-lbl">Session ID</div></div>
+          </div>
         </div>
-        <div id="ans-rows"></div>
+
+        <div class="distrib-card">
+          <div class="distrib-title">Attempt Distribution</div>
+          <div class="distrib-bar" id="distrib-bar">
+            <div class="db-seg c" id="db-c" style="flex:0"></div>
+            <div class="db-seg w" id="db-w" style="flex:0"></div>
+            <div class="db-seg s" id="db-s" style="flex:0"></div>
+          </div>
+          <div class="distrib-legend">
+            <div class="dl-item"><div class="dl-dot" style="background:#2e7d32"></div><span class="dl-lbl">Correct</span><span class="dl-val" id="dl-c">—</span><span class="dl-pct" id="dl-cp"></span></div>
+            <div class="dl-item"><div class="dl-dot" style="background:#c62828"></div><span class="dl-lbl">Wrong</span><span class="dl-val" id="dl-w">—</span><span class="dl-pct" id="dl-wp"></span></div>
+            <div class="dl-item"><div class="dl-dot" style="background:#90a4ae"></div><span class="dl-lbl">Skipped</span><span class="dl-val" id="dl-s">—</span><span class="dl-pct" id="dl-sp"></span></div>
+          </div>
+        </div>
+
+        <!-- Time per section -->
+        <div class="time-card" id="time-card" style="display:none">
+          <div class="time-card-title">⏱ Time Spent by Subject</div>
+          <div class="time-section-rows" id="time-section-rows"></div>
+        </div>
+
+        <!-- Section performance cards -->
+        <div id="sec-grid-wrap" style="display:none">
+          <div class="sec-grid" id="sec-grid"></div>
+        </div>
+
       </div>
     </div>
-  </div>
 
-  <!-- Footer -->
+    <!-- TAB 1: Answer Sheet (grid) -->
+    <div class="tab-pane" id="tab-answers" style="flex-direction:column">
+      <div class="ans-sheet-wrap">
+
+        <!-- Left: number grid -->
+        <div class="grid-panel">
+          <div class="grid-panel-toolbar">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="gp-title">Questions</div>
+              <span id="grid-count" style="font-size:11px;font-weight:700;color:#8a9ab7"></span>
+            </div>
+            <div class="filter-pills">
+              <button class="pill p-all"     onclick="setGridFilter('all',this)">All</button>
+              <button class="pill"           onclick="setGridFilter('correct',this)">✓</button>
+              <button class="pill"           onclick="setGridFilter('wrong',this)">✗</button>
+              <button class="pill"           onclick="setGridFilter('skipped',this)">—</button>
+            </div>
+          </div>
+          <div class="grid-scroll" id="grid-scroll"></div>
+        </div>
+
+        <!-- Right: explanation panel -->
+        <div class="expl-panel" id="expl-panel">
+          <div class="expl-empty" id="expl-empty">
+            <div class="expl-empty-icon">👆</div>
+            <div class="expl-empty-txt">Select a question</div>
+            <div class="expl-empty-sub">Click any number on the left to see the explanation video</div>
+          </div>
+          <div class="expl-content" id="expl-content" style="display:none">
+            <div class="expl-header">
+              <div class="expl-qnum" id="ex-qnum">—</div>
+              <div class="expl-meta">
+                <div class="expl-meta-title" id="ex-title">Question —</div>
+                <div class="expl-meta-sub" id="ex-sub"></div>
+              </div>
+              <button class="expl-close" onclick="closeExpl()">✕</button>
+            </div>
+            <div class="expl-ans-row" id="ex-ans-row"></div>
+            <div class="expl-video-wrap" id="ex-video-wrap"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: Sections -->
+    <div class="tab-pane" id="tab-sections" style="flex-direction:column">
+      <div class="sections-body">
+        <div id="sec-rows-wrap"></div>
+      </div>
+    </div>
+
+  </div><!-- end tab-body -->
+
+  <!-- ── Footer ── -->
   <div class="res-footer">
     <button class="f-btn outline" onclick="goBack()">← Back to Home</button>
     <div class="f-meta" id="f-meta"></div>
     <button class="f-btn purple" onclick="goAnalysis()">View Detailed Analysis →</button>
   </div>
-</div>
+
+</div><!-- end shell -->
 
 <script type="module">
 import { boot, requireAuth } from "/modules/auth/fe/web/app.js";
 
-const _p         = new URLSearchParams(location.search);
-const SID        = _p.get("session_id") || "";
-const SCORE      = parseFloat(_p.get("score")   || "0");
-const CORRECT    = parseInt(_p.get("correct")    || "0");
-const WRONG      = parseInt(_p.get("wrong")      || "0");
-const SKIPPED    = parseInt(_p.get("skipped")    || "0");
-const TOTAL      = parseInt(_p.get("total")      || "0");
-const PCT        = parseFloat(_p.get("pct")      || "0");
-const BACK_URL   = _p.get("back_url")             || "./";
-const LABEL      = _p.get("label")               || "Exam Result";
-const API_PREFIX = _p.get("api_prefix")           || "/exam";
+const _p        = new URLSearchParams(location.search);
+const SID       = _p.get("session_id") || "";
+const SCORE     = parseFloat(_p.get("score")    || "0");
+const CORRECT   = parseInt(_p.get("correct")    || "0");
+const WRONG     = parseInt(_p.get("wrong")      || "0");
+const SKIPPED   = parseInt(_p.get("skipped")    || "0");
+const TOTAL     = parseInt(_p.get("total")      || "0");
+const PCT       = parseFloat(_p.get("pct")      || "0");
+const ELAPSED_S = parseInt(_p.get("elapsed_s")  || "0");
+const BACK_URL  = _p.get("back_url")             || "./";
+const HOME_URL  = _p.get("home_url")             || BACK_URL;
+const LABEL     = _p.get("label")               || "Exam Result";
+const API_PFX   = _p.get("api_prefix")           || "/exam";
 
 const COLORS = ["#1565c0","#6a1b9a","#2e7d32","#e65100","#0277bd","#ad1457","#00838f","#558b2f"];
 
-let allRows = [], activeFilter = "all";
+let allRows      = [];
+let gridFilter   = "all";
+let activeQIdx   = -1;
+let isSubscribed = false;
+let timings      = {};
 
+function fmt(s) {
+  if (!s && s !== 0) return "—";
+  const m = Math.floor(s / 60), sec = s % 60;
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   if (!requireAuth()) return;
   await boot();
 
-  document.getElementById("exam-label").textContent = LABEL;
-  const sign = SCORE >= 0 ? "+" : "";
-  document.getElementById("score-val").textContent = `${sign}${SCORE.toFixed(2)}`;
-  document.getElementById("chip-c").textContent = CORRECT;
-  document.getElementById("chip-w").textContent = WRONG;
-  document.getElementById("chip-s").textContent = SKIPPED;
-  document.getElementById("chip-t").textContent = TOTAL;
-  document.getElementById("pct-val").textContent = `${PCT}%`;
+  document.getElementById("hdr-title").textContent = LABEL;
+  document.getElementById("hdr-sub").textContent   = `Session ${SID.slice(-8)} · ${fmt(ELAPSED_S)} elapsed`;
 
-  const es = parseInt(_p.get("elapsed_s") || "0");
-  document.getElementById("f-meta").textContent =
-    `Session ${SID.slice(-8)} · Time used: ${Math.floor(es/60)}m ${es%60}s`;
+  const sign = SCORE >= 0 ? "+" : "";
+  document.getElementById("st-score").textContent = `${sign}${SCORE.toFixed(2)}`;
+  document.getElementById("st-c").textContent  = CORRECT;
+  document.getElementById("st-w").textContent  = WRONG;
+  document.getElementById("st-s").textContent  = SKIPPED;
+  document.getElementById("st-t").textContent  = TOTAL;
+  document.getElementById("st-pct").textContent = `${PCT}%`;
+
+  document.getElementById("sum-score").textContent = `${sign}${SCORE.toFixed(2)}`;
+  document.getElementById("sum-time").textContent  = fmt(ELAPSED_S);
+  document.getElementById("sum-avg").textContent   = TOTAL ? fmt(Math.round(ELAPSED_S / TOTAL)) : "—";
+  document.getElementById("sum-sess").textContent  = SID.slice(-8).toUpperCase();
+
+  if (TOTAL > 0) {
+    setTimeout(() => {
+      document.getElementById("db-c").style.flex = CORRECT;
+      document.getElementById("db-w").style.flex = WRONG;
+      document.getElementById("db-s").style.flex = SKIPPED || 0.01;
+      document.getElementById("db-c").textContent = CORRECT > 0 ? CORRECT : "";
+      document.getElementById("db-w").textContent = WRONG   > 0 ? WRONG   : "";
+    }, 80);
+  }
+  document.getElementById("dl-c").textContent  = CORRECT;
+  document.getElementById("dl-w").textContent  = WRONG;
+  document.getElementById("dl-s").textContent  = SKIPPED;
+  document.getElementById("dl-cp").textContent = TOTAL ? `(${Math.round(CORRECT/TOTAL*100)}%)` : "";
+  document.getElementById("dl-wp").textContent = TOTAL ? `(${Math.round(WRONG/TOTAL*100)}%)` : "";
+  document.getElementById("dl-sp").textContent = TOTAL ? `(${Math.round(SKIPPED/TOTAL*100)}%)` : "";
+
+  document.getElementById("tbadge-overview").textContent = `${TOTAL} Qs`;
+  document.getElementById("f-meta").textContent = `${TOTAL} questions · ${fmt(ELAPSED_S)} · ${LABEL}`;
+
+  // Check subscription from JWT
+  try {
+    const token = localStorage.getItem("auth_token") || "";
+    if (token) {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      isSubscribed = !!(payload.subscribed || payload.subscription ||
+        payload.role === "premium" || payload.role === "super_admin" || payload.role === "product_admin");
+    }
+  } catch(e) {}
 
   const raw = sessionStorage.getItem(`result_${SID}`);
-  if (!raw) { renderSections(null, []); return; }
+  if (!raw) return;
   const data = JSON.parse(raw);
-  renderSections(data.sections, data.section_defs || []);
-  buildRows(data.answer_key, data.responses, data.sections, data.section_defs || []);
-  renderRows();
+  const defs = data.section_defs || [];
+  timings = data.timings || {};
+
+  buildRows(data.answer_key, data.responses, data.sections, defs);
+  renderSectionGrid(data.sections, defs);
+  renderTimeCard(defs, data.sections);
+  renderSectionRows(data.sections, defs);
+  renderGrid();
+
+  document.getElementById("tbadge-answers").textContent  = allRows.length;
+  document.getElementById("tbadge-sections").textContent = defs.length || "—";
 }
 
-function renderSections(sections, defs) {
-  const el = document.getElementById("sec-list");
-  if (!sections || !defs.length) {
-    el.innerHTML = `<div style="padding:24px;text-align:center;color:#aaa;font-size:13px">No section data available</div>`;
-    return;
-  }
-  el.innerHTML = defs.map((def, i) => {
-    const d = sections[def.id] || { correct:0, wrong:0, skipped:0, rawScaled:0 };
-    const att = d.correct + d.wrong;
-    const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
-    const sc  = (d.rawScaled / 1000).toFixed(2);
-    const color = COLORS[i % COLORS.length];
-    return `
-      <div class="sec-card">
-        <div class="sec-name">${def.label}</div>
-        <div class="sec-stats">
-          <div class="ss c"><div class="ss-v">${d.correct}</div><div class="ss-l">Correct</div></div>
-          <div class="ss w"><div class="ss-v">${d.wrong}</div><div class="ss-l">Wrong</div></div>
-          <div class="ss s"><div class="ss-v">${d.skipped}</div><div class="ss-l">Skipped</div></div>
-        </div>
-        <div class="sec-bar-wrap">
-          <div class="sec-bar" style="width:${acc}%;background:${color}"></div>
-        </div>
-        <div class="sec-foot">
-          <span>Score: ${sc >= 0 ? '+' : ''}${sc}</span>
-          <span>Accuracy: ${acc}%</span>
-        </div>
-      </div>`;
-  }).join("");
-}
-
+// ── Build rows ────────────────────────────────────────────────────────────────
 function buildRows(answerKey, responses, sections, defs) {
   const qSec = {};
-  if (sections) {
+  if (sections)
     for (const [sid, s] of Object.entries(sections))
       for (const qid of Object.keys(s.responses || {})) qSec[qid] = sid;
-  }
-  const labels = Object.fromEntries((defs||[]).map(d => [d.id, d.label]));
+  const labels = Object.fromEntries((defs || []).map(d => [d.id, d.label]));
   let idx = 0;
   allRows = Object.entries(answerKey || {}).map(([qid, correct]) => {
     idx++;
-    const r = (responses||{})[qid] || { chosen:null, attempted:false };
-    const sid = qSec[qid] || "";
+    const r       = (responses || {})[qid] || { chosen: null, attempted: false };
+    const sid     = qSec[qid] || "";
+    const secLbl  = labels[sid] || sid;
     const verdict = !r.attempted ? "skipped" : r.chosen === correct ? "correct" : "wrong";
-    const marks = verdict === "correct" ? "+1" : verdict === "wrong" ? "−0.33" : "0";
-    return { idx, qid, sec: labels[sid] || sid, chosen: r.chosen||"—", correct, verdict, marks };
+    const marks   = verdict === "correct" ? "+1" : verdict === "wrong" ? "−0.33" : "0";
+    const timeS   = timings[qid] || 0;
+    const ytId    = correct?.youtube_id || "Pe-D7zFe-wg"; // fallback test video
+    return { idx, qid, sid, sec: secLbl, chosen: r.chosen || "—", correct: typeof correct === "object" ? correct.answer : correct, verdict, marks, timeS, ytId };
   });
 }
 
-function renderRows() {
-  const rows = activeFilter === "all" ? allRows : allRows.filter(r => r.verdict === activeFilter);
-  document.getElementById("f-count").textContent = `${rows.length} questions`;
-  document.getElementById("ans-rows").innerHTML = rows.map(r => `
-    <div class="ans-row ${r.verdict}">
-      <span class="a-num">${r.idx}</span>
-      <span class="a-sec">${r.sec}</span>
-      <span class="a-chosen" style="color:${r.verdict==='wrong'?'#c62828':'#1a1a1a'}">${r.chosen}</span>
-      <span class="a-correct">${r.correct}</span>
-      <span class="${r.verdict==='correct'?'v-c':r.verdict==='wrong'?'v-w':'v-s'}">
-        ${r.verdict==='correct'?'✓ Correct':r.verdict==='wrong'?'✗ Wrong':'— Skipped'}
-      </span>
-      <span class="a-marks" style="color:${r.verdict==='correct'?'#2e7d32':r.verdict==='wrong'?'#c62828':'#90a4ae'}">${r.marks}</span>
-    </div>`).join("") ||
-    `<div style="padding:40px;text-align:center;color:#aaa;font-size:14px">No questions</div>`;
+// ── Overview: section grid ────────────────────────────────────────────────────
+function renderSectionGrid(sections, defs) {
+  const grid = document.getElementById("sec-grid");
+  if (!sections || !defs.length) return;
+  document.getElementById("sec-grid-wrap").style.display = "";
+  grid.innerHTML = defs.map((def, i) => {
+    const d   = sections[def.id] || { correct:0, wrong:0, skipped:0, rawScaled:0 };
+    const att = d.correct + d.wrong;
+    const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+    const sc  = (d.rawScaled / 1000).toFixed(2);
+    const col = COLORS[i % COLORS.length];
+    const secTime = Object.entries(timings)
+      .filter(([qid]) => allRows.find(r => r.qid === qid && r.sid === def.id))
+      .reduce((sum, [, t]) => sum + t, 0);
+    const qCount = allRows.filter(r => r.sid === def.id).length;
+    const avgT = qCount ? Math.round(secTime / qCount) : 0;
+    return `
+      <div class="sec-card2" style="border-left-color:${col}">
+        <div class="sc2-head">
+          <div class="sc2-name">${def.label}</div>
+          <div class="sc2-score" style="color:${col}">${sc >= 0 ? "+" : ""}${sc}</div>
+        </div>
+        <div class="sc2-stats">
+          <div class="sc2-stat c"><div class="sc2-stat-v">${d.correct}</div><div class="sc2-stat-l">Correct</div></div>
+          <div class="sc2-stat w"><div class="sc2-stat-v">${d.wrong}</div><div class="sc2-stat-v"></div><div class="sc2-stat-l">Wrong</div></div>
+          <div class="sc2-stat s"><div class="sc2-stat-v">${d.skipped}</div><div class="sc2-stat-l">Skipped</div></div>
+        </div>
+        <div class="sc2-bar-track">
+          <div class="sc2-bar-fill" data-w="${acc}" style="width:0%;background:${col}"></div>
+        </div>
+        <div class="sc2-footer"><span>${att} attempted</span><span>${acc}% accuracy</span></div>
+        ${secTime > 0 ? `<div class="sc2-time"><span>⏱ Time spent</span><span>${fmt(secTime)} · avg ${fmt(avgT)}/q</span></div>` : ""}
+      </div>`;
+  }).join("");
+  setTimeout(() => {
+    grid.querySelectorAll(".sc2-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+  }, 80);
 }
 
-window.setFilter = function(f, btn) {
-  activeFilter = f;
-  document.querySelectorAll(".f-chip").forEach(c => {
-    c.className = "f-chip";
+// ── Overview: time per section bar chart ──────────────────────────────────────
+function renderTimeCard(defs, sections) {
+  if (!defs?.length || !Object.keys(timings).length) return;
+  const secTimes = defs.map((def, i) => {
+    const t = Object.entries(timings)
+      .filter(([qid]) => allRows.find(r => r.qid === qid && r.sid === def.id))
+      .reduce((sum, [, v]) => sum + v, 0);
+    return { label: def.label, t, color: COLORS[i % COLORS.length], id: def.id };
   });
-  btn.classList.add(`fa-${f}`);
-  renderRows();
+  const maxT = Math.max(...secTimes.map(s => s.t), 1);
+  document.getElementById("time-card").style.display = "";
+  document.getElementById("time-section-rows").innerHTML = secTimes.map(s => {
+    const qCount = allRows.filter(r => r.sid === s.id).length;
+    const avg = qCount ? Math.round(s.t / qCount) : 0;
+    const pct = Math.round((s.t / maxT) * 100);
+    return `
+      <div class="tsr">
+        <div class="tsr-name" title="${s.label}">${s.label}</div>
+        <div class="tsr-bar-wrap">
+          <div class="tsr-bar-track">
+            <div class="tsr-bar-fill" data-w="${pct}" style="width:0%;background:${s.color}"></div>
+          </div>
+          <div class="tsr-meta"><span>${qCount} questions</span><span>avg ${fmt(avg)}/q</span></div>
+        </div>
+        <div class="tsr-time">${fmt(s.t)}</div>
+      </div>`;
+  }).join("");
+  setTimeout(() => {
+    document.querySelectorAll(".tsr-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+  }, 80);
+}
+
+// ── Answer sheet: number grid ─────────────────────────────────────────────────
+function renderGrid() {
+  const scroll = document.getElementById("grid-scroll");
+  // Group rows by section
+  const groups = {};
+  const groupOrder = [];
+  for (const r of allRows) {
+    if (!groups[r.sid]) { groups[r.sid] = { label: r.sec || "General", rows: [] }; groupOrder.push(r.sid); }
+    groups[r.sid].rows.push(r);
+  }
+  // If no sections, one flat group
+  const hasSections = groupOrder.length > 1 || (groupOrder.length === 1 && groupOrder[0]);
+
+  scroll.innerHTML = groupOrder.map(sid => {
+    const g = groups[sid];
+    const visible = g.rows.filter(r => gridFilter === "all" || r.verdict === gridFilter);
+    const c = g.rows.filter(r => r.verdict === "correct").length;
+    const w = g.rows.filter(r => r.verdict === "wrong").length;
+    const s = g.rows.filter(r => r.verdict === "skipped").length;
+    return `
+      <div class="sec-group" data-sid="${sid}">
+        ${hasSections ? `
+        <div class="sec-group-header">
+          <span>${g.label}</span>
+          <span class="sec-group-counts">
+            <span style="color:#2e7d32">✓${c}</span>
+            <span style="color:#c62828">✗${w}</span>
+            <span style="color:#f57f17">—${s}</span>
+          </span>
+        </div>` : ""}
+        <div class="q-num-grid">
+          ${g.rows.map(r => {
+            const hidden = gridFilter !== "all" && r.verdict !== gridFilter ? " hidden" : "";
+            const timeLabel = r.timeS > 0 ? `<span class="qnum-time">${r.timeS < 60 ? r.timeS + "s" : Math.round(r.timeS/60) + "m"}</span>` : "";
+            return `<div class="qnum ${r.verdict}${hidden}${activeQIdx === r.idx - 1 ? " active" : ""}"
+              onclick="openExpl(${r.idx - 1})" title="Q${r.idx} · ${r.verdict} · ${fmt(r.timeS)}">${r.idx}${timeLabel}</div>`;
+          }).join("")}
+        </div>
+      </div>`;
+  }).join("");
+
+  const visible = allRows.filter(r => gridFilter === "all" || r.verdict === gridFilter);
+  document.getElementById("grid-count").textContent = `${visible.length} / ${allRows.length}`;
+}
+
+// ── Explanation panel ─────────────────────────────────────────────────────────
+window.openExpl = function(idx) {
+  activeQIdx = idx;
+  const r = allRows[idx];
+  if (!r) return;
+
+  // Re-render grid to show active
+  renderGrid();
+
+  document.getElementById("expl-empty").style.display   = "none";
+  document.getElementById("expl-content").style.display = "flex";
+
+  const qnEl = document.getElementById("ex-qnum");
+  qnEl.textContent  = r.idx;
+  qnEl.className    = `expl-qnum ${r.verdict}`;
+
+  document.getElementById("ex-title").textContent = `Question ${r.idx}`;
+
+  const vIcon  = r.verdict === "correct" ? "✅ Correct" : r.verdict === "wrong" ? "❌ Wrong" : "⏭ Skipped";
+  document.getElementById("ex-sub").innerHTML = `
+    <span>${vIcon}</span>
+    ${r.sec ? `<span>📚 ${r.sec}</span>` : ""}
+    ${r.timeS > 0 ? `<span>⏱ ${fmt(r.timeS)}</span>` : ""}
+  `;
+
+  const yourCls  = r.verdict === "wrong" ? "your-wrong" : r.verdict === "skipped" ? "your-skip" : "your-correct";
+  const marksCls = r.verdict === "correct" ? "marks-pos" : r.verdict === "wrong" ? "marks-neg" : "marks-zero";
+  document.getElementById("ex-ans-row").innerHTML = `
+    <div class="ans-chip ${yourCls}">
+      <div class="ans-chip-lbl">Your Answer</div>
+      <div class="ans-chip-val">${r.chosen}</div>
+    </div>
+    <div class="ans-chip correct-ans">
+      <div class="ans-chip-lbl">Correct Answer</div>
+      <div class="ans-chip-val">${r.correct}</div>
+    </div>
+    <div class="ans-chip marks-chip ${marksCls}">
+      <div class="ans-chip-lbl">Marks</div>
+      <div class="ans-chip-val">${r.marks}</div>
+    </div>
+    ${r.timeS > 0 ? `<div class="ans-chip time-chip"><div class="ans-chip-lbl">Time Spent</div><div class="ans-chip-val">${fmt(r.timeS)}</div></div>` : ""}
+  `;
+
+  // YouTube embed — rebuild iframe fresh every time to avoid stale DOM
+  const videoWrap = document.getElementById("ex-video-wrap");
+  if (!isSubscribed) {
+    videoWrap.innerHTML = `
+      <div class="sub-gate" style="display:flex;position:absolute;inset:0;background:rgba(13,27,75,0.88);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;z-index:10">
+        <div style="font-size:48px">🔒</div>
+        <div style="font-size:20px;font-weight:900;color:#fff;text-align:center">Subscribe to Unlock Explanations</div>
+        <button class="sub-gate-btn" onclick="goSubscribe()">Subscribe Now →</button>
+      </div>`;
+  } else if (r.ytId) {
+    videoWrap.innerHTML = `<iframe style="position:absolute;inset:0;width:100%;height:100%;border:none"
+      src="https://www.youtube-nocookie.com/embed/${r.ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&playsinline=1"
+      allowfullscreen
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+    </iframe>`;
+  } else {
+    videoWrap.innerHTML = `
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#aaa;height:100%">
+        <div style="font-size:40px">🎬</div>
+        <div style="font-size:14px;font-weight:700">No explanation video</div>
+      </div>`;
+  }
+};
+
+window.closeExpl = function() {
+  activeQIdx = -1;
+  const vw = document.getElementById("ex-video-wrap");
+  if (vw) vw.innerHTML = ""; // stops video playback
+  document.getElementById("expl-empty").style.display   = "flex";
+  document.getElementById("expl-content").style.display = "none";
+  renderGrid();
+};
+
+// ── Section rows (tab 2) ──────────────────────────────────────────────────────
+function renderSectionRows(sections, defs) {
+  const wrap = document.getElementById("sec-rows-wrap");
+  if (!sections || !defs.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-msg">No section data</div></div>`;
+    return;
+  }
+  wrap.innerHTML = defs.map((def, i) => {
+    const d   = sections[def.id] || { correct:0, wrong:0, skipped:0, rawScaled:0 };
+    const att = d.correct + d.wrong;
+    const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+    const sc  = (d.rawScaled / 1000).toFixed(2);
+    const col = COLORS[i % COLORS.length];
+    const secTime = Object.entries(timings)
+      .filter(([qid]) => allRows.find(r => r.qid === qid && r.sid === def.id))
+      .reduce((sum, [, t]) => sum + t, 0);
+    const accCls = acc >= 70 ? "background:#e8f5e9;color:#2e7d32" : acc >= 40 ? "background:#fff8e1;color:#f57f17" : "background:#ffebee;color:#c62828";
+    return `
+      <div class="sec-row">
+        <div class="sr-rank" style="background:${col}20;color:${col}">${i + 1}</div>
+        <div class="sr-name" title="${def.label}">${def.label}</div>
+        <div class="sr-bar-area">
+          <div class="sr-bar-labels"><span>Accuracy</span><span>${acc}%</span></div>
+          <div class="sr-bar-track">
+            <div class="sr-bar-fill" data-w="${acc}" style="width:0%;background:${col}"></div>
+          </div>
+        </div>
+        <div class="sr-stats">
+          <div class="sr-stat c"><div class="sr-stat-v">${d.correct}</div><div class="sr-stat-l">✓</div></div>
+          <div class="sr-stat w"><div class="sr-stat-v">${d.wrong}</div><div class="sr-stat-l">✗</div></div>
+          <div class="sr-stat s"><div class="sr-stat-v">${d.skipped}</div><div class="sr-stat-l">—</div></div>
+        </div>
+        <div class="sr-acc-badge" style="${accCls}">${acc}%</div>
+        ${secTime > 0 ? `<div class="sr-time">⏱ ${fmt(secTime)}</div>` : ""}
+        <div class="sr-score">${sc >= 0 ? "+" : ""}${sc}</div>
+      </div>`;
+  }).join("");
+  setTimeout(() => {
+    wrap.querySelectorAll(".sr-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+  }, 80);
+}
+
+// ── Globals ───────────────────────────────────────────────────────────────────
+window.switchTab = function(id, btn) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById(`tab-${id}`).classList.add("active");
+  if (id === "sections") {
+    setTimeout(() => {
+      document.querySelectorAll(".sr-bar-fill").forEach(b => { b.style.width = b.dataset.w + "%"; });
+    }, 50);
+  }
+};
+
+window.setGridFilter = function(f, btn) {
+  gridFilter = f;
+  document.querySelectorAll(".filter-pills .pill").forEach(p => p.className = "pill");
+  btn.classList.add(`p-${f}`);
+  renderGrid();
+};
+
+window.goSubscribe = function() {
+  window.location.href = HOME_URL + "?subscribe=1";
 };
 
 window.goBack     = () => { window.location.href = BACK_URL; };
 window.goAnalysis = () => {
   const p = new URLSearchParams({
-    session_id: SID, label: LABEL,
-    api_prefix: API_PREFIX, back_url: location.href,
-    home_url:   BACK_URL,
+    session_id: SID, label: LABEL, api_prefix: API_PFX,
+    back_url: location.href, home_url: HOME_URL,
     correct: CORRECT, wrong: WRONG, skipped: SKIPPED,
-    total: TOTAL, pct: PCT, score: SCORE,
-    elapsed_s: _p.get("elapsed_s")||"0",
+    total: TOTAL, pct: PCT, score: SCORE, elapsed_s: ELAPSED_S,
   });
   window.location.href = `analysis.html?${p}`;
 };
 
 init();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" });
 </script>
 </body>
 </html>

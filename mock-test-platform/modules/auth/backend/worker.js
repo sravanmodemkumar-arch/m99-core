@@ -10,7 +10,7 @@
  */
 import { requestOtp, verifyOtp } from "./otp.js";
 import { signJwt, verifyJwt } from "./jwt.js";
-import { filterModules } from "./access.js";
+import { filterModules, ALL_MODULE_IDS } from "./access.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -60,7 +60,7 @@ async function _otpVerify(request, env) {
   let tenantRaw = await env.KV.get(`tenant:${tenantId}`);
   // Local dev only: auto-bootstrap default tenant so dev works without seeding
   if (!tenantRaw && env.DEV_OTP_BYPASS) {
-    const defaultTenant = { tier: "free", modules: ["rrb-group-d"] };
+    const defaultTenant = { tier: "free", modules: ALL_MODULE_IDS };
     await env.KV.put(`tenant:${tenantId}`, JSON.stringify(defaultTenant));
     tenantRaw = JSON.stringify(defaultTenant);
   }

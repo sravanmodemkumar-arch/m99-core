@@ -5,7 +5,7 @@ import {
   scoreExam,
   formatScore,
   percentage,
-} from "../../modules/rrb-group-d/fe/shared/scoring.js";
+} from "../../modules/exam-engine/fe/shared/scoring.js";
 
 // ── scoreQuestion ─────────────────────────────────────────────────────────────
 

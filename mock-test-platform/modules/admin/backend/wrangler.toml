@@ -1,0 +1,17 @@
+name = "mtp-admin"
+main = "backend/worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_ADMIN_KV_ID"
+preview_id = "REPLACE_WITH_ADMIN_KV_PREVIEW_ID"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "mtp-exam-data"
+preview_bucket_name = "mtp-exam-data-preview"
+
+[vars]
+# JWT_SECRET must match modules/auth/backend/.dev.vars
+# In production set via: wrangler secret put JWT_SECRET

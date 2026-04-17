@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
-  onload="window.__katexReady=true"></script>
-<script src="/modules/rrb-group-d/fe/desktop/desktop-adapter.js"></script>
+  onload="window.__katexReady=true;window.__katexPending&&window.__katexPending()"></script>
+<script src="/modules/exam-engine/fe/desktop/desktop-adapter.js" onerror="void 0"></script>
 </head>
 <body>
 
@@ -146,13 +146,15 @@ function _unisexSvg() {
   </svg>`;
 }
 
-let state           = null;
-let bundle          = null;
-let sessionId       = null;
-let timerHandle     = null;
-let syncHandle      = null;
-let activeSectionId = null;
-let sectionElapsed  = {};
+let state             = null;
+let bundle            = null;
+let sessionId         = null;
+let timerHandle       = null;
+let syncHandle        = null;
+let activeSectionId   = null;
+let sectionElapsed    = {};
+let qTimings          = {};   // { [qid]: seconds spent }
+let questionEnteredAt = null; // Date.now() when current question was displayed
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function init() {
@@ -207,6 +209,7 @@ async function init() {
 
   activeSectionId = bundle.sections[0]?.id;
   state = goTo(state, state.order[0]);
+  questionEnteredAt = Date.now();
 
   document.getElementById("loading-wrap").style.display = "none";
   document.getElementById("exam-shell").style.display   = "";
@@ -327,25 +330,42 @@ function _scrollToCurrent() {
   }
 }
 
+const KATEX_OPTS = {
+  delimiters: [
+    { left: "\\[", right: "\\]", display: true  },
+    { left: "\\(", right: "\\)", display: false },
+    { left: "$$",  right: "$$",  display: true  },
+    { left: "$",   right: "$",   display: false },
+  ],
+  throwOnError: false,
+};
+
 function _renderMath() {
-  if (!window.__katexReady || !window.renderMathInElement) return;
   const el = document.getElementById("question-area");
   if (!el) return;
-  try {
-    renderMathInElement(el, {
-      delimiters: [
-        { left: "\\[", right: "\\]", display: true  },
-        { left: "\\(", right: "\\)", display: false },
-        { left: "$$",  right: "$$",  display: true  },
-        { left: "$",   right: "$",   display: false },
-      ],
-      throwOnError: false,
-    });
-  } catch(e) {}
+  if (!window.__katexReady || !window.renderMathInElement) {
+    // KaTeX not loaded yet — queue it; onload will fire this
+    window.__katexPending = () => { window.__katexPending = null; _doRender(el); };
+    return;
+  }
+  _doRender(el);
+}
+
+function _doRender(el) {
+  try { renderMathInElement(el, KATEX_OPTS); } catch(e) {}
 }
 
 // ── Global actions ─────────────────────────────────────────────────────────
+function _recordQTime() {
+  if (state?.current && questionEnteredAt) {
+    const spent = Math.round((Date.now() - questionEnteredAt) / 1000);
+    qTimings[state.current] = (qTimings[state.current] || 0) + spent;
+  }
+  questionEnteredAt = Date.now();
+}
+
 window.__goTo = (qId) => {
+  _recordQTime();
   state = goTo(state, qId);
   const q = state.questions[qId];
   if (q?.section !== activeSectionId) {
@@ -444,10 +464,13 @@ window.confirmSubmit = async function() {
     back_url:   BACK_URL,
     home_url:   BACK_URL,
   });
+  _recordQTime(); // flush time on last question
   const section_defs = bundle.sections.map(s => ({ id: s.id, label: s.label }));
   sessionStorage.setItem(`result_${sessionId}`, JSON.stringify({
     answer_key: data.answer_key, responses,
     sections: result.sections, section_defs,
+    timings:  qTimings,
+    questions: bundle.questions.map(q => ({ id: q.id, section: q.section, topic: q.topic || null })),
     elapsed_s: state.elapsed, ...result.total,
   }));
   window.location.href = `${RESULT_URL}?${params}`;
@@ -469,6 +492,9 @@ async function pushSync() {
 }
 
 init();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" });
 </script>
 </body>
 </html>

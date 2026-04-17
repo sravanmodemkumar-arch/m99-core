@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Subjects</title>
+<link rel="stylesheet" href="../shared/admin.css">
+</head>
+<body>
+<div id="subject-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><span id="s-modal-title">New Subject</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="s-id-edit">
+      <div class="form-group"><label class="form-label">ID (slug)</label><input id="s-id" class="form-control" placeholder="mathematics"></div>
+      <div class="form-group"><label class="form-label">Label *</label><input id="s-label" class="form-control" placeholder="Mathematics"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSubject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="topic-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">Add Topic<button class="modal-close" onclick="closeTopicModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="t-parent-sid">
+      <div class="form-group"><label class="form-label">ID (slug)</label><input id="t-id" class="form-control" placeholder="algebra"></div>
+      <div class="form-group"><label class="form-label">Label *</label><input id="t-label" class="form-control" placeholder="Algebra"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTopicModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTopic()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
+
+await initAdminShell({ title: "Subjects & Topics" });
+document.getElementById("topbar-actions").innerHTML = `<button class="btn btn-primary" onclick="openCreate()">+ New Subject</button>`;
+
+const pageBody = document.getElementById("page-body");
+pageBody.innerHTML = `<div id="subjects-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px"></div>`;
+
+async function loadSubjects() {
+  const r = await adminApi("/subjects");
+  const grid = document.getElementById("subjects-grid");
+  const subjects = r.ok ? (r.data.subjects || []) : [];
+  if (!subjects.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📚</div><div class="empty-title">No subjects yet</div></div>`;
+    return;
+  }
+  grid.innerHTML = subjects.map(s => `
+    <div class="card">
+      <div class="card-header">
+        ${s.label}
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-xs" onclick="editSubject('${s.id}','${s.label.replace(/'/g,"\\'")}')">Edit</button>
+          <button class="btn btn-secondary btn-xs" onclick="openTopicModal('${s.id}')">+ Topic</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteSubject('${s.id}','${s.label.replace(/'/g,"\\'")}')">Del</button>
+        </div>
+      </div>
+      <div class="card-body" style="display:flex;flex-wrap:wrap;gap:6px">
+        ${(s.topics || []).map(t => `
+          <span class="badge badge-blue" style="font-size:12px;padding:3px 10px">${t.label}</span>
+        `).join("") || `<span style="font-size:12px;color:#aaa">No topics</span>`}
+      </div>
+    </div>`).join("");
+}
+await loadSubjects();
+
+window.openCreate = function() {
+  document.getElementById("s-modal-title").textContent = "New Subject";
+  document.getElementById("s-id-edit").value = "";
+  document.getElementById("s-id").value = "";
+  document.getElementById("s-label").value = "";
+  document.getElementById("subject-modal").classList.remove("hidden");
+};
+window.editSubject = function(id, label) {
+  document.getElementById("s-modal-title").textContent = "Edit Subject";
+  document.getElementById("s-id-edit").value = id;
+  document.getElementById("s-id").value = id;
+  document.getElementById("s-label").value = label;
+  document.getElementById("subject-modal").classList.remove("hidden");
+};
+window.closeModal = function() { document.getElementById("subject-modal").classList.add("hidden"); };
+
+window.saveSubject = async function() {
+  const editId = document.getElementById("s-id-edit").value;
+  const label  = document.getElementById("s-label").value.trim();
+  const id     = document.getElementById("s-id").value.trim() || label.toLowerCase().replace(/\s+/g,"_");
+  if (!label) { toast("Label required","error"); return; }
+  const body = { id, label };
+  const r = editId
+    ? await adminApi(`/subjects/${editId}`, { method: "PUT", body })
+    : await adminApi("/subjects", { method: "POST", body });
+  if (r.ok) { toast(editId?"Updated":"Created","success"); closeModal(); loadSubjects(); }
+  else toast(r.data.error||"Failed","error");
+};
+window.deleteSubject = async function(id, label) {
+  if (!confirm(`Delete subject "${label}"?`)) return;
+  const r = await adminApi(`/subjects/${id}`, { method: "DELETE" });
+  if (r.ok) { toast("Deleted","success"); loadSubjects(); }
+  else toast(r.data.error||"Failed","error");
+};
+
+window.openTopicModal = function(sid) {
+  document.getElementById("t-parent-sid").value = sid;
+  document.getElementById("t-id").value = "";
+  document.getElementById("t-label").value = "";
+  document.getElementById("topic-modal").classList.remove("hidden");
+};
+window.closeTopicModal = function() { document.getElementById("topic-modal").classList.add("hidden"); };
+window.saveTopic = async function() {
+  const sid   = document.getElementById("t-parent-sid").value;
+  const label = document.getElementById("t-label").value.trim();
+  const id    = document.getElementById("t-id").value.trim() || label.toLowerCase().replace(/\s+/g,"_");
+  if (!label) { toast("Label required","error"); return; }
+  const r = await adminApi(`/subjects/${sid}/topics`, { method: "POST", body: { id, label } });
+  if (r.ok) { toast("Topic added","success"); closeTopicModal(); loadSubjects(); }
+  else toast(r.data.error||"Failed","error");
+};
+</script>
+</body>
+</html>
