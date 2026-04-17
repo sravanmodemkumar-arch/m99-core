@@ -1,5 +1,5 @@
 /** Auth app bootstrap — loads tenant config, applies theme, guards routes */
-import { applyTheme, getSavedMode, toggleMode, THEMES, DEFAULT_THEME } from "../shared/themes.js";
+import { applyTheme, getSavedMode, toggleMode, THEMES, DEFAULT_THEME, registerCustomTheme } from "../shared/themes.js";
 export { otpAutoAdvance, getOtpValue } from "../shared/otp-dom.js";
 export { detectIdentifier } from "../shared/validators.js";
 export { renderOtpInput, renderPasswordField, renderReauthGate, renderProgressSteps, renderModuleCard, renderFaqItem, renderDeviceItem, renderEmptyState, startResendTimer } from "../shared/components.js";
@@ -9,8 +9,9 @@ const API = "";
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 export async function boot() {
   const cfg = await loadConfig();
+  if (cfg.custom_theme) registerCustomTheme(cfg.custom_theme);
   const mode = _resolveMode(cfg);
-  applyTheme(cfg.theme || DEFAULT_THEME, mode);
+  applyTheme(cfg.theme || cfg.custom_theme?.name || DEFAULT_THEME, mode);
   _injectModeToggle(cfg, mode);
   return cfg;
 }

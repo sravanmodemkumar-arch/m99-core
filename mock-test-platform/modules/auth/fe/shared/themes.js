@@ -61,3 +61,48 @@ export function toggleMode() {
   localStorage.setItem("theme_mode", next);
   return next;
 }
+
+/**
+ * Register a custom tenant theme at runtime.
+ * Called by boot() when cfg.custom_theme is present in KV config.
+ *
+ * cfg.custom_theme shape:
+ * {
+ *   name: "my-brand",          // slug — used as theme key
+ *   light: { primary, primaryDark, bg, surface, surface2, text, textMuted, border },
+ *   dark:  { primary, primaryDark, bg, surface, surface2, text, textMuted, border }
+ * }
+ */
+export function registerCustomTheme(customTheme) {
+  if (!customTheme?.name || !customTheme?.light) return;
+  THEMES[customTheme.name] = {
+    light: customTheme.light,
+    dark: customTheme.dark || customTheme.light,
+  };
+}
+
+/**
+ * Register a custom landing layout at runtime.
+ * Imported and called by landing.html when cfg.custom_layout is present.
+ *
+ * cfg.custom_layout shape:
+ * {
+ *   name: "my-layout",         // slug — used as layout key
+ *   template: "<html string with {{title}}, {{subtitle}}, {{ctaBtns}} placeholders>"
+ * }
+ *
+ * Simple token replacement — no eval, no script injection.
+ */
+export function resolveCustomLayout(customLayout, cfg) {
+  if (!customLayout?.template) return null;
+  const tokens = {
+    "{{title}}": cfg.title || "",
+    "{{subtitle}}": cfg.subtitle || "",
+    "{{login_label}}": cfg.login_label || "Sign In",
+    "{{register_label}}": cfg.register_label || "Register Free",
+    "{{module_name}}": cfg.module_name || "",
+    "{{announcement}}": cfg.announcement || "",
+    "{{tagline}}": cfg.tagline || "",
+  };
+  return Object.entries(tokens).reduce((tpl, [k, v]) => tpl.replaceAll(k, v), customLayout.template);
+}
