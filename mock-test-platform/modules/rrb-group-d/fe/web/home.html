@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RRB Group D — Home</title>
-<link rel="stylesheet" href="../../auth/fe/shared/base.css">
-<link rel="stylesheet" href="../fe/shared/exam.css">
+<link rel="stylesheet" href="/modules/auth/fe/shared/base.css">
+<link rel="stylesheet" href="/modules/rrb-group-d/fe/shared/exam.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css">
 <style>
   .page-wrap { max-width: 860px; margin: 0 auto; padding: 1.25rem; }
@@ -41,7 +41,7 @@
   .pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
   .section-title { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.75rem; }
 </style>
-<script src="../desktop/desktop-adapter.js"></script>
+<script src="/modules/rrb-group-d/fe/desktop/desktop-adapter.js"></script>
 </head>
 <body>
 <div style="background:var(--bg);min-height:100vh">
@@ -53,7 +53,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:0.75rem">
       <button class="mode-toggle" id="mode-toggle" title="Toggle dark/light">🌙</button>
-      <a href="../../auth/fe/web/home.html" class="btn btn-outline btn-sm">Home</a>
+      <a href="/modules/rrb-group-d/fe/web/home.html" class="btn btn-outline btn-sm">Home</a>
     </div>
   </div>
 
@@ -115,7 +115,7 @@
 </div>
 
 <script type="module">
-import { boot, requireAuth, api } from "../../auth/fe/web/app.js";
+import { boot, requireAuth, api } from "/modules/auth/fe/web/app.js";
 
 const EXAMS_PER_PAGE = 10;
 let allExams = [];
