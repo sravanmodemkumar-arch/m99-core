@@ -3,8 +3,10 @@ const path   = require("path");
 const fs     = require("fs");
 const server = require("./server");
 
-const CONFIG_PATH = path.join(__dirname, "app-config.json");
-const config      = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+// Shared config — edit modules/shared/app-config.json to change URLs
+const config = JSON.parse(fs.readFileSync(
+  path.join(__dirname, "../../../shared/app-config.json"), "utf8"
+));
 
 const WEB_DIR    = path.join(__dirname, "../web");
 const SHARED_DIR = path.join(__dirname, "../shared");

@@ -1,10 +1,10 @@
 const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, session } = require("electron");
 const path = require("path");
+const fs   = require("fs");
 
-// ── Config ─────────────────────────────────────────────────────────────────
-// In prod, AUTH_BASE is the CDN URL served by CF Worker.
-// In dev, point to local dev server.
-const AUTH_BASE = process.env.AUTH_BASE || "https://app.mocktest.in/auth/web";
+// Shared config — edit modules/shared/app-config.json to change URLs
+const _cfg      = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../shared/app-config.json"), "utf8"));
+const AUTH_BASE = _cfg.auth_base;
 
 let mainWindow = null;
 let tray = null;

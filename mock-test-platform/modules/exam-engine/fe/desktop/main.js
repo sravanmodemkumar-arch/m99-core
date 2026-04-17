@@ -13,6 +13,11 @@ const server = require("./server.js");
 
 const isDev  = process.env.NODE_ENV === "development";
 
+// ── Shared config — edit modules/shared/app-config.json to change URLs ────────
+const CONFIG = JSON.parse(fs.readFileSync(
+  path.join(__dirname, "../../../shared/app-config.json"), "utf8"
+));
+
 // ── Asset bootstrap — download HTMX + Tailwind once ──────────────────────────
 
 const ASSETS_DIR = path.join(app.getPath("userData"), "assets");
@@ -80,7 +85,7 @@ function createWindow(port) {
 app.whenReady().then(async () => {
   await ensureAssets();
 
-  const port = await server.start(ASSETS_DIR);
+  const port = await server.start(ASSETS_DIR, CONFIG);
   console.log(`[desktop] server on :${port}`);
 
   createWindow(port);

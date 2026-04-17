@@ -10,8 +10,8 @@ const fs    = require("fs");
 const path  = require("path");
 const { syncNow } = require("./sync.js");
 
-const API_BASE      = process.env.API_BASE || "https://api.yourplatform.com";
-const CDN_MANIFEST  = process.env.CDN_MANIFEST || "";
+let   API_BASE      = "";
+let   CDN_MANIFEST  = "";
 let   ASSETS_DIR    = "";
 let   CACHE_DIR     = "";
 
@@ -559,8 +559,10 @@ async function handle(req, res) {
 
 // ── Start server ──────────────────────────────────────────────────────────────
 
-function start(assetsDir) {
-  ASSETS_DIR = assetsDir;
+function start(assetsDir, config = {}) {
+  ASSETS_DIR    = assetsDir;
+  API_BASE      = config.exam_base    || "http://localhost:8788";
+  CDN_MANIFEST  = config.cdn_manifest || "";
   CACHE_DIR  = path.join(require("electron").app.getPath("userData"), "cdn-cache");
   if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
 
