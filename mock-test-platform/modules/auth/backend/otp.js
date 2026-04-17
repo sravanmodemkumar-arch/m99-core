@@ -13,6 +13,9 @@ export async function requestOtp(phone, env) {
 }
 
 export async function verifyOtp(phone, otp, env) {
+  // Dev bypass — set DEV_OTP_BYPASS=123456 in .dev.vars to skip KV check
+  if (env.DEV_OTP_BYPASS && otp === env.DEV_OTP_BYPASS) return { valid: true };
+
   const stored = await env.KV.get(`otp:${phone}`);
   if (!stored || stored !== otp) return { valid: false };
   await env.KV.delete(`otp:${phone}`);
