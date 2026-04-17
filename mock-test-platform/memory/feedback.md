@@ -20,10 +20,8 @@
 3. `feature/platform-gateway/routing` → commit → merge platform to dev ✅
 4. `feature/auth/backend` → commit ✅
 5. `feature/auth/web` → login.html + home.html ✅
-6. `feature/auth/screens` → 18 screens web (IN PROGRESS)
-   Built: landing, splash, welcome, login, register-1/2/3, themes.js, base.css, app.js, home
-   Remaining: social-complete, first-login, forgot-password, profile, edit-profile, security, delete-account, settings, subscriptions, help
-7. `feature/auth/mobile` → 18 screens React Native → merge auth to dev
+6. `feature/auth/screens` → 18 screens web ✅
+7. `feature/auth/mobile` → 18 screens React Native ✅ → merged to build/v1
 8. `feature/rrb-group-d/shared` (scoring + qstate + UI components) → commit
 9. `feature/rrb-group-d/backend` → commit
 10. `feature/rrb-group-d/web` (responsive: mobile/tablet/desktop) → commit
