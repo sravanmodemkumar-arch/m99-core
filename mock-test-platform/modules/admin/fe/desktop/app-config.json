@@ -1,0 +1,5 @@
+{
+  "api_base": "https://api.yourplatform.com",
+  "admin_start_page": "dashboard.html",
+  "window_title": "Admin Panel"
+}

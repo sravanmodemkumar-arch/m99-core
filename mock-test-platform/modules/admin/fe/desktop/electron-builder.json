@@ -1,0 +1,18 @@
+{
+  "appId": "com.adminpanel.desktop",
+  "productName": "Admin Panel",
+  "directories": { "output": "dist" },
+  "files": [
+    "main.js",
+    "server.js",
+    "preload.js",
+    "app-config.json",
+    "package.json",
+    "../web/**/*",
+    "../shared/**/*"
+  ],
+  "win":   { "target": "nsis",     "icon": "assets/icon.ico"  },
+  "mac":   { "target": "dmg",      "icon": "assets/icon.icns" },
+  "linux": { "target": "AppImage", "icon": "assets/icon.png"  },
+  "nsis":  { "oneClick": true, "perMachine": false }
+}

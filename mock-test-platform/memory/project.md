@@ -146,7 +146,10 @@ TypeScript ONLY at shared boundaries — never in leaf nodes:
 - Seed scripts: seed-exam-data.js (40 Qs, 2 exams, KV+R2), gen-cdn-manifest.js (post-publish manifest)
 - Tests: exam-engine integration tests updated; rrb-group-d tests removed (module retired)
 - app-shell module: placeholder only (not needed for v1 launch)
-- Next: admin desktop app + admin mobile app (new branch: build/admin-clients)
+- Branch `build/admin-clients`: admin desktop + admin mobile COMPLETE
+- admin desktop: main.js (Electron + app menu + tray), server.js (static file server for admin HTML), preload.js, package.json, electron-builder.json, app-config.json
+- admin mobile: LoginScreen (OTP + admin role verify), DashboardScreen, ExamsScreen (publish action), QuestionsScreen (search+paginate), UsersScreen (set role modal, super_admin only), SubscriptionsScreen (grant/revoke), ReportsScreen (overview + per-exam analytics + section bars)
+- admin mobile navigation: bottom tabs (Dashboard/Exams/Questions/Users/More) + stack for Login/Reports
 
 ## Adding a New Module
 1. Copy `modules/rrb-group-d/` → `modules/{id}/`
