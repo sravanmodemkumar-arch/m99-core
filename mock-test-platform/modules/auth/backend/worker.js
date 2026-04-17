@@ -45,15 +45,25 @@ async function _otpRequest(request, env) {
 }
 
 async function _otpVerify(request, env) {
-  const { phone, otp } = await request.json();
+  const body = await request.json();
+  const { phone, otp } = body;
   if (!phone || !otp) return _json({ error: "missing fields" }, 400);
 
   const { valid } = await verifyOtp(phone, otp, env);
   if (!valid) return _json({ error: "invalid or expired OTP" }, 401);
 
-  // Resolve tenant from gateway-injected header
-  const tenantId = request.headers.get("X-Tenant-Id");
-  const tenantRaw = tenantId ? await env.KV.get(`tenant:${tenantId}`) : null;
+  // Production: gateway injects X-Tenant-Id header
+  // Local dev: fall back to tenantId in request body
+  const tenantId = request.headers.get("X-Tenant-Id") || body.tenantId;
+  if (!tenantId) return _json({ error: "tenant not found" }, 404);
+
+  let tenantRaw = await env.KV.get(`tenant:${tenantId}`);
+  // Local dev only: auto-bootstrap default tenant so dev works without seeding
+  if (!tenantRaw && env.DEV_OTP_BYPASS) {
+    const defaultTenant = { tier: "free", modules: ["rrb-group-d"] };
+    await env.KV.put(`tenant:${tenantId}`, JSON.stringify(defaultTenant));
+    tenantRaw = JSON.stringify(defaultTenant);
+  }
   if (!tenantRaw) return _json({ error: "tenant not found" }, 404);
   const tenant = JSON.parse(tenantRaw);
 

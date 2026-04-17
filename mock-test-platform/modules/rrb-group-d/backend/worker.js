@@ -310,20 +310,26 @@ async function _verifyJWT(request, env) {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   if (!token) { const e = new Error("No token"); e.status = 401; throw e; }
 
-  // JWT claims are stored in KV as `jwt:{token_hash}` by auth worker on login
-  const hash = await _sha256Hex(token);
-  const raw  = await env.KV.get(`jwt:${hash}`);
-  if (!raw) { const e = new Error("Invalid token"); e.status = 401; throw e; }
-  const claims = JSON.parse(raw);
-  if (claims.exp < Math.floor(Date.now() / 1000)) {
-    const e = new Error("Token expired"); e.status = 401; throw e;
-  }
+  const claims = await _verifyJwtSignature(token, env.JWT_SECRET);
+  if (!claims) { const e = new Error("Invalid token"); e.status = 401; throw e; }
   return { uid: claims.uid, tenantId: claims.tenant_id };
 }
 
-async function _sha256Hex(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+async function _verifyJwtSignature(token, secret) {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [header, body, sig] = parts;
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const expected = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${header}.${body}`));
+  const expectedB64 = btoa(String.fromCharCode(...new Uint8Array(expected)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  if (sig !== expectedB64) return null;
+  const payload = JSON.parse(atob(body.replace(/-/g, "+").replace(/_/g, "/")));
+  if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+  return payload;
 }
 
 async function _signedBundleUrl(bundleKey, env) {

@@ -1,0 +1,20 @@
+{
+  "name": "mock-test-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:auth":    "wrangler dev --config modules/auth/wrangler.toml --local --port 8787 --inspector-port 9229",
+    "dev:rrb":     "wrangler dev --config modules/rrb-group-d/wrangler.toml --local --port 8788 --inspector-port 9230",
+    "dev":         "concurrently -n auth,rrb -c cyan,magenta \"npm run dev:auth\" \"npm run dev:rrb\"",
+    "seed:dev":    "node scripts/seed-admin.js --env dev",
+    "seed:r2":     "node scripts/seed-r2-local.js",
+    "test":        "cd tests && npx vitest run",
+    "test:unit":   "cd tests && npx vitest run --config vitest.config.unit.ts",
+    "test:int":    "cd tests && npx vitest run --config vitest.config.integration.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wrangler": "^3.96.0"
+  }
+}
