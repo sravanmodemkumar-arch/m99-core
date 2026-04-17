@@ -56,7 +56,12 @@ mock-test-platform/
 │       ├── template.yaml
 │       └── requirements.txt
 └── modules/
-    ├── auth/               ← OTP, JWT, LoginScreen, HomeScreen
+    ├── auth/               ← 25 screens, dynamic RBAC, theme-aware
+    │   ├── backend/        ← worker.js, otp.js, jwt.js, access.js, config.js, session.js, device.js
+    │   └── fe/
+    │       ├── web/        ← 25 screens (responsive: mobile/tablet/desktop)
+    │       ├── mobile/     ← 25 screens (phone + tablet, React Native)
+    │       └── shared/     ← themes.js (25 themes × 2 modes), layouts/ (25 templates)
     ├── app-shell/          ← composition root ONLY
     └── rrb-group-d/        ← exam module template
         ├── backend/        ← worker.js, config.js, marking.js, tsf.js, tenant.js, theme.js
@@ -75,12 +80,21 @@ mock-test-platform/
 | Contract | Value |
 |---|---|
 | TSF JSON schema | session_id, tenant_id, uid, exam_id, started_at, duration_ms, bundle_key, answers, states, current_qid, submitted, submitted_at |
-| KV keys | `slug:` `domain:` `tenant:` `flag:` `tsf:` `idem:` `bundle:` |
+| KV keys | `slug:` `domain:` `tenant:` `flag:` `tsf:` `idem:` `bundle:` `auth_config:` `landing:` `otp:` `user:` `session:` `lockout:` `device:` |
 | Module API routes | `/config` `/session` `/start` `/answer` `/flag` `/submit` `/result` |
 | Batch result format | `{test_id, module_id, score, correct, wrong, unattempted, answers, submitted_at}` |
 | QID format | `SUBJ-topic-subtopic-type-difficulty-cat-000001` (7 parts) |
 | 5 question states | not_visited, not_answered, answered, marked_review, answered_marked |
 | Schema naming | `tenant_{slug}` |
+
+## Theme + Landing System
+- Theme = tenant-level (all modules share one brand)
+- Layout + Content = module-level (per exam)
+- 25 themes × 25 layouts × 2 modes = 1,250 combinations
+- KV: `tenant:{id}` holds theme config
+- KV: `landing:{tenantId}:{moduleId}` holds layout + content
+- Admin publishes → KV write → live instantly
+- Preview Player shows all 25 auth screens with selected config
 
 ## Adding a New Module
 1. Copy `modules/rrb-group-d/` → `modules/{id}/`
