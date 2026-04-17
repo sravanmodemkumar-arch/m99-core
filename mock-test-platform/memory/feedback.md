@@ -26,8 +26,8 @@
 8. `feature/rrb-group-d/shared` (scoring + qstate + UI components) → commit ✅
 9. `feature/rrb-group-d/backend` → commit ✅
 10. `feature/rrb-group-d/web` (responsive: mobile/tablet/desktop) → commit ✅
-11. `feature/rrb-group-d/mobile` (phone + tablet layouts) → commit ✅ (in progress)
-12. `feature/rrb-group-d/desktop` (Electron shell) → commit → merge rrb-group-d to dev
+11. `feature/rrb-group-d/mobile` (phone + tablet layouts) → commit ✅
+12. `feature/rrb-group-d/desktop` (Electron shell) → commit → merge rrb-group-d to dev ✅ (in progress)
 13. `feature/app-shell/navigation` → commit → merge to dev
 
 ## Auth Screen Rules (locked)

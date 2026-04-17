@@ -50,6 +50,7 @@
   .submit-modal-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; }
   .submit-modal-sub { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem; }
 </style>
+<script src="../desktop/desktop-adapter.js"></script>
 </head>
 <body>
 
@@ -180,6 +181,7 @@ async function init() {
   // Render shell
   document.getElementById("loading-wrap").style.display = "none";
   document.getElementById("exam-shell").style.display   = "";
+  if (window.__examStarted) window.__examStarted();
 
   renderSectionTabsBar();
   renderCurrentQuestion();
@@ -362,6 +364,7 @@ window.confirmSubmit = async function() {
 
   clearInterval(timerHandle);
   clearInterval(syncHandle);
+  if (window.__examEnded) window.__examEnded();
 
   const responses = {};
   for (const [id, q] of Object.entries(state.questions)) {
