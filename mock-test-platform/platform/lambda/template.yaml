@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Mock Test Platform — Lambda Services
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        EPS_CHUNK_SIZE: !Ref EpsChunkSize
+        BATCH_SIZE: !Ref BatchSize
+        FLUSH_HOURS: !Ref FlushHours
+        TGM_MIN_TENANTS: !Ref TgmMinTenants
+        TGM_USER_THRESHOLD: !Ref TgmUserThreshold
+        RDS_PORT: !Ref RdsPort
+        RDS_DB: !Ref RdsDb
+        RDS_USER: !Ref RdsUser
+        RDS_PASSWORD: !Ref RdsPassword
+        JWT_SECRET: !Ref JwtSecret
+        R2_BUCKET: !Ref R2Bucket
+
+Parameters:
+  EpsChunkSize:
+    Type: Number
+    Default: 100
+  BatchSize:
+    Type: Number
+    Default: 4
+  FlushHours:
+    Type: Number
+    Default: 24
+  TgmMinTenants:
+    Type: Number
+    Default: 20
+  TgmUserThreshold:
+    Type: Number
+    Default: 50000
+  RdsPort:
+    Type: Number
+    Default: 5432
+  RdsDb:
+    Type: String
+    Default: mocktest
+  RdsUser:
+    Type: String
+  RdsPassword:
+    Type: String
+    NoEcho: true
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  R2Bucket:
+    Type: String
+    Default: mock-test-content
+
+Resources:
+  # ── ACTIVE: Tenant Provisioning Service ──────────────────────────────────
+  TpsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mtp-tps
+      CodeUri: .
+      Handler: tenant.tps.handler.lambda_handler
+      Description: Tenant Provisioning Service — creates schemas, syncs KV
+
+  # ── ACTIVE: Bundle Service ────────────────────────────────────────────────
+  BsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mtp-bs
+      CodeUri: .
+      Handler: content.bs.handler.lambda_handler
+      Description: Bundle Service — serves exam bundles from R2
+
+  # ── ACTIVE: Exam Processing Service ──────────────────────────────────────
+  EpsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mtp-eps
+      CodeUri: .
+      Handler: content.eps.handler.lambda_handler
+      Description: Exam Processing Service — batch result ingestion
+      Events:
+        S3Trigger:
+          Type: S3
+          Properties:
+            Bucket: !Ref ResultsBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: batch/
+                  - Name: suffix
+                    Value: .json
+
+  # ── STUB: Tenant Group Manager ────────────────────────────────────────────
+  TgmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mtp-tgm
+      CodeUri: .
+      Handler: tenant.tgm.handler.lambda_handler
+      Description: "STUB — activate flag:tgm_active when >20 tenants or >50k users"
+
+  # ── STUB: Tenant Migration Service ───────────────────────────────────────
+  TmsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mtp-tms
+      CodeUri: .
+      Handler: tenant.tms.handler.lambda_handler
+      Description: "STUB — activate flag:tms_active on first tier migration"
+
+  # ── STUB: Conceptual Gap Service ─────────────────────────────────────────
+  CgsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mtp-cgs
+      CodeUri: .
+      Handler: content.cgs.handler.lambda_handler
+      Description: "STUB — activate flag:cgs_active when >1000 submissions/day"
+
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${R2Bucket}-results"
+
+Outputs:
+  TpsFunctionArn:
+    Value: !GetAtt TpsFunction.Arn
+  BsFunctionArn:
+    Value: !GetAtt BsFunction.Arn
+  EpsFunctionArn:
+    Value: !GetAtt EpsFunction.Arn

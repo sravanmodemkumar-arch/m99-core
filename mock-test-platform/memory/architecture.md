@@ -1,239 +1,114 @@
 # Architecture Decisions
 
 ## Domain Routing
-
 ```
-allen.m99-core.com
-  → gateway CF Worker reads host
-  → KV get("slug:allen") → "T001"
-  → route to auth or exam module worker
-
-test.allen.ac.in (custom domain — CF for SaaS)
-  → Cloudflare resolves via custom hostname registration
-  → KV get("domain:test.allen.ac.in") → "T001"
-  → same flow
+allen.m99-core.com  → gateway → KV slug:allen → T001 → auth/exam worker
+test.allen.ac.in    → CNAME → CF for SaaS → KV domain:test.allen.ac.in → T001
 ```
+Adding custom domain: tenant enters → CF API → custom hostname → SSL auto → KV write → CNAME → live in 5min
 
-**Adding a custom domain:**
-1. Tenant enters domain in admin panel
-2. Platform calls CF API → adds custom hostname → CF issues SSL cert automatically
-3. Platform writes `domain:{host}` → tenant_id to KV
-4. Tenant adds CNAME: `test.allen.ac.in CNAME allen.m99-core.com`
-5. Live in ~5 minutes, zero manual SSL work
+## KV Schema
+| Key | Value |
+|---|---|
+| `slug:{slug}` | tenant_id |
+| `domain:{host}` | tenant_id |
+| `tenant:{id}` | `{modules, tier, pg_host, schema_name, theme}` |
+| `flag:{name}` | feature flag value |
+| `tsf:{session_id}` | TSF JSON (48h TTL) |
+| `idem:{key}` | idempotency record |
+| `bundle:{exam_id}` | R2 object key |
 
-**KV key schema:**
-```
-slug:{slug}       → tenant_id
-domain:{host}     → tenant_id
-tenant:{id}       → { modules, tier, pg_host, theme }
-flag:{name}       → feature flag value
-tsf:{session_id}  → TSF JSON (48h TTL)
-idem:{key}        → idempotency record
-```
-
----
-
-## Database Design
+## Database
 
 ### v1 Setup
-- **Single RDS PostgreSQL instance** (ap-south-1) — no proxy, no multi-instance
-- **Schema-per-tenant** — `tenant_{slug}` naming (e.g. `tenant_allen`)
-- **Global schema** — `tenants`, `questions`, `exams`, `subjects`, `exam_question_map`
-- **No RDS Proxy in v1** — add when Lambda concurrency > 10 AND connection errors appear
-- **Lambda connection** — `pool_size=1, max_overflow=0` — one connection per invocation
+- Single RDS PostgreSQL (ap-south-1), schema-per-tenant, no proxy
+- `pool_size=1, max_overflow=0` — one connection per Lambda invocation
+- `max_connections=100` at RDS level
+- `log_min_duration_statement=100` — log slow queries from day 1
 
-### Schema Naming Rule
-```
-tenant_allen      ← readable in pg_dump, psql, CloudWatch logs
-tenant_fiitjee
-tenant_narayana
-```
-- Slug-based, NOT UUID — readable in every tool
-- Set at provisioning (TPS), never changed
-- Stored in global `tenants` table as source of truth
-
-### Global Tenants Table (source of truth)
+### Global Tenants Table
 ```sql
 CREATE TABLE tenants (
-  tenant_id   UUID        PRIMARY KEY,
-  slug        VARCHAR     UNIQUE NOT NULL,    -- "allen"
-  schema_name VARCHAR     NOT NULL,           -- "tenant_allen"
-  pg_host     VARCHAR     NOT NULL,           -- resolved per invocation
-  tier        VARCHAR     NOT NULL DEFAULT 'T1',
-  modules     JSONB       NOT NULL DEFAULT '[]',
-  theme       JSONB       NOT NULL DEFAULT '{}',
-  created_at  BIGINT      NOT NULL
+  tenant_id   UUID PRIMARY KEY,
+  slug        VARCHAR UNIQUE NOT NULL,   -- "allen"
+  schema_name VARCHAR NOT NULL,          -- "tenant_allen"
+  pg_host     VARCHAR NOT NULL,          -- resolved per invocation
+  tier        VARCHAR NOT NULL DEFAULT 'T1',
+  modules     JSONB NOT NULL DEFAULT '[]',
+  theme       JSONB NOT NULL DEFAULT '{}',
+  created_at  BIGINT NOT NULL
 );
 ```
-- TPS writes here first → then syncs to KV
-- KV is a cache. This table is the source of truth.
-- If KV is wiped: rebuild from this table in seconds.
+TPS writes here first → syncs to KV. KV is cache. This table is source of truth.
 
-### Every Tenant Table Carries tenant_id
-All tables in every tenant schema have `tenant_id UUID NOT NULL`.
-**Why:** When migrating from schema-per-tenant to shared-DB-with-tenant_id at scale, no ALTER TABLE needed.
+### Tenant Schema Tables
+- `users` — uid, tenant_id, phone, name, active, created_at
+- `results` — append-only. PK: (uid, qid, attempt_no). score=full float, no rounding
+- `checkpoints` — TSF snapshot synced during exam
+- `weakness_snapshot` — written by CGS (v2.5 stub)
 
-### Table Design Rules
-```
-results         → append-only. PK: (uid, qid, attempt_no). Never UPDATE.
-attempt_no      → validated server-side: must = current_max + 1
-questions       → stored in R2. DB holds qid reference only.
-writes          → batch inserts, never row-by-row
-cross-tenant    → never. One session = one tenant schema.
-indexes v1      → uid, qid, attempt_no, timestamp only
-```
+All tables carry `tenant_id UUID NOT NULL` — future-proof for shared-DB migration.
 
-### Lambda Connection Pattern
-```python
-engine = create_engine(
-    url,
-    pool_size=1,
-    max_overflow=0,
-    pool_pre_ping=True,
-)
+### DB Evolution
 ```
-```
-max_connections = 100   (RDS parameter group)
-pg_host         = resolved dynamically from global tenants table — never hardcoded
+v1   → single RDS, no proxy
+v2   → RDS Proxy (when concurrency>10 + errors)
+v2.5 → schema groups
+v3   → shared DB with tenant_id (col already exists)
+v3.5 → read replicas
 ```
 
-### Monitoring (from day 1)
-```
-postgresql.conf:  log_min_duration_statement = 100   (log queries > 100ms)
-CloudWatch:       Connections · FreeableMemory · CPUUtilization · ReadIOPS · WriteIOPS
-```
+## Feature Flags (KV — flip to activate, no deploy)
+| Flag | Default | Activate when |
+|---|---|---|
+| `flag:tgm_active` | false | >20 tenants or >50k users |
+| `flag:tms_active` | false | first migration needed |
+| `flag:cgs_active` | false | >1000 submissions/day |
+| `flag:rds_proxy` | false | Lambda concurrency >10 + errors |
+| `flag:multi_region` | false | >500 tenants or latency |
+| `flag:batch_size` | 4 | tune anytime |
+| `flag:flush_hours` | 24 | tune anytime |
 
-### DB Evolution Path
-```
-v1   → single RDS, schema-per-tenant, no proxy
-        ↓ Lambda concurrency > 10 + connection errors
-v2   → add RDS Proxy
-        ↓ 50+ tenants, Alembic across schemas becomes slow
-v2.5 → schema groups (batch tenants per instance)
-        ↓ approaching schema count limits (~1000+)
-v3   → shared DB with tenant_id (column already on all tables from v1)
-        ↓ read load signal
-v3.5 → read replicas per region
-```
-
----
-
-## Feature Flag System (KV — flip to activate, no deploy needed)
-
-```
-flag:tgm_active    = "false"    → activate at 20 tenants / 50k users
-flag:tms_active    = "false"    → activate on first migration need
-flag:cgs_active    = "false"    → activate at 1000 submissions/day
-flag:rds_proxy     = "false"    → activate when connection errors appear
-flag:multi_region  = "false"    → activate at 500 tenants / latency signal
-flag:batch_size    = "4"        → tune without code change
-flag:flush_hours   = "24"       → tune without code change
-```
-
----
+## SAM Env Vars (tune without code change)
+| Var | Default |
+|---|---|
+| `EPS_CHUNK_SIZE` | 100 |
+| `BATCH_SIZE` | 4 |
+| `FLUSH_HOURS` | 24 |
+| `TGM_MIN_TENANTS` | 20 |
+| `TGM_USER_THRESHOLD` | 50000 |
 
 ## Exam Session Data Flow
-
 ```
-1. Open allen.m99-core.com
-   → gateway → auth → login page
-
-2. OTP login
-   → auth CF Worker → JWT issued (tenant_id + uid)
-   → fetch module list from KV → show switcher or redirect
-
-3. Start exam
-   → exam CF Worker → build TSF → store in KV (48h TTL)
-   → serve fe/web/ or mobile ExamScreen
-   → client downloads bundle from R2 (all questions + answer key)
-
-4. During exam
-   → answers saved locally (IndexedDB / expo-sqlite)
-   → fire-and-forget POST to CF Worker for server-side TSF sync
-   → CF Worker updates TSF in KV
-
-5. Submit
-   → client computes score instantly from bundle answer key
-   → result shown immediately — zero server wait
-   → result queued locally for batch sync
-
-6. Batch sync  (4 results OR 24h trigger)
-   → client POSTs batch to CF Worker
-   → Worker writes locked batch file to ECDN R2
-   → EPS Lambda: picks up → validates attempt_no → writes to tenant PG
-   → deletes locked file only after confirmed PG write
-
-7. Weakness analytics  (v2.5 — CGS stub in v1)
-   → CGS triggered by EPS after confirmed write
-   → computes subtopic accuracy map
-   → writes to tenant PG + pushes to CCDN R2
+1. Login → JWT (tenant_id + uid) → module list
+2. Start exam → CF Worker → TSF built → KV (48h TTL) → bundle URL returned
+3. Client downloads bundle from R2 (questions + answer key)
+4. During exam → answers saved locally + fire-and-forget POST to CF → KV TSF sync
+5. Submit → client scores instantly from bundle → result shown — zero server wait
+6. Batch sync (4 results OR 24h) → CF Worker → locked file in R2 → EPS Lambda → PG write → R2 delete
+7. (v2.5) EPS triggers CGS → weakness map → PG + CCDN R2
 ```
 
----
-
-## Module Independence Rule
-
-Each exam module:
-- Has its own CF Worker — `wrangler deploy` ships everything
-- Has its own config, frontend, tests
-- Knows nothing about other modules
-- Consumes platform services (BS, EPS) — never owns them
-- **NO shared library across modules** — each module owns all its code
-
----
-
-## Platform Evolution Path
-
-```
-v1   → 5–10 tenants · 1 region · TPS + BS + EPS active
-        ↓ 20 tenants OR 50k users
-v1.5 → TGM activates
-
-        ↓ first migration need
-v2   → TMS activates · RDS Proxy added
-
-        ↓ 1000+ submissions/day
-v2.5 → CGS activates (weakness analytics)
-
-        ↓ 500+ tenants OR SEA latency
-v3   → multi-region gateway · second RDS region
-
-        ↓ real-time feature demand
-v3.5 → Durable Objects (live proctoring / leaderboards)
-```
-
-No rewrites at any step. Every activation = flip KV flag + fill stub.
-
----
-
-## SAM Environment Variables (tune without deploy)
-
-```yaml
-TGM_MIN_TENANTS: "20"
-TGM_USER_THRESHOLD: "50000"
-EPS_CHUNK_SIZE: "100"
-BATCH_SIZE: "4"
-FLUSH_HOURS: "24"
-```
-
----
-
-## Key Architectural Decisions
-
+## Key Decisions
 | Decision | Rule |
 |---|---|
-| Auth is a separate module | `modules/auth/` — identity only, knows nothing about exam modules |
-| app-shell = composition root | Only file allowed to import across modules |
-| Platform lambdas shared | BS/EPS/TPS serve ALL modules — never duplicated per module |
-| fe/shared/ per module | Shared only within that module — not cross-module |
-| No shared library across modules | Each module owns all code. No `packages/shared/` |
-| CF Workers never touch DB | Workers use KV + R2 only. Only Lambda touches RDS |
-| Exact 1/3 negative marking | `wrong: 1/3` in config.js — no Math.round mid-calc |
-| Batch sync rule | 4 results OR 24h — checked on page load / app foreground |
-| Wrangler serves `./fe` | Web at `/web/`, shared at `/shared/` |
-| Custom domains via CF for SaaS | CNAME → m99-core.com. KV: `domain:{host}` → tenant_id |
-| Client handles exam logic | Scoring, state, navigation client-side. Server validates + stores |
-| KV for routing + flags only | Never store mutable user data in KV |
-| Append-only results | INSERT only. PK: `(uid, qid, attempt_no)` |
-| tenant_id on all tables | Future-proof for schema → shared-DB migration |
-| pg_host resolved dynamically | Never hardcoded. Fetched from global tenants table per invocation |
+| Auth = separate module | identity only, knows nothing about exams |
+| app-shell = composition root | only file that imports across modules |
+| Platform lambdas shared | BS/EPS/TPS serve all modules |
+| fe/shared/components/ | copy-paste per module, never cross-import |
+| CF Workers never touch DB | KV + R2 only |
+| Client handles scoring | instant result, server validates + stores |
+| KV = cache only | global tenants table = source of truth |
+| Append-only results | INSERT only, PK: (uid, qid, attempt_no) |
+| tenant_id on all tables | future-proof for shared-DB migration |
+| pg_host resolved dynamically | never hardcoded |
+
+## Evolution Path
+```
+v1   → 5–10 tenants, 1 region, TPS+BS+EPS active
+v1.5 → TGM activates
+v2   → TMS + RDS Proxy
+v2.5 → CGS (weakness analytics)
+v3   → multi-region + second RDS
+v3.5 → Durable Objects (real-time proctoring)
+```

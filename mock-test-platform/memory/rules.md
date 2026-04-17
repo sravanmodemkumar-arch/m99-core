@@ -1,77 +1,59 @@
-# Hard Rules — Never Break
+# Hard Rules
 
-## Cross-Module Boundaries
-- `app-shell/mobile/App.js` is the ONLY file allowed to import across module boundaries
-- Modules NEVER import from each other
-- Modules NEVER import from platform/
-- Platform lambdas serve ALL modules — never duplicated per module
+## Module Boundaries
+- `app-shell/mobile/App.js` = ONLY file that imports across modules
+- Modules NEVER import from each other or from platform/
+- Platform lambdas (BS/EPS/TPS) serve ALL modules — never per-module
 
-## Auth Module
-- `modules/auth/` — identity only: OTP, JWT, module access list
-- Auth knows NOTHING about exam modules
-- After login: 1 module → redirect direct; 2+ → HomeScreen switcher; 0 → "No active subscription"
-
-## Exam Module Config
-- `backend/config.js` is the ONLY source of truth for exam pattern
-- Pattern change = update `config.js` only — zero other code changes
-- `wrong: 1/3` exact fraction — NEVER `0.33` or rounded equivalent
+## Auth
+- `modules/auth/` = identity only: OTP, JWT, module list
+- Auth knows NOTHING about exam content
+- After login: 1 module → redirect direct | 2+ → HomeScreen | 0 → "No subscription"
 
 ## Scoring
-- `marking.js` (server) and `fe/shared/scoring.js` (client) must produce IDENTICAL results
-- Full float precision — NO Math.round mid-calculation
-- Display only: `score.toFixed(2)` — but only at display layer, never in calculation
+- `backend/marking.js` (server) ≡ `fe/shared/scoring.js` (client) — must be IDENTICAL
+- `wrong: 1/3` exact — NEVER 0.33
+- No Math.round mid-calc. Display only: `score.toFixed(2)`
 
 ## CF Workers
-- CF Workers NEVER touch RDS directly
-- CF Workers use KV + R2 ONLY
-- Only Lambda touches RDS
+- Workers: KV + R2 ONLY. NEVER touch RDS.
+- Only Lambda touches RDS.
 
 ## Database
-- Results: append-only. INSERT only, NEVER UPDATE. PK: (uid, qid, attempt_no)
-- attempt_no validated server-side: must = current_max + 1
-- Questions/content stored in R2 — DB holds qid reference only
-- Cross-tenant queries: NEVER (design error if needed)
-- Batch inserts, not row-by-row
-- pg_host: NEVER hardcoded — always resolved dynamically from global tenants table
+- Results: INSERT only, NEVER UPDATE. PK: `(uid, qid, attempt_no)`
+- `attempt_no` validated server-side: must = current_max + 1
+- Questions in R2 — DB holds qid reference only
+- No cross-tenant queries ever
+- Batch inserts — never row-by-row
+- `pg_host` NEVER hardcoded — always from global tenants table
+- `pool_size=1, max_overflow=0` — one connection per Lambda invocation
 
 ## KV
-- KV is a cache — never source of truth for mutable user data
-- Source of truth for tenant routing: global tenants table in RDS
-- If KV wiped: rebuild from tenants table
+- KV = cache only. Source of truth = global tenants table in RDS
+- KV keys: `slug:` `domain:` `tenant:` `flag:` `tsf:` `idem:` `bundle:`
 
-## Schema Naming
-- Always `tenant_{slug}` — never UUID-based
-- Set at provisioning (TPS), NEVER changed after
+## Schema
+- Always `tenant_{slug}` — never UUID-based. Set at TPS, never changed.
+
+## Batch Sync
+- Queue locally first (IndexedDB / expo-sqlite)
+- Flush: 4 results OR 24h — whichever first
+- Check: every page load (web), every app foreground (mobile)
+
+## Shared UI Components
+- Each module has `fe/shared/components/` — pure UI, zero business logic
+- New module: copy entire `fe/shared/components/` folder — no rework needed
+- Components: stateless, data passed in via props/params only
+- Web: vanilla JS functions returning HTML string or DOM node
+- Mobile: pure React Native presentational components (no internal state)
+
+## Wrangler
+- `assets = "./fe"` — CF serves entire fe/ folder
+- Web at `/web/`, shared JS at `/shared/`, components at `/shared/components/`
 
 ## Mobile Navigation
 - Screen names: `{ModuleId}Exam`, `{ModuleId}Result`
 - Registered ONLY in `app-shell/mobile/App.js`
 
-## Frontend Imports (within a module)
-- Web: `import '/shared/scoring.js'` (absolute URL — CF serves `/shared/` from `./fe/shared/`)
-- Mobile: `import '../shared/scoring.js'` (relative file path)
-- Desktop: same as mobile
-
-## Batch Sync
-- Queue results locally first (IndexedDB / expo-sqlite)
-- Flush trigger: 4 results accumulated OR 24h since last flush
-- Check: every page load (web), every app foreground (mobile)
-
-## Wrangler Assets
-- `assets = "./fe"` in wrangler.toml — CF serves entire fe/ folder
-- Web pages at `/web/`, shared JS at `/shared/`
-- Worker handles: `GET /` → redirect to `/web/index.html`
-
-## Idempotency
-- EPS Lambda validates attempt_no before every write
-- Locked batch files in R2 deleted ONLY after confirmed PG write
-- Idempotency keys stored in KV with TTL
-
-## What NEVER Changes After v1 Ships
-- TSF JSON schema
-- KV key format
-- Module API routes
-- Batch result format
-- QID format (7 parts: SUBJ-topic-subtopic-type-difficulty-cat-seq)
-- 5 question state names and their meaning
-- Schema naming convention `tenant_{slug}`
+## Never Change After v1
+- TSF schema, KV key format, module API routes, batch format, QID format, 5 state names, `tenant_{slug}`
