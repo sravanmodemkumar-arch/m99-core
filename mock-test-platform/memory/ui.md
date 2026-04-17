@@ -5,6 +5,138 @@ Ultra pro level. 50+ years of educational product experience.
 Students take high-stakes govt exams (RRB, SSC) on mid-range Android phones.
 Zero distraction. Zero confusion. Instant feedback. Works on ₹8000 phones.
 
+## Theme System
+- 25 pre-built themes × 2 modes (light + dark) = 50 variants
+- 25 landing layouts (per module)
+- 25 themes × 25 layouts = 625 unique combinations
+- Theme = TENANT-level (brand identity, all modules share it)
+- Layout + Content = MODULE-level (per exam)
+- `allow_module_theme_override: false` by default (tenant locks brand)
+
+### Theme Config (in KV tenant:{id})
+```json
+{
+  "theme": "saffron",
+  "mode_control": "user",
+  "default_mode": "light",
+  "logo": "logo.png",
+  "allow_module_theme_override": false
+}
+```
+
+### Mode Control
+| Value | Behavior |
+|---|---|
+| `user` | Student picks in settings (default) |
+| `force_light` | Always light (govt/formal) |
+| `force_dark` | Always dark (premium/night) |
+| `system` | Follows OS setting |
+
+### 25 Themes
+| # | Name | Primary | Vibe |
+|---|---|---|---|
+| 1 | Ocean Blue | #2563EB | Trust (default) |
+| 2 | Forest Green | #16A34A | Growth |
+| 3 | Royal Purple | #7C3AED | Premium |
+| 4 | Sunset Orange | #EA580C | Energy |
+| 5 | Crimson Red | #DC2626 | Power |
+| 6 | Midnight Dark | #0F172A | Modern dark |
+| 7 | Golden Amber | #D97706 | Achievement |
+| 8 | Steel Gray | #475569 | Corporate |
+| 9 | Rose Pink | #DB2777 | Friendly |
+| 10 | Deep Teal | #0D9488 | Calm |
+| 11 | Indigo | #4338CA | Academic |
+| 12 | Emerald | #059669 | Fresh |
+| 13 | Sky Blue | #0284C7 | Light open |
+| 14 | Violet | #7C3AED | Creative |
+| 15 | Navy | #1E3A5F | Govt/serious |
+| 16 | Coral | #F43F5E | Warm |
+| 17 | Sage Green | #65A30D | Soft |
+| 18 | Bronze | #92400E | Heritage |
+| 19 | Lavender | #818CF8 | Soft premium |
+| 20 | Charcoal | #1C1C1E | Dark minimal |
+| 21 | Mint | #10B981 | Fresh light |
+| 22 | Deep Maroon | #881337 | Traditional |
+| 23 | Pearl White | #F8FAFC | Ultra minimal |
+| 24 | Electric Blue | #0EA5E9 | Bold modern |
+| 25 | Saffron | #F59E0B | Indian cultural |
+
+### 25 Landing Layouts
+| # | Layout | Best for |
+|---|---|---|
+| 1 | Hero centered + features grid | General |
+| 2 | Split screen (image + CTA) | Branded institutes |
+| 3 | Full-screen hero + floating card | Premium |
+| 4 | Minimal (logo + buttons only) | Admin-created users |
+| 5 | Slideshow hero + stats bar | Large institutes |
+| 6 | Video background hero | Modern/premium |
+| 7 | Stats-first + features below | Data-driven |
+| 8 | Exam countdown timer hero | Upcoming exam |
+| 9 | Course catalog grid | Multi-exam |
+| 10 | Coach/teacher featured | Personal brand |
+| 11 | Announcement-first | News-heavy |
+| 12 | Leaderboard preview | Competitive |
+| 13 | Achievement badges | Gamified |
+| 14 | Mobile app style | App-first |
+| 15 | Magazine/editorial | Content-rich |
+| 16 | Government portal | Formal |
+| 17 | Testimonials hero | Social proof |
+| 18 | Timeline (exam dates) | Calendar focus |
+| 19 | Dark dashboard preview | Tech-forward |
+| 20 | Card grid (exam categories) | Multi-category |
+| 21 | Parallax scroll | Visual impact |
+| 22 | Minimal dark | Night mode first |
+| 23 | Regional/vernacular | Tier-2/3 cities |
+| 24 | News + updates feed | Active institutes |
+| 25 | Gradient hero + floating CTA | Modern startup |
+
+## Preview Player
+- Admin selects theme/layout/content → all 25 auth screens render live
+- Tenant theme preview → plays ALL modules
+- Module layout preview → plays this module only
+- 3 modes: Play (auto-advance) / Navigate (manual) / Interact (clickable)
+- Device frames: 📱 Mobile / 📟 Tablet / 💻 Desktop
+- Real-time updates — no save needed to preview
+- Publish → writes to KV → live instantly, no deploy
+
+## Auth Screens (25 total — web + mobile)
+| # | Screen |
+|---|---|
+| 0 | Landing (pre-auth, dynamic theme+layout+content) |
+| 1 | Splash |
+| 2 | Welcome |
+| 3 | Login (dynamic identifiers + password + Google) |
+| 4 | OTP Verify (shared) |
+| 5 | TOTP Verify |
+| 6 | Register Step 1 (name, phone, email, password, DOB, gender) |
+| 7 | Register Step 2 (state, city, pincode, address) |
+| 8 | Register Step 3 (category, module fields) |
+| 9 | Register OTP |
+| 10 | Social Complete (phone + missing after Google) |
+| 11 | First Login (admin-created, set password) |
+| 12 | TOTP Setup (QR + confirm) |
+| 13 | Forgot Password (dynamic per module) |
+| 14 | Reset Password |
+| 15 | Profile (view) |
+| 16 | Edit Profile |
+| 17 | Security (password, phone, TOTP) |
+| 18 | Change Identifier |
+| 19 | Delete Account |
+| 20 | Settings |
+| 21 | Notifications |
+| 22 | App Info |
+| 23 | My Subscriptions |
+| 24 | Help |
+
+## Admin Panel Screens
+| Screen | Description |
+|---|---|
+| Theme Picker | 25 themes, dark/light, live preview |
+| Layout Picker | 25 layout thumbnails |
+| Content Editor | Edit all dynamic content, real-time |
+| Preview Player | All 25 screens, 3 device frames, play/navigate/interact |
+| Publish | Review → publish → live via KV |
+
 ## Platform Targets (ALL three — every module)
 | Platform | Tech | Responsive targets |
 |---|---|---|
