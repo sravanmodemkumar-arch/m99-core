@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RRB Group D — Home</title>
+<link rel="stylesheet" href="../../auth/fe/shared/base.css">
+<link rel="stylesheet" href="../fe/shared/exam.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css">
+<style>
+  .page-wrap { max-width: 860px; margin: 0 auto; padding: 1.25rem; }
+  .exam-header-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.875rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; }
+  .greeting { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+  .greeting-sub { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+  /* Stats row */
+  .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+  .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+  .stat-lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.125rem; }
+  /* Exam cards */
+  .exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .exam-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; transition: box-shadow 0.15s; }
+  .exam-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .exam-card-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+  .exam-card-meta { font-size: 0.8125rem; color: var(--text-muted); display: flex; gap: 1rem; flex-wrap: wrap; }
+  .exam-tag { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .badge { padding: 0.125rem 0.5rem; border-radius: 999px; font-size: 0.6875rem; font-weight: 700; }
+  .badge-new { background: #DCFCE7; color: #15803D; }
+  .badge-popular { background: #FEF3C7; color: #92400E; }
+  /* Search */
+  .search-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .search-bar input { flex: 1; }
+  /* History table */
+  .history-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .history-table th { text-align: left; padding: 0.5rem 0.75rem; background: var(--surface-2); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+  .history-table tr:last-child td { border-bottom: none; }
+  /* Pagination */
+  .pagination { display: flex; align-items: center; gap: 0.375rem; margin-top: 1rem; }
+  .pagination button { min-width: 2rem; height: 2rem; border-radius: 0.375rem; border: 1px solid var(--border); background: var(--surface); font-size: 0.8125rem; cursor: pointer; }
+  .pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .section-title { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.75rem; }
+</style>
+</head>
+<body>
+<div style="background:var(--bg);min-height:100vh">
+
+  <!-- Top bar -->
+  <div class="exam-header-bar">
+    <div style="display:flex;align-items:center;gap:0.75rem">
+      <span style="font-size:1.0625rem;font-weight:800;color:var(--primary)">RRB Group D</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.75rem">
+      <button class="mode-toggle" id="mode-toggle" title="Toggle dark/light">🌙</button>
+      <a href="../../auth/fe/web/home.html" class="btn btn-outline btn-sm">Home</a>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <!-- Greeting -->
+    <div style="margin: 1.25rem 0">
+      <div class="greeting" id="greeting">Good morning!</div>
+      <div class="greeting-sub" id="greeting-sub">Ready for today's practice?</div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-card"><div class="stat-val" id="stat-attempts">—</div><div class="stat-lbl">Attempts</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-best">—</div><div class="stat-lbl">Best Score</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-avg">—</div><div class="stat-lbl">Avg Score</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-rank">—</div><div class="stat-lbl">Current Rank</div></div>
+    </div>
+
+    <!-- Available exams -->
+    <div class="section-title">Available Mock Tests</div>
+    <!-- Search + filter -->
+    <div class="search-bar">
+      <input type="search" id="exam-search" placeholder="Search mock tests…" oninput="filterExams(this.value)">
+      <select id="exam-filter" onchange="filterExams(document.getElementById('exam-search').value)" class="btn btn-outline" style="padding:0 0.75rem;cursor:pointer">
+        <option value="all">All</option>
+        <option value="full">Full Test</option>
+        <option value="section">Section Test</option>
+        <option value="mini">Mini Test</option>
+      </select>
+    </div>
+    <div class="exam-grid" id="exam-grid">
+      <!-- populated by JS -->
+    </div>
+
+    <!-- Attempt history -->
+    <div class="section-title">Attempt History</div>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="history-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Exam</th>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Correct</th>
+            <th>Wrong</th>
+            <th>Rank</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+          <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">Loading history…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+
+  </div>
+</div>
+
+<script type="module">
+import { boot, requireAuth, api } from "../../auth/fe/web/app.js";
+
+const EXAMS_PER_PAGE = 10;
+let allExams = [];
+let history  = [];
+let page     = 1;
+
+async function init() {
+  if (!requireAuth()) return;
+  await boot();
+
+  // Greeting
+  const h = new Date().getHours();
+  const greet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const name  = localStorage.getItem("name") || "Candidate";
+  document.getElementById("greeting").textContent     = `${greet}, ${name}!`;
+  document.getElementById("greeting-sub").textContent = `Keep practicing — exam day is getting closer.`;
+
+  // Load exams list + stats in parallel
+  const [examsRes, statsRes, histRes] = await Promise.all([
+    api("/rrb/exams"),
+    api("/rrb/stats"),
+    api("/rrb/history?page=1&limit=" + EXAMS_PER_PAGE),
+  ]);
+
+  if (examsRes.ok) {
+    allExams = examsRes.data.exams || _defaultExams();
+  } else {
+    allExams = _defaultExams();
+  }
+  renderExamGrid(allExams);
+
+  if (statsRes.ok) {
+    const s = statsRes.data;
+    document.getElementById("stat-attempts").textContent = s.attempts ?? "—";
+    document.getElementById("stat-best").textContent     = s.best_score != null ? s.best_score.toFixed(2) : "—";
+    document.getElementById("stat-avg").textContent      = s.avg_score  != null ? s.avg_score.toFixed(2)  : "—";
+    document.getElementById("stat-rank").textContent     = s.rank != null ? `#${s.rank}` : "—";
+  }
+
+  if (histRes.ok) {
+    history = histRes.data.results || [];
+    renderHistory(history, histRes.data.total || 0);
+  } else {
+    document.getElementById("history-tbody").innerHTML =
+      `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">No attempts yet</td></tr>`;
+  }
+}
+
+function renderExamGrid(exams) {
+  const filterVal = document.getElementById("exam-filter")?.value || "all";
+  const filtered  = exams.filter(e => filterVal === "all" || e.type === filterVal);
+  document.getElementById("exam-grid").innerHTML = filtered.map(e => `
+    <div class="exam-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem">
+        <div class="exam-card-title">${e.title}</div>
+        ${e.badge ? `<span class="badge badge-${e.badge}">${e.badge === "new" ? "New" : "Popular"}</span>` : ""}
+      </div>
+      <div class="exam-card-meta">
+        <span class="exam-tag">📋 ${e.total_qs || 100} Qs</span>
+        <span class="exam-tag">⏱ ${Math.floor((e.duration_s || 5400) / 60)} min</span>
+        <span class="exam-tag">${e.type || "Full Test"}</span>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="startExam('${e.id}')">Start Test</button>
+    </div>`).join("") || `<div style="color:var(--text-muted);padding:2rem">No tests found</div>`;
+}
+
+window.filterExams = function(q) {
+  const s = q.toLowerCase();
+  const filterVal = document.getElementById("exam-filter")?.value || "all";
+  const filtered  = allExams.filter(e =>
+    (filterVal === "all" || e.type === filterVal) &&
+    (!s || e.title.toLowerCase().includes(s))
+  );
+  renderExamGrid(filtered);
+};
+
+window.startExam = function(examId) {
+  window.location.href = `exam.html?exam_id=${encodeURIComponent(examId)}`;
+};
+
+function renderHistory(rows, total) {
+  if (!rows.length) {
+    document.getElementById("history-tbody").innerHTML =
+      `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">No attempts yet — start a test above!</td></tr>`;
+    return;
+  }
+  document.getElementById("history-tbody").innerHTML = rows.map((r, i) => `
+    <tr>
+      <td>${(page - 1) * EXAMS_PER_PAGE + i + 1}</td>
+      <td>${r.exam_title || r.exam_id}</td>
+      <td>${new Date(r.submitted_at).toLocaleDateString("en-IN")}</td>
+      <td style="font-weight:700;color:var(--primary)">${r.score?.toFixed(2) ?? "—"}</td>
+      <td style="color:#16A34A;font-weight:600">${r.correct ?? "—"}</td>
+      <td style="color:#DC2626;font-weight:600">${r.wrong ?? "—"}</td>
+      <td>${r.rank != null ? "#" + r.rank : "—"}</td>
+      <td><a href="result.html?session_id=${r.session_id}&score=${r.score}&correct=${r.correct}&wrong=${r.wrong}&skipped=${r.skipped}&total=${r.total_qs}" class="btn btn-outline btn-sm">View</a></td>
+    </tr>`).join("");
+
+  const pages = Math.ceil(total / EXAMS_PER_PAGE);
+  renderPagination(page, pages, total);
+}
+
+function renderPagination(current, total, count) {
+  if (total <= 1) { document.getElementById("pagination").innerHTML = ""; return; }
+  let html = `<span style="font-size:0.8125rem;color:var(--text-muted);margin-right:0.25rem">${count} attempts</span>`;
+  for (let i = 1; i <= total; i++) {
+    html += `<button class="${i === current ? "active" : ""}" onclick="goPage(${i})">${i}</button>`;
+  }
+  document.getElementById("pagination").innerHTML = html;
+}
+
+window.goPage = async function(p) {
+  page = p;
+  const res = await api(`/rrb/history?page=${p}&limit=${EXAMS_PER_PAGE}`);
+  if (res.ok) renderHistory(res.data.results || [], res.data.total || 0);
+};
+
+function _defaultExams() {
+  return [
+    { id: "rrb-gd-2024-full-1", title: "RRB Group D Full Mock Test 1", type: "full", total_qs: 100, duration_s: 5400, badge: "popular" },
+    { id: "rrb-gd-2024-full-2", title: "RRB Group D Full Mock Test 2", type: "full", total_qs: 100, duration_s: 5400 },
+    { id: "rrb-gd-2024-full-3", title: "RRB Group D Full Mock Test 3", type: "full", total_qs: 100, duration_s: 5400, badge: "new" },
+    { id: "rrb-gd-math-1",      title: "Mathematics Section Test 1",   type: "section", total_qs: 25,  duration_s: 1500 },
+    { id: "rrb-gd-reasoning-1", title: "Reasoning Section Test 1",     type: "section", total_qs: 30,  duration_s: 1800 },
+    { id: "rrb-gd-science-1",   title: "General Science Section Test 1", type: "section", total_qs: 25, duration_s: 1500 },
+    { id: "rrb-gd-gk-1",        title: "GK & Current Affairs Test 1",  type: "section", total_qs: 20,  duration_s: 1200 },
+    { id: "rrb-gd-mini-1",      title: "Quick 20-Question Mini Test",  type: "mini",    total_qs: 20,  duration_s: 1200 },
+  ];
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
