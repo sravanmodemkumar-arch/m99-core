@@ -4,5 +4,7 @@
   "admin_base":   "http://localhost:8789",
   "exam_base":    "http://localhost:8788",
   "user_base":    "http://localhost:8790",
+  "rrb_base":     "http://localhost:8791",
+  "rrb_gd_base":  "http://localhost:8792",
   "cdn_manifest": "http://localhost:8788/exam-engine/manifest.json"
 }

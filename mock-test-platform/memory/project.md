@@ -91,6 +91,24 @@ mock-test-platform/
 │   │       ├── web/        ← profile.html, history.html, analytics.html, subscription.html
 │   │       ├── mobile/     ← ProfileScreen, HistoryScreen, AnalyticsScreen, SubscriptionScreen + UserNavigator
 │   │       └── desktop/    ← main.js, server.js (static+proxy), preload.js
+│   ├── rrb/                ← COMPLETE — wrapper/hub (port 8791)
+│   │   ├── backend/        ← worker.js (GET /rrb/modules, GET /rrb/info, GET /rrb/syllabus/:exam)
+│   │   ├── wrangler.toml
+│   │   └── fe/
+│   │       ├── web/        ← index.html (module listing, dynamic via /rrb/modules API)
+│   │       ├── mobile/     ← RRBHomeScreen.js, App.js, RRBNavigator.js
+│   │       └── desktop/    ← main.js, server.js (module listing + proxy to rrb_gd_base), preload.js
+│   ├── rrb-group-d/        ← COMPLETE — standalone exam module (port 8792)
+│   │   ├── backend/        ← worker.js (POST /rrb-gd/exam/start, GET /rrb-gd/bundle/:sid,
+│   │   │                       POST /rrb-gd/exam/sync, POST /rrb-gd/exam/submit,
+│   │   │                       GET /rrb-gd/exams, GET /rrb-gd/stats, GET /rrb-gd/history)
+│   │   ├── wrangler.toml
+│   │   └── fe/
+│   │       ├── web/        ← home.html, exam.html, result.html, analysis.html, sw.js
+│   │       ├── mobile/     ← HomeScreen, ExamScreen, ResultScreen, AnalysisScreen
+│   │       │               ← src/utils/api.js (rrb_gd_base), sync.js, scoring.js
+│   │       │               ← src/navigation/AppNavigator.js
+│   │       └── desktop/    ← main.js, server.js (HTMX exam flow), preload.js, sync.js
 │   └── app-shell/          ← placeholder (empty)
 ├── scripts/
 │   ├── devserver.js        ← start all workers in dev
@@ -154,6 +172,12 @@ TypeScript ONLY at shared boundaries — never in leaf nodes:
 - Tests: 101/101 passing (see above for key fixes)
 - Deploy: scripts/setup.js (one-time infra) + scripts/deploy.js (repeatable) — npm run setup / npm run deploy
 - Dynamic config: modules/shared/app-config.json = single file; deploy.js auto-updates it with real worker URLs post-deploy (branch build/admin-clients) — unit (scoring, qstate) + integration (auth 40, exam-engine 40, admin 61). Key fixes: crypto polyfill (always assign globalThis.crypto in Node 18), bank fixture uses q.answer not q.answer_key.answer, integer scoring (-1.332 not -4/3), admin role="none" treated as delete.
+- rrb module (port 8791): COMPLETE — wrapper backend + web index + mobile (RRBHomeScreen + RRBNavigator) + desktop (module listing server)
+- rrb-group-d module (port 8792): COMPLETE — standalone exam backend + web (home/exam/result/analysis) + mobile (Home/Exam/Result/Analysis + AppNavigator) + desktop (HTMX exam server)
+- shared/app-config.json: now includes rrb_base (8791) + rrb_gd_base (8792)
+- package.json: dev:rrb + dev:rrb-gd scripts added
+- scripts/setup.js: rrb + rrb-group-d KV namespaces + JWT_SECRET secrets added
+- scripts/deploy.js: rrb + rrb-group-d workers + URL auto-update added
 - app-shell module: placeholder only (not needed for v1 launch)
 - Branch `build/admin-clients`: admin desktop + admin mobile COMPLETE
 - admin desktop: main.js (Electron + app menu + tray), server.js (static file server for admin HTML), preload.js, package.json, electron-builder.json, app-config.json

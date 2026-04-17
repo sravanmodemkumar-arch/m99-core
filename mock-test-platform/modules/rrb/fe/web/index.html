@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RRB Mock Tests</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#f0f4f8; font-family:system-ui,sans-serif; margin:0; }
+  .rrb-red  { color:#c62828; }
+  .rrb-blue { color:#0d47a1; }
+  .card-hover { transition:transform .15s,box-shadow .15s; }
+  .card-hover:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+</style>
+</head>
+<body>
+
+<script>
+const API   = window._API_PREFIX || "/rrb";
+const token = localStorage.getItem("auth_token");
+if (!token) { location.href = "/modules/auth/fe/web/login.html"; }
+
+async function init() {
+  try {
+    const res = await fetch(API + "/modules", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const { modules } = await res.json();
+    renderModules(modules);
+  } catch { renderModules([]); }
+}
+
+function renderModules(modules) {
+  const grid = document.getElementById("modules-grid");
+  grid.innerHTML = "";
+  for (const m of modules) {
+    const active = m.status === "active";
+    const card = document.createElement("div");
+    card.className = `bg-white rounded-2xl p-6 shadow-sm card-hover ${active ? "cursor-pointer" : "opacity-60"}`;
+    card.innerHTML = `
+      <div class="text-4xl mb-3">${m.icon}</div>
+      <div class="flex items-center gap-2 mb-1">
+        <h2 class="text-lg font-black text-[#1a2a4a]">${m.name}</h2>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}">
+          ${active ? "Active" : "Coming Soon"}
+        </span>
+      </div>
+      <p class="text-xs text-[#5c6b8a] mb-3">${m.full_name}</p>
+      ${m.vacancies ? `<p class="text-xs font-semibold text-[#8a9ab7]">Vacancies: ${m.vacancies}</p>` : ""}
+      <div class="flex flex-wrap gap-1 mt-3">
+        ${(m.topics || []).map(t => `<span class="text-xs bg-[#e8eaf6] text-[#1a237e] px-2 py-0.5 rounded-full font-semibold">${t}</span>`).join("")}
+      </div>
+      ${active ? `<div class="mt-4"><a href="/modules/${m.id}/fe/web/home.html" class="bg-[#0d47a1] text-white text-sm font-black px-5 py-2.5 rounded-xl hover:bg-[#1565c0] transition inline-block">Start Practice →</a></div>` : ""}
+    `;
+    grid.appendChild(card);
+  }
+  if (!modules.length) grid.innerHTML = `<p class="text-center text-[#aaa] col-span-2 py-12">Loading modules…</p>`;
+}
+
+init();
+</script>
+
+<!-- ── Header ── -->
+<header class="bg-gradient-to-r from-[#0d47a1] to-[#1565c0] text-white px-6 py-5">
+  <div class="max-w-3xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">🚂</span>
+      <div>
+        <h1 class="text-xl font-black tracking-tight">RRB Mock Tests</h1>
+        <p class="text-xs text-blue-200">Railway Recruitment Board — All Exams</p>
+      </div>
+    </div>
+    <a href="/modules/exam-engine/fe/web/home.html" class="text-xs text-blue-200 hover:text-white font-semibold">All Exams →</a>
+  </div>
+</header>
+
+<!-- ── Banner ── -->
+<div class="bg-[#0d47a1] text-white text-center py-3 text-sm font-semibold">
+  🚆 Practice for RRB exams with real-pattern mock tests · Negative marking included
+</div>
+
+<div class="max-w-3xl mx-auto p-5 space-y-6">
+
+  <!-- Sub-module grid -->
+  <div>
+    <h2 class="text-xs font-black uppercase tracking-widest text-[#5c6b8a] mb-3">Select Your Exam</h2>
+    <div id="modules-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="col-span-2 text-center py-12 text-[#aaa]">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Info strip -->
+  <div class="bg-white rounded-2xl p-5 shadow-sm flex flex-wrap gap-6 justify-around text-center">
+    <div><div class="text-2xl font-black text-[#0d47a1]">+1</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">Correct Answer</div></div>
+    <div><div class="text-2xl font-black text-[#c62828]">-⅓</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">Wrong Answer</div></div>
+    <div><div class="text-2xl font-black text-[#5c6b8a]">0</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">No Attempt</div></div>
+    <div><div class="text-2xl font-black text-[#2e7d32]">CBT</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">Computer Based</div></div>
+  </div>
+
+</div>
+</body>
+</html>

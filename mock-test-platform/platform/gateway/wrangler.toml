@@ -32,5 +32,13 @@ service = "mtp-admin"
 binding = "MODULE_USER"
 service = "mtp-user"
 
+[[services]]
+binding = "MODULE_RRB"
+service = "mtp-rrb"
+
+[[services]]
+binding = "MODULE_RRB_GROUP_D"
+service = "mtp-rrb-group-d"
+
 [vars]
 ENVIRONMENT = "production"

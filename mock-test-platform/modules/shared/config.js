@@ -21,6 +21,8 @@ export const DEFAULTS = {
   admin_base:   _defaults.admin_base,
   exam_base:    _defaults.exam_base,
   user_base:    _defaults.user_base,
+  rrb_base:     _defaults.rrb_base,
+  rrb_gd_base:  _defaults.rrb_gd_base,
   cdn_manifest: _defaults.cdn_manifest,
 };
 

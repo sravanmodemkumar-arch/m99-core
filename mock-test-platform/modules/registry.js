@@ -32,4 +32,20 @@ export const MODULES = [
     apiPrefix: "/user",
     home:      "/modules/user/fe/web/profile.html",
   },
+  {
+    id:        "rrb",
+    name:      "RRB Exams",
+    icon:      "🚂",
+    port:      8791,
+    apiPrefix: "/rrb",
+    home:      "/modules/rrb/fe/web/index.html",
+  },
+  {
+    id:        "rrb-group-d",
+    name:      "RRB Group D",
+    icon:      "🛤️",
+    port:      8792,
+    apiPrefix: "/rrb-gd",
+    home:      "/modules/rrb-group-d/fe/web/home.html",
+  },
 ];
