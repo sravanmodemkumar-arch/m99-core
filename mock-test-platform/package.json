@@ -13,7 +13,14 @@
     "seed:r2":     "node scripts/seed-r2-local.js",
     "test":        "cd tests && npx vitest run",
     "test:unit":   "cd tests && npx vitest run --config vitest.config.unit.ts",
-    "test:int":    "cd tests && npx vitest run --config vitest.config.integration.ts"
+    "test:int":    "cd tests && npx vitest run --config vitest.config.integration.ts",
+    "setup":       "node scripts/setup.js",
+    "deploy":      "node scripts/deploy.js",
+    "deploy:cf":   "node scripts/deploy.js --step cf",
+    "deploy:sam":  "node scripts/deploy.js --step sam",
+    "deploy:db":   "node scripts/deploy.js --step db",
+    "deploy:seed": "node scripts/deploy.js --step seed",
+    "deploy:cdn":  "node scripts/deploy.js --step cdn"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
