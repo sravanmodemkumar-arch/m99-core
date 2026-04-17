@@ -3,183 +3,421 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In — Mock Test Platform</title>
-<link rel="stylesheet" href="../shared/base.css">
+<title>Sign In</title>
 <style>
-  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
-  .login-card { width: 100%; max-width: 380px; }
-  .brand { text-align: center; margin-bottom: 2rem; }
-  .brand-name { font-size: 1.375rem; font-weight: 800; color: var(--primary); }
-  .brand-sub  { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
-  .step { display: none; }
-  .step.active { display: block; }
-  .otp-row { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.25rem; }
-  .otp-row input { width: 2.75rem; height: 3rem; text-align: center; font-size: 1.25rem; font-weight: 700; padding: 0; border-radius: var(--radius-sm); }
-  .error { color: var(--danger); font-size: 0.8125rem; margin-top: 0.375rem; min-height: 1.2em; }
-  .back-link { font-size: 0.8125rem; color: var(--text-muted); text-align: center; margin-top: 1rem; cursor: pointer; }
-  .back-link:hover { color: var(--primary); }
-  #timer-text { font-size: 0.8125rem; color: var(--text-muted); text-align: center; margin-top: 0.75rem; }
-  #timer-text a { color: var(--primary); cursor: pointer; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+body {
+  display: flex; min-height: 100vh;
+  background: #f0f4f8;
+}
+
+/* ── Left panel (hero) ─────────────────────────────── */
+.hero {
+  display: none;
+  flex: 1;
+  background: linear-gradient(145deg, #0d47a1 0%, #1565c0 60%, #1976d2 100%);
+  padding: 48px;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+@media (min-width: 900px) { .hero { display: flex; } }
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.hero-logo { font-size: 48px; margin-bottom: 24px; }
+.hero-title { font-size: 32px; font-weight: 800; color: #fff; line-height: 1.25; margin-bottom: 16px; }
+.hero-sub { font-size: 16px; color: rgba(255,255,255,.75); line-height: 1.6; margin-bottom: 40px; }
+.hero-features { display: flex; flex-direction: column; gap: 14px; }
+.hero-feat { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,.9); font-size: 14px; }
+.hero-feat-icon { width: 36px; height: 36px; background: rgba(255,255,255,.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+
+/* ── Right panel (form) ─────────────────────────────── */
+.form-panel {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 24px;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0,0,0,.06);
+}
+@media (min-width: 900px) { .form-panel { padding: 48px 40px; } }
+@media (max-width: 899px) { .form-panel { max-width: 100%; box-shadow: none; } }
+
+.brand { margin-bottom: 32px; }
+.brand-name { font-size: 22px; font-weight: 800; color: #0d47a1; display: flex; align-items: center; gap: 8px; }
+.brand-sub { font-size: 13px; color: #78909c; margin-top: 4px; }
+
+.form-title { font-size: 20px; font-weight: 700; color: #1a237e; margin-bottom: 6px; }
+.form-sub { font-size: 13px; color: #78909c; margin-bottom: 28px; }
+
+/* ── Tabs ─────────────────────────────────────────── */
+.tabs { display: flex; gap: 0; border: 1.5px solid #e3e8f0; border-radius: 10px; padding: 3px; margin-bottom: 24px; }
+.tab {
+  flex: 1; padding: 9px; text-align: center; font-size: 13px; font-weight: 600;
+  border-radius: 7px; cursor: pointer; color: #78909c; transition: all .15s;
+  border: none; background: none;
+}
+.tab.active { background: #0d47a1; color: #fff; }
+
+/* ── Fields ─────────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: #546e7a; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.field input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #cfd8dc;
+  border-radius: 8px; font-size: 14px; color: #1a237e; background: #fff;
+  transition: border-color .15s, box-shadow .15s; outline: none;
+}
+.field input:focus { border-color: #0d47a1; box-shadow: 0 0 0 3px rgba(13,71,161,.1); }
+.field input::placeholder { color: #b0bec5; }
+
+.input-wrap { position: relative; }
+.input-wrap input { padding-right: 44px; }
+.eye-btn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 18px; color: #90a4ae; padding: 2px;
+}
+
+.field-hint { font-size: 11px; color: #90a4ae; margin-top: 5px; }
+.field-error { font-size: 12px; color: #e53935; margin-top: 5px; min-height: 16px; }
+
+/* ── OTP boxes ─────────────────────────────────────── */
+.otp-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 4px; }
+.otp-row input {
+  width: 44px; height: 52px; text-align: center; font-size: 20px; font-weight: 700;
+  border: 1.5px solid #cfd8dc; border-radius: 8px; padding: 0;
+  transition: border-color .15s; outline: none; color: #1a237e;
+}
+.otp-row input:focus { border-color: #0d47a1; box-shadow: 0 0 0 3px rgba(13,71,161,.1); }
+
+/* ── Buttons ─────────────────────────────────────── */
+.btn-primary {
+  width: 100%; padding: 13px; background: #0d47a1; color: #fff;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: background .15s; margin-top: 4px;
+}
+.btn-primary:hover:not(:disabled) { background: #0a3680; }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+.divider { text-align: center; font-size: 12px; color: #b0bec5; margin: 18px 0; position: relative; }
+.divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background: #e3e8f0; }
+.divider::before { left: 0; } .divider::after { right: 0; }
+
+.link-row { text-align: center; font-size: 13px; color: #78909c; margin-top: 20px; }
+.link-row a { color: #0d47a1; font-weight: 600; text-decoration: none; }
+.link-row a:hover { text-decoration: underline; }
+
+.forgot-link { text-align: right; font-size: 12px; margin-bottom: 4px; }
+.forgot-link a { color: #0d47a1; text-decoration: none; font-weight: 600; }
+
+.back-link { text-align: center; font-size: 13px; color: #78909c; margin-top: 12px; cursor: pointer; }
+.back-link:hover { color: #0d47a1; }
+
+.timer-text { font-size: 12px; color: #90a4ae; text-align: center; margin-top: 10px; }
+.timer-text a { color: #0d47a1; cursor: pointer; font-weight: 600; }
+
+.step { display: none; }
+.step.active { display: block; }
+
+.otp-sent-info { text-align: center; margin-bottom: 20px; }
+.otp-sent-info .phone-badge { font-size: 15px; font-weight: 700; color: #1a237e; }
+.otp-sent-info .hint { font-size: 12px; color: #90a4ae; margin-top: 4px; }
+
+.phone-prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; font-weight: 600; color: #546e7a; }
+.with-prefix { padding-left: 42px !important; }
 </style>
 </head>
 <body>
 
-<div class="login-card card">
-  <div class="brand">
-    <div class="brand-name">Mock Test Platform</div>
-    <div class="brand-sub">India's most trusted exam prep</div>
-  </div>
-
-  <!-- Step 1: Phone -->
-  <div class="step active" id="step-phone">
-    <div class="field">
-      <label for="phone">Mobile Number</label>
-      <input type="tel" id="phone" maxlength="10" inputmode="numeric"
-             placeholder="10-digit mobile number"
-             onkeydown="if(event.key==='Enter') sendOtp()">
-      <div class="error" id="phone-error"></div>
-    </div>
-    <button class="btn btn-primary" id="send-btn" onclick="sendOtp()">Send OTP</button>
-  </div>
-
-  <!-- Step 2: OTP -->
-  <div class="step" id="step-otp">
-    <div style="text-align:center;margin-bottom:1.25rem">
-      <div style="font-size:0.9375rem;font-weight:600;margin-bottom:0.25rem">Enter OTP</div>
-      <div style="font-size:0.8125rem;color:var(--text-muted)">Sent to <span id="phone-display" style="color:var(--primary);font-weight:600"></span></div>
-    </div>
-    <div class="otp-row" id="otp-boxes">
-      <input type="tel" maxlength="1" inputmode="numeric">
-      <input type="tel" maxlength="1" inputmode="numeric">
-      <input type="tel" maxlength="1" inputmode="numeric">
-      <input type="tel" maxlength="1" inputmode="numeric">
-      <input type="tel" maxlength="1" inputmode="numeric">
-      <input type="tel" maxlength="1" inputmode="numeric">
-    </div>
-    <div class="error" id="otp-error"></div>
-    <button class="btn btn-primary" id="verify-btn" onclick="verifyOtp()">Verify &amp; Sign In</button>
-    <div id="timer-text"></div>
-    <div class="back-link" onclick="goBack()">← Change number</div>
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-logo">🚆</div>
+  <div class="hero-title">India's Smartest<br>Exam Prep Platform</div>
+  <div class="hero-sub">Practice with real-pattern mock tests, negative marking, and instant analysis.</div>
+  <div class="hero-features">
+    <div class="hero-feat"><div class="hero-feat-icon">📝</div>120+ Mock Tests — RRB NTPC, Group-D, JE</div>
+    <div class="hero-feat"><div class="hero-feat-icon">⚡</div>Instant scoring with section-wise analysis</div>
+    <div class="hero-feat"><div class="hero-feat-icon">🏆</div>50,000+ students trust our platform</div>
+    <div class="hero-feat"><div class="hero-feat-icon">📊</div>Track your progress over time</div>
   </div>
 </div>
 
-<script type="module">
-const TENANT = "mtp-main";
-let phone = "";
+<!-- Form Panel -->
+<div class="form-panel">
+  <div class="brand">
+    <div class="brand-name">🚂 RailwayMock</div>
+    <div class="brand-sub">Railway Recruitment Board Exam Prep</div>
+  </div>
+
+  <div class="form-title">Welcome back</div>
+  <div class="form-sub">Sign in to continue your preparation</div>
+
+  <!-- Tabs: Password vs OTP -->
+  <div class="tabs">
+    <button class="tab active" id="tab-pw"  onclick="switchTab('pw')">Password</button>
+    <button class="tab"        id="tab-otp" onclick="switchTab('otp')">OTP Login</button>
+  </div>
+
+  <!-- ── Password login steps ─────────────────────────────────────── -->
+  <div id="pane-pw">
+    <div class="field">
+      <label>Phone or Email</label>
+      <input type="text" id="pw-identifier" placeholder="9876543210 or you@email.com"
+             autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('pw-password').focus()">
+      <div class="field-error" id="pw-id-error"></div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="input-wrap">
+        <input type="password" id="pw-password" placeholder="Enter your password"
+               autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="eye-btn" type="button" onclick="toggleEye('pw-password',this)">👁</button>
+      </div>
+      <div class="forgot-link"><a href="#" onclick="event.preventDefault()">Forgot password?</a></div>
+      <div class="field-error" id="pw-error"></div>
+    </div>
+    <button class="btn-primary" id="pw-btn" onclick="doLogin()">Sign In</button>
+  </div>
+
+  <!-- ── OTP login steps ─────────────────────────────────────────── -->
+  <div id="pane-otp">
+    <!-- Step 1: phone -->
+    <div class="step active" id="otp-step-phone">
+      <div class="field">
+        <label>Mobile Number</label>
+        <div class="input-wrap">
+          <span class="phone-prefix">+91</span>
+          <input type="tel" id="otp-phone" class="with-prefix" maxlength="10" inputmode="numeric"
+                 placeholder="10-digit mobile" onkeydown="if(event.key==='Enter')sendOtp()">
+        </div>
+        <div class="field-error" id="otp-phone-error"></div>
+      </div>
+      <button class="btn-primary" id="otp-send-btn" onclick="sendOtp()">Send OTP</button>
+    </div>
+
+    <!-- Step 2: OTP boxes -->
+    <div class="step" id="otp-step-verify">
+      <div class="otp-sent-info">
+        <div class="phone-badge" id="otp-phone-display">xxxxxxxxxx</div>
+        <div class="hint">Enter the 6-digit OTP sent to this number</div>
+        <div class="hint" style="color:#43a047;font-weight:600;margin-top:4px">Dev OTP: 123456</div>
+      </div>
+      <div class="otp-row" id="otp-boxes">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+      </div>
+      <div class="field-error" id="otp-verify-error" style="text-align:center"></div>
+      <button class="btn-primary" id="otp-verify-btn" onclick="doOtpVerify()">Verify &amp; Sign In</button>
+      <div class="timer-text" id="otp-timer"></div>
+      <div class="back-link" onclick="otpGoBack()">← Change number</div>
+    </div>
+  </div>
+
+  <div class="divider">or</div>
+  <div class="link-row">
+    Don't have an account? <a href="./signup.html">Create one free</a>
+  </div>
+</div>
+
+<script>
+// ── Tenant from URL ──────────────────────────────────────────────────────────
+const urlParams = new URLSearchParams(location.search);
+const TENANT_ID = urlParams.get("tenant") || "mtp-main";
+
+// Redirect if already logged in
+const existingToken = localStorage.getItem("auth_token");
+if (existingToken) {
+  const dest = localStorage.getItem("home_url") || "/modules/auth/fe/web/home.html";
+  location.href = dest;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function storeAuth(data) {
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("uid",        data.uid);
+  localStorage.setItem("role",       data.role);
+  if (data.name)     localStorage.setItem("name",     data.name);
+  if (data.modules)  localStorage.setItem("modules",  JSON.stringify(data.modules));
+  const dest = data.home_url || "/modules/auth/fe/web/home.html";
+  localStorage.setItem("home_url", dest);
+  return dest;
+}
+
+function setLoading(btnId, loading, label) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.textContent = loading ? "Please wait…" : label;
+}
+
+function toggleEye(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const isPass = inp.type === "password";
+  inp.type = isPass ? "text" : "password";
+  btn.textContent = isPass ? "🙈" : "👁";
+}
+
+// ── Tab switch ──────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.getElementById("tab-pw").className  = "tab" + (tab === "pw"  ? " active" : "");
+  document.getElementById("tab-otp").className = "tab" + (tab === "otp" ? " active" : "");
+  document.getElementById("pane-pw").style.display  = tab === "pw"  ? "" : "none";
+  document.getElementById("pane-otp").style.display = tab === "otp" ? "" : "none";
+}
+document.getElementById("pane-otp").style.display = "none";
+
+// ── Password login ──────────────────────────────────────────────────────────
+
+async function doLogin() {
+  const identifier = document.getElementById("pw-identifier").value.trim();
+  const password   = document.getElementById("pw-password").value;
+  document.getElementById("pw-id-error").textContent = "";
+  document.getElementById("pw-error").textContent    = "";
+
+  if (!identifier) { document.getElementById("pw-id-error").textContent = "Enter phone or email"; return; }
+  if (!password)   { document.getElementById("pw-error").textContent    = "Enter password"; return; }
+
+  setLoading("pw-btn", true, "Sign In");
+  try {
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, password, tenantId: TENANT_ID }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Login failed");
+    location.href = storeAuth(data);
+  } catch (err) {
+    document.getElementById("pw-error").textContent = err.message;
+  } finally {
+    setLoading("pw-btn", false, "Sign In");
+  }
+}
+
+// ── OTP login ───────────────────────────────────────────────────────────────
+
+let otpPhone = "";
 let resendTimer = null;
 
-const boxes = document.querySelectorAll("#otp-boxes input");
-boxes.forEach((box, i) => {
+const otpBoxes = document.querySelectorAll("#otp-boxes input");
+otpBoxes.forEach((box, i) => {
   box.addEventListener("input", () => {
-    box.value = box.value.replace(/\D/g, "").slice(-1);
-    if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+    box.value = box.value.replace(/\D/, "").slice(-1);
+    if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
   });
-  box.addEventListener("keydown", (e) => {
-    if (e.key === "Backspace" && !box.value && i > 0) boxes[i - 1].focus();
-    if (e.key === "Enter") verifyOtp();
+  box.addEventListener("keydown", e => {
+    if (e.key === "Backspace" && !box.value && i > 0) otpBoxes[i - 1].focus();
+    if (e.key === "Enter") doOtpVerify();
   });
-  box.addEventListener("paste", (e) => {
+  box.addEventListener("paste", e => {
     const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    [...paste].forEach((ch, j) => { if (boxes[i + j]) boxes[i + j].value = ch; });
-    boxes[Math.min(i + paste.length, boxes.length - 1)].focus();
+    [...paste].forEach((ch, j) => { if (otpBoxes[i + j]) otpBoxes[i + j].value = ch; });
+    otpBoxes[Math.min(i + paste.length, otpBoxes.length - 1)].focus();
     e.preventDefault();
   });
 });
 
-function getOtp() { return [...boxes].map(b => b.value).join(""); }
+function getOtp() { return [...otpBoxes].map(b => b.value).join(""); }
 
-window.sendOtp = async function() {
-  phone = document.getElementById("phone").value.trim();
-  if (!/^\d{10}$/.test(phone)) {
-    document.getElementById("phone-error").textContent = "Enter a valid 10-digit number";
+function otpShowStep(id) {
+  document.querySelectorAll("#pane-otp .step").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+async function sendOtp() {
+  otpPhone = document.getElementById("otp-phone").value.trim();
+  if (!/^\d{10}$/.test(otpPhone)) {
+    document.getElementById("otp-phone-error").textContent = "Enter a valid 10-digit number";
     return;
   }
-  document.getElementById("phone-error").textContent = "";
-  const btn = document.getElementById("send-btn");
-  btn.disabled = true; btn.textContent = "Sending…";
-
+  document.getElementById("otp-phone-error").textContent = "";
+  setLoading("otp-send-btn", true, "Send OTP");
   try {
     const res = await fetch("/auth/otp/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phone: otpPhone }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to send OTP");
-    document.getElementById("phone-display").textContent = phone;
-    show("step-otp");
-    boxes[0].focus();
+    document.getElementById("otp-phone-display").textContent = "+91 " + otpPhone;
+    otpShowStep("otp-step-verify");
+    otpBoxes[0].focus();
     startResendTimer(30);
   } catch (err) {
-    document.getElementById("phone-error").textContent = err.message;
+    document.getElementById("otp-phone-error").textContent = err.message;
   } finally {
-    btn.disabled = false; btn.textContent = "Send OTP";
+    setLoading("otp-send-btn", false, "Send OTP");
   }
-};
+}
 
-window.verifyOtp = async function() {
+async function doOtpVerify() {
   const otp = getOtp();
   if (otp.length < 6) {
-    document.getElementById("otp-error").textContent = "Enter the 6-digit OTP";
+    document.getElementById("otp-verify-error").textContent = "Enter the 6-digit OTP";
     return;
   }
-  document.getElementById("otp-error").textContent = "";
-  const btn = document.getElementById("verify-btn");
-  btn.disabled = true; btn.textContent = "Verifying…";
-
+  document.getElementById("otp-verify-error").textContent = "";
+  setLoading("otp-verify-btn", true, "Verify & Sign In");
   try {
     const res = await fetch("/auth/otp/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, otp, tenantId: TENANT }),
+      body: JSON.stringify({ phone: otpPhone, otp, tenantId: TENANT_ID }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Invalid OTP");
-    localStorage.setItem("auth_token", data.token);
-    localStorage.setItem("uid",  data.uid);
-    localStorage.setItem("role", data.role);
-    window.location.href = "/modules/auth/fe/web/home.html";
+    location.href = storeAuth(data);
   } catch (err) {
-    document.getElementById("otp-error").textContent = err.message;
-    boxes.forEach(b => b.value = ""); boxes[0].focus();
+    document.getElementById("otp-verify-error").textContent = err.message;
+    otpBoxes.forEach(b => b.value = "");
+    otpBoxes[0].focus();
   } finally {
-    btn.disabled = false; btn.textContent = "Verify & Sign In";
+    setLoading("otp-verify-btn", false, "Verify & Sign In");
   }
-};
-
-function show(id) {
-  document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
 }
 
-window.goBack = function() {
+function otpGoBack() {
   clearInterval(resendTimer);
-  document.getElementById("timer-text").textContent = "";
-  boxes.forEach(b => b.value = "");
-  document.getElementById("otp-error").textContent = "";
-  show("step-phone");
-};
+  document.getElementById("otp-timer").textContent = "";
+  otpBoxes.forEach(b => b.value = "");
+  document.getElementById("otp-verify-error").textContent = "";
+  otpShowStep("otp-step-phone");
+}
 
-function startResendTimer(seconds) {
-  let s = seconds;
+function startResendTimer(s) {
   clearInterval(resendTimer);
-  const el = document.getElementById("timer-text");
+  const el = document.getElementById("otp-timer");
   el.textContent = `Resend OTP in ${s}s`;
   resendTimer = setInterval(() => {
     s--;
     if (s <= 0) {
       clearInterval(resendTimer);
-      el.innerHTML = `Didn't receive OTP? <a onclick="window.resendOtp()">Resend</a>`;
+      el.innerHTML = `Didn't receive OTP? <a onclick="resendOtp()">Resend</a>`;
     } else {
       el.textContent = `Resend OTP in ${s}s`;
     }
   }, 1000);
 }
 
-window.resendOtp = function() {
-  boxes.forEach(b => b.value = ""); boxes[0].focus();
-  window.sendOtp();
-};
+function resendOtp() {
+  otpBoxes.forEach(b => b.value = "");
+  otpBoxes[0].focus();
+  sendOtp();
+}
 </script>
 </body>
 </html>

@@ -3,100 +3,388 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RRB Mock Tests</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>RRB Mock Tests — Home</title>
+<script src="/modules/shared/theme.js"></script>
 <style>
-  body { background:#f0f4f8; font-family:system-ui,sans-serif; margin:0; }
-  .rrb-red  { color:#c62828; }
-  .rrb-blue { color:#0d47a1; }
-  .card-hover { transition:transform .15s,box-shadow .15s; }
-  .card-hover:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; background: #f0f4f8; color: #1a237e; }
+
+/* ── CSS variable fallbacks (overridden by theme.js) ── */
+:root {
+  --t-primary:      #0d47a1;
+  --t-primary-dark: #082f8a;
+  --t-accent:       #f57f17;
+  --t-header-bg:    linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.header {
+  background: var(--t-header-bg); color: #fff;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.header-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 58px;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.header-logo  { font-size: 24px; }
+.header-name  { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+.header-sub   { font-size: 11px; opacity: .75; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-user-name { font-size: 13px; opacity: .9; }
+.header-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+}
+.btn-logout {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: #fff; border-radius: 6px; padding: 5px 12px;
+  font-size: 12px; cursor: pointer; transition: background .15s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.28); }
+
+/* ── Hero banner ─────────────────────────────────────── */
+.hero {
+  background: var(--t-header-bg);
+  padding: 32px 20px 40px;
+  color: #fff;
+}
+.hero-inner { max-width: 1100px; margin: 0 auto; }
+.hero-greeting { font-size: 13px; opacity: .8; margin-bottom: 4px; }
+.hero-title { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+.hero-sub { font-size: 14px; opacity: .8; margin-bottom: 24px; }
+
+/* Stats chips in hero */
+.hero-stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.h-stat {
+  background: rgba(255,255,255,.15); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,.2); border-radius: 10px;
+  padding: 10px 16px; display: flex; flex-direction: column; gap: 2px;
+}
+.h-stat-val { font-size: 20px; font-weight: 800; color: #fff; }
+.h-stat-lbl { font-size: 11px; opacity: .8; }
+
+/* ── Content ─────────────────────────────────────────── */
+.content { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+/* Section header */
+.sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sec-title {
+  font-size: 13px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; color: #546e7a;
+  display: flex; align-items: center; gap: 8px;
+}
+.sec-title::after { content: ""; display: block; width: 40px; height: 2px; background: var(--t-primary); border-radius: 2px; }
+
+/* ── Exam cards ─────────────────────────────────────── */
+.exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 36px; }
+
+.exam-card {
+  background: #fff; border-radius: 14px;
+  border: 1.5px solid #e3e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  overflow: hidden;
+  transition: box-shadow .2s, transform .15s;
+  display: flex; flex-direction: column;
+}
+.exam-card:hover { box-shadow: 0 8px 24px rgba(13,71,161,.14); transform: translateY(-2px); }
+
+.exam-card-head {
+  padding: 20px 20px 16px;
+  background: linear-gradient(135deg, #e8eaf6 0%, #f3f4fa 100%);
+  border-bottom: 1px solid #e3e8f0;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+}
+.exam-icon { font-size: 32px; }
+.exam-card-info { flex: 1; }
+.exam-name { font-size: 17px; font-weight: 800; color: #1a237e; margin-bottom: 3px; }
+.exam-full-name { font-size: 11px; color: #78909c; font-weight: 500; }
+
+.exam-badge {
+  font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+  background: var(--t-primary); color: #fff;
+}
+
+.exam-card-body { padding: 16px 20px; flex: 1; }
+
+.exam-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+.meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #546e7a; }
+.meta-icon { font-size: 14px; }
+
+.subject-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+.subject-tag {
+  font-size: 11px; background: #e8eaf6; color: #283593;
+  padding: 3px 9px; border-radius: 12px; font-weight: 600;
+}
+
+.exam-card-foot { padding: 14px 20px; border-top: 1px solid #f0f2f5; display: flex; gap: 10px; }
+
+.btn-start {
+  flex: 1; background: var(--t-primary); color: #fff;
+  border: none; border-radius: 8px; padding: 11px;
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s;
+}
+.btn-start:hover { background: var(--t-primary-dark); }
+
+.btn-practice {
+  background: #fff; color: var(--t-primary); border: 1.5px solid var(--t-primary);
+  border-radius: 8px; padding: 11px 14px; font-size: 12px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: background .15s;
+}
+.btn-practice:hover { background: #e8eaf6; }
+
+/* ── Marking scheme strip ────────────────────────────── */
+.marking-strip {
+  background: #fff; border-radius: 12px; border: 1.5px solid #e3e8f0;
+  padding: 16px 20px; margin-bottom: 28px;
+  display: flex; flex-wrap: wrap; gap: 0; align-items: stretch;
+}
+.mark-item {
+  flex: 1; min-width: 120px; text-align: center;
+  padding: 6px 16px; border-right: 1px solid #e3e8f0;
+}
+.mark-item:last-child { border-right: none; }
+.mark-val { font-size: 22px; font-weight: 800; color: var(--t-primary); }
+.mark-val.wrong { color: #c62828; }
+.mark-val.skip  { color: #546e7a; }
+.mark-lbl { font-size: 11px; color: #90a4ae; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ── Subject coverage ────────────────────────────────── */
+.subjects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 36px; }
+.subject-card {
+  background: #fff; border-radius: 12px; border: 1.5px solid #e3e8f0;
+  padding: 16px; display: flex; align-items: center; gap: 14px;
+}
+.subj-icon { font-size: 28px; }
+.subj-info { flex: 1; }
+.subj-name { font-size: 13px; font-weight: 700; color: #1a237e; margin-bottom: 4px; }
+.subj-bar-wrap { height: 4px; background: #e3e8f0; border-radius: 2px; overflow: hidden; }
+.subj-bar { height: 100%; border-radius: 2px; background: var(--t-primary); }
+.subj-count { font-size: 11px; color: #90a4ae; margin-top: 4px; }
+
+/* ── Loading / empty ──────────────────────────────────── */
+.spin {
+  width: 22px; height: 22px; border: 3px solid #e0e0e0;
+  border-top-color: var(--t-primary); border-radius: 50%;
+  animation: spin .8s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) {
+  .content { padding: 20px 14px; }
+  .hero { padding: 24px 14px 32px; }
+  .hero-title { font-size: 21px; }
+  .exam-grid { grid-template-columns: 1fr; }
+  .subjects-grid { grid-template-columns: 1fr 1fr; }
+  .mark-item { min-width: 80px; }
+}
 </style>
 </head>
 <body>
 
-<script>
-const API   = window._API_PREFIX || "/rrb";
-const token = localStorage.getItem("auth_token");
-if (!token) { location.href = "/modules/auth/fe/web/login.html"; }
+<!-- Header -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-logo">🚂</div>
+      <div>
+        <div class="header-name">RailwayMock</div>
+        <div class="header-sub">Railway Recruitment Board</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="header-user-name" id="hdr-name"></span>
+      <div class="header-avatar" id="hdr-avatar">U</div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
 
-async function init() {
-  try {
-    const res = await fetch(API + "/modules", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const { modules } = await res.json();
-    renderModules(modules);
-  } catch { renderModules([]); }
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-greeting">Railway Exam Preparation</div>
+    <div class="hero-title">Welcome, <span id="hero-name">Aspirant</span> 👋</div>
+    <div class="hero-sub">Pick an exam below and start your timed mock test now</div>
+    <div class="hero-stats" id="hero-stats">
+      <div class="h-stat"><div class="h-stat-val" id="stat-exams">—</div><div class="h-stat-lbl">Mock Tests</div></div>
+      <div class="h-stat"><div class="h-stat-val" id="stat-attempts">—</div><div class="h-stat-lbl">Your Attempts</div></div>
+      <div class="h-stat"><div class="h-stat-val" id="stat-best">—</div><div class="h-stat-lbl">Best Score</div></div>
+      <div class="h-stat"><div class="h-stat-val" id="stat-acc">—</div><div class="h-stat-lbl">Avg Accuracy</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Main content -->
+<div class="content">
+
+  <!-- Marking scheme -->
+  <div class="sec-header"><div class="sec-title">Marking Scheme</div></div>
+  <div class="marking-strip">
+    <div class="mark-item"><div class="mark-val">+1</div><div class="mark-lbl">Correct Answer</div></div>
+    <div class="mark-item"><div class="mark-val wrong">−⅓</div><div class="mark-lbl">Wrong Answer</div></div>
+    <div class="mark-item"><div class="mark-val skip">0</div><div class="mark-lbl">Not Attempted</div></div>
+    <div class="mark-item"><div class="mark-val">CBT</div><div class="mark-lbl">Computer Based</div></div>
+  </div>
+
+  <!-- Exam cards -->
+  <div class="sec-header">
+    <div class="sec-title">Choose Your Exam</div>
+    <a href="./analysis.html" style="font-size:12px;color:var(--t-primary);font-weight:700;text-decoration:none">View Analysis →</a>
+  </div>
+  <div class="exam-grid" id="exam-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:#90a4ae">
+      <div class="spin"></div>
+      <div style="margin-top:12px">Loading exams…</div>
+    </div>
+  </div>
+
+  <!-- Subject coverage -->
+  <div class="sec-header"><div class="sec-title">Topics Covered</div></div>
+  <div class="subjects-grid">
+    <div class="subject-card"><div class="subj-icon">🔢</div><div class="subj-info"><div class="subj-name">Mathematics</div><div class="subj-bar-wrap"><div class="subj-bar" style="width:85%"></div></div><div class="subj-count">Arithmetic · Algebra · Geometry</div></div></div>
+    <div class="subject-card"><div class="subj-icon">🧠</div><div class="subj-info"><div class="subj-name">Reasoning</div><div class="subj-bar-wrap"><div class="subj-bar" style="width:90%"></div></div><div class="subj-count">Verbal · Non-Verbal · Analogy</div></div></div>
+    <div class="subject-card"><div class="subj-icon">🌍</div><div class="subj-info"><div class="subj-name">General Awareness</div><div class="subj-bar-wrap"><div class="subj-bar" style="width:75%"></div></div><div class="subj-count">Current Affairs · Static GK</div></div></div>
+    <div class="subject-card"><div class="subj-icon">⚙️</div><div class="subj-info"><div class="subj-name">General Science</div><div class="subj-bar-wrap"><div class="subj-bar" style="width:70%"></div></div><div class="subj-count">Physics · Chemistry · Biology</div></div></div>
+    <div class="subject-card"><div class="subj-icon">🏛️</div><div class="subj-info"><div class="subj-name">History &amp; Polity</div><div class="subj-bar-wrap"><div class="subj-bar" style="width:65%"></div></div><div class="subj-count">Indian History · Constitution</div></div></div>
+    <div class="subject-card"><div class="subj-icon">🗺️</div><div class="subj-info"><div class="subj-name">Geography</div><div class="subj-bar-wrap"><div class="subj-bar" style="width:60%"></div></div><div class="subj-count">India · World · Environment</div></div></div>
+  </div>
+
+</div>
+
+<script>
+const TOKEN = localStorage.getItem("auth_token");
+if (!TOKEN) location.href = "/modules/auth/fe/web/login.html?tenant=rrb";
+
+function logout() {
+  localStorage.clear();
+  location.href = "/modules/auth/fe/web/login.html";
 }
 
-function renderModules(modules) {
-  const grid = document.getElementById("modules-grid");
-  grid.innerHTML = "";
-  for (const m of modules) {
-    const active = m.status === "active";
-    const card = document.createElement("div");
-    card.className = `bg-white rounded-2xl p-6 shadow-sm card-hover ${active ? "cursor-pointer" : "opacity-60"}`;
-    card.innerHTML = `
-      <div class="text-4xl mb-3">${m.icon}</div>
-      <div class="flex items-center gap-2 mb-1">
-        <h2 class="text-lg font-black text-[#1a2a4a]">${m.name}</h2>
-        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}">
-          ${active ? "Active" : "Coming Soon"}
-        </span>
+async function apiFetch(path) {
+  const res = await fetch(path, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  return { ok: res.ok, data: await res.json().catch(() => ({})) };
+}
+
+function fmtDuration(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+
+const EXAM_META = {
+  "rrb-ntpc": {
+    icon: "🚆",
+    name: "RRB NTPC",
+    fullName: "Non-Technical Popular Categories",
+    badge: "CBT 1 & CBT 2",
+    subjects: ["Mathematics", "Reasoning", "General Awareness"],
+    apiPrefix: "/rrb-ntpc",
+    homeUrl: "/modules/rrb-ntpc/fe/web/home.html",
+  },
+  "rrb-group-d": {
+    icon: "🔧",
+    name: "RRB Group-D",
+    fullName: "Level 1 Posts (Group D)",
+    badge: "CBT",
+    subjects: ["Mathematics", "Reasoning", "General Science", "General Awareness"],
+    apiPrefix: "/rrb-gd",
+    homeUrl: "/modules/rrb-group-d/fe/web/home.html",
+  },
+};
+
+const SUB_MODULES = [
+  { id: "rrb-ntpc",    ...EXAM_META["rrb-ntpc"]    },
+  { id: "rrb-group-d", ...EXAM_META["rrb-group-d"] },
+];
+
+function renderModules(examCounts) {
+  const grid = document.getElementById("exam-grid");
+  grid.innerHTML = SUB_MODULES.map(m => {
+    const count = examCounts[m.id] || 0;
+    const subjects = m.subjects.map(s => `<span class="subject-tag">${s}</span>`).join("");
+    return `
+    <div class="exam-card">
+      <div class="exam-card-head">
+        <div>
+          <div class="exam-icon">${m.icon}</div>
+        </div>
+        <div class="exam-card-info">
+          <div class="exam-name">${m.name}</div>
+          <div class="exam-full-name">${m.fullName}</div>
+        </div>
+        <span class="exam-badge">${m.badge}</span>
       </div>
-      <p class="text-xs text-[#5c6b8a] mb-3">${m.full_name}</p>
-      ${m.vacancies ? `<p class="text-xs font-semibold text-[#8a9ab7]">Vacancies: ${m.vacancies}</p>` : ""}
-      <div class="flex flex-wrap gap-1 mt-3">
-        ${(m.topics || []).map(t => `<span class="text-xs bg-[#e8eaf6] text-[#1a237e] px-2 py-0.5 rounded-full font-semibold">${t}</span>`).join("")}
+      <div class="exam-card-body">
+        <div class="exam-meta">
+          <div class="meta-item"><span class="meta-icon">📋</span>${count} Mock Tests</div>
+          <div class="meta-item"><span class="meta-icon">⏱</span>90 min (CBT)</div>
+          <div class="meta-item"><span class="meta-icon">❓</span>100 Questions</div>
+        </div>
+        <div class="subject-tags">${subjects}</div>
       </div>
-      ${active ? `<div class="mt-4"><a href="/modules/${m.id}/fe/web/home.html" class="bg-[#0d47a1] text-white text-sm font-black px-5 py-2.5 rounded-xl hover:bg-[#1565c0] transition inline-block">Start Practice →</a></div>` : ""}
-    `;
-    grid.appendChild(card);
+      <div class="exam-card-foot">
+        <button class="btn-start" onclick="location.href='${m.homeUrl}'">Browse Tests →</button>
+        <button class="btn-practice" onclick="location.href='${m.homeUrl}'">Practice</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderStats(ntpcStats, gdStats) {
+  const combined = {
+    attempts: (ntpcStats?.total_attempts || 0) + (gdStats?.total_attempts || 0),
+    best: Math.max(ntpcStats?.best_score || 0, gdStats?.best_score || 0),
+    acc: [ntpcStats?.avg_accuracy, gdStats?.avg_accuracy].filter(v => v != null),
+  };
+  const avgAcc = combined.acc.length
+    ? (combined.acc.reduce((a, b) => a + b, 0) / combined.acc.length).toFixed(1)
+    : null;
+
+  if (combined.attempts > 0) document.getElementById("stat-attempts").textContent = combined.attempts;
+  if (combined.best > 0)     document.getElementById("stat-best").textContent = combined.best.toFixed(1);
+  if (avgAcc != null)        document.getElementById("stat-acc").textContent = avgAcc + "%";
+}
+
+async function init() {
+  // User info
+  const name  = localStorage.getItem("name") || localStorage.getItem("phone") || "";
+  const photo = localStorage.getItem("avatar_url") || "";
+  if (name) {
+    document.getElementById("hdr-name").textContent = name;
+    document.getElementById("hero-name").textContent = name.split(" ")[0];
   }
-  if (!modules.length) grid.innerHTML = `<p class="text-center text-[#aaa] col-span-2 py-12">Loading modules…</p>`;
+  const av = document.getElementById("hdr-avatar");
+  if (photo) {
+    av.innerHTML = `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    av.textContent = (name.slice(0, 1).toUpperCase()) || "U";
+  }
+
+  // Parallel: load exam counts + stats for both modules
+  const [ntpcExams, gdExams, ntpcStats, gdStats] = await Promise.all([
+    apiFetch("/rrb-ntpc/exams"),
+    apiFetch("/rrb-gd/exams"),
+    apiFetch("/rrb-ntpc/stats"),
+    apiFetch("/rrb-gd/stats"),
+  ]);
+
+  const examCounts = {
+    "rrb-ntpc":    ntpcExams.ok ? (ntpcExams.data.exams?.length || 0) : 0,
+    "rrb-group-d": gdExams.ok   ? (gdExams.data.exams?.length  || 0) : 0,
+  };
+  const totalExams = examCounts["rrb-ntpc"] + examCounts["rrb-group-d"];
+  document.getElementById("stat-exams").textContent = totalExams || "—";
+
+  renderModules(examCounts);
+  renderStats(ntpcStats.ok ? ntpcStats.data : null, gdStats.ok ? gdStats.data : null);
 }
 
 init();
 </script>
-
-<!-- ── Header ── -->
-<header class="bg-gradient-to-r from-[#0d47a1] to-[#1565c0] text-white px-6 py-5">
-  <div class="max-w-3xl mx-auto flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <span class="text-3xl">🚂</span>
-      <div>
-        <h1 class="text-xl font-black tracking-tight">RRB Mock Tests</h1>
-        <p class="text-xs text-blue-200">Railway Recruitment Board — All Exams</p>
-      </div>
-    </div>
-    <a href="/modules/exam-engine/fe/web/home.html" class="text-xs text-blue-200 hover:text-white font-semibold">All Exams →</a>
-  </div>
-</header>
-
-<!-- ── Banner ── -->
-<div class="bg-[#0d47a1] text-white text-center py-3 text-sm font-semibold">
-  🚆 Practice for RRB exams with real-pattern mock tests · Negative marking included
-</div>
-
-<div class="max-w-3xl mx-auto p-5 space-y-6">
-
-  <!-- Sub-module grid -->
-  <div>
-    <h2 class="text-xs font-black uppercase tracking-widest text-[#5c6b8a] mb-3">Select Your Exam</h2>
-    <div id="modules-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="col-span-2 text-center py-12 text-[#aaa]">Loading…</div>
-    </div>
-  </div>
-
-  <!-- Info strip -->
-  <div class="bg-white rounded-2xl p-5 shadow-sm flex flex-wrap gap-6 justify-around text-center">
-    <div><div class="text-2xl font-black text-[#0d47a1]">+1</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">Correct Answer</div></div>
-    <div><div class="text-2xl font-black text-[#c62828]">-⅓</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">Wrong Answer</div></div>
-    <div><div class="text-2xl font-black text-[#5c6b8a]">0</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">No Attempt</div></div>
-    <div><div class="text-2xl font-black text-[#2e7d32]">CBT</div><div class="text-xs text-[#8a9ab7] font-semibold mt-1">Computer Based</div></div>
-  </div>
-
-</div>
 </body>
 </html>

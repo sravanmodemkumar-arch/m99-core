@@ -3,114 +3,300 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Tenants</title>
-<link rel="stylesheet" href="../shared/admin.css">
+<title>Super Admin — Tenants</title>
+<script src="./admin-common.js"></script>
 </head>
 <body>
-<div id="tenant-modal" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-header"><span id="t-modal-title">New Tenant</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="t-edit-id">
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Tenant ID *</label><input id="t-id" class="form-control" placeholder="acme"></div>
-        <div class="form-group"><label class="form-label">Name *</label><input id="t-name" class="form-control" placeholder="Acme Test Prep"></div>
+<div class="admin-wrap">
+  <aside id="admin-sidebar"></aside>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">Tenants</div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openCreate()">+ New Tenant</button>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Tier</label>
-          <select id="t-tier" class="form-control"><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select>
-        </div>
-        <div class="form-group"><label class="form-label">Modules (comma-separated)</label><input id="t-modules" class="form-control" value="exam-engine"></div>
+    </header>
+    <div class="page-content">
+      <div class="table-card">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Tenant</th>
+              <th>Tagline</th>
+              <th>Primary Color</th>
+              <th>Modules</th>
+              <th>Users</th>
+              <th>Exams</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tenants-tbody">
+            <tr><td colspan="7" class="empty-row">Loading…</td></tr>
+          </tbody>
+        </table>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveTenant()">Save</button>
     </div>
   </div>
 </div>
 
-<script type="module">
-import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
-const me = await initAdminShell({ title: "Tenants (Super Admin)" });
-if (me?.role !== "super_admin") {
-  document.getElementById("page-body").innerHTML = `<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-title">Super Admin Only</div></div>`;
-} else {
-  document.getElementById("topbar-actions").innerHTML = `<button class="btn btn-primary" onclick="openCreate()">+ New Tenant</button>`;
-  document.getElementById("page-body").innerHTML = `
-    <div class="card">
-      <div class="card-body" style="padding:0">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Tenant ID</th><th>Name</th><th>Tier</th><th>Modules</th><th style="text-align:right">Actions</th></tr></thead>
-            <tbody id="tenants-tbody"><tr><td colspan="5" class="loading-row"><div class="spin"></div></td></tr></tbody>
-          </table>
+<!-- Tenant Modal -->
+<div id="tenant-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal('tenant-modal')">
+  <div class="modal-box" style="max-width:620px;">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title-txt">New Tenant</div>
+      <button class="modal-close" onclick="closeModal('tenant-modal')">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="fld">
+        <label>Tenant ID <span style="color:#dc2626">*</span></label>
+        <input type="text" id="t-id" placeholder="e.g. mtp-main" required />
+        <div class="fld-hint">Lowercase, hyphens allowed. Cannot be changed after creation.</div>
+      </div>
+
+      <div class="fld">
+        <label>Name <span style="color:#dc2626">*</span></label>
+        <input type="text" id="t-name" placeholder="Mock Test Platform" required />
+      </div>
+
+      <div class="fld">
+        <label>Tagline</label>
+        <input type="text" id="t-tagline" placeholder="Ace your exam" />
+      </div>
+
+      <div class="fld">
+        <label>Logo Emoji</label>
+        <input type="text" id="t-emoji" placeholder="🏢" maxlength="4" />
+      </div>
+
+      <div class="fld-row3" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Primary Color</label>
+          <input type="color" id="t-primary" value="#2563eb" style="height:40px;padding:2px 6px;" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Primary Dark</label>
+          <input type="color" id="t-primary-dark" value="#1d4ed8" style="height:40px;padding:2px 6px;" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Accent Color</label>
+          <input type="color" id="t-accent" value="#f59e0b" style="height:40px;padding:2px 6px;" />
         </div>
       </div>
-    </div>`;
+
+      <div class="fld">
+        <label>Header Background</label>
+        <input type="text" id="t-header-bg" placeholder="linear-gradient(135deg, #0d47a1, #1565c0) or leave blank" />
+      </div>
+
+      <div class="fld">
+        <label>Modules</label>
+        <div id="modules-checkboxes" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="checkbox" value="rrb-ntpc" class="mod-chk" /> RRB NTPC
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="checkbox" value="rrb-group-d" class="mod-chk" /> RRB Group-D
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="checkbox" value="rrb" class="mod-chk" /> RRB (hub)
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="checkbox" value="exam-engine" class="mod-chk" /> Exam Engine
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="checkbox" value="admin" class="mod-chk" /> Admin
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="checkbox" value="user" class="mod-chk" /> User
+          </label>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin:16px 0;"></div>
+      <div style="font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;">Settings</div>
+
+      <div class="fld">
+        <label>Home URL</label>
+        <input type="text" id="t-home-url" placeholder="/modules/auth/fe/web/home.html" />
+      </div>
+
+      <div class="fld-row2" style="margin-bottom:14px;align-items:center;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Exam Brand</label>
+          <input type="text" id="t-exam-brand" placeholder="MTP Exams" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Show Rank</label>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="t-show-rank" style="width:auto;margin:0;" />
+            <span style="font-size:13px;color:#475569;">Enable rank display</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('tenant-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTenant()" id="save-btn">Save Tenant</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return "—";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${String(d.getDate()).padStart(2,"0")} ${months[d.getMonth()]} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+let tenants = [];
+let editingId = null;
+
+async function loadTenants() {
+  const r = await api.get("/superadmin/tenants");
+  if (!r.ok) { toast("Failed to load tenants", "error"); return; }
+  tenants = r.data.tenants || [];
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tenants-tbody");
+  if (!tenants.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No tenants found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = tenants.map(t => {
+    const modCount = Array.isArray(t.modules) ? t.modules.length : 0;
+    const swatch = `<span class="color-swatch" style="background:${t.primary_color || "#2563eb"};" title="${t.primary_color || ""}"></span>`;
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;line-height:1;">${t.logo_emoji || "🏢"}</span>
+            <div>
+              <div style="font-weight:600;font-size:13px;">${t.name}</div>
+              <div style="font-size:11px;color:#94a3b8;">${t.id}</div>
+            </div>
+          </div>
+        </td>
+        <td style="color:#64748b;font-size:12px;">${t.tagline || "—"}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:4px;">
+            ${swatch}
+            <span style="font-size:11px;color:#64748b;">${t.primary_color || "—"}</span>
+          </div>
+        </td>
+        <td><span class="badge bg-blue">${modCount}</span></td>
+        <td><span class="badge bg-gray">${t.user_count ?? 0}</span></td>
+        <td><span class="badge bg-green">${t.exam_count ?? 0}</span></td>
+        <td>
+          <div class="tbl-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEdit(${JSON.stringify(t).replace(/"/g, "&quot;")})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteTenant('${t.id}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openCreate() {
+  editingId = null;
+  document.getElementById("modal-title-txt").textContent = "New Tenant";
+  document.getElementById("t-id").value = "";
+  document.getElementById("t-id").disabled = false;
+  document.getElementById("t-name").value = "";
+  document.getElementById("t-tagline").value = "";
+  document.getElementById("t-emoji").value = "";
+  document.getElementById("t-primary").value = "#2563eb";
+  document.getElementById("t-primary-dark").value = "#1d4ed8";
+  document.getElementById("t-accent").value = "#f59e0b";
+  document.getElementById("t-header-bg").value = "";
+  document.getElementById("t-home-url").value = "";
+  document.getElementById("t-exam-brand").value = "";
+  document.getElementById("t-show-rank").checked = false;
+  document.querySelectorAll(".mod-chk").forEach(c => c.checked = false);
+  openModal("tenant-modal");
+}
+
+function openEdit(t) {
+  editingId = t.id;
+  document.getElementById("modal-title-txt").textContent = "Edit Tenant";
+  document.getElementById("t-id").value = t.id;
+  document.getElementById("t-id").disabled = true;
+  document.getElementById("t-name").value = t.name || "";
+  document.getElementById("t-tagline").value = t.tagline || "";
+  document.getElementById("t-emoji").value = t.logo_emoji || "";
+  document.getElementById("t-primary").value = t.primary_color || "#2563eb";
+  document.getElementById("t-primary-dark").value = t.primary_dark || "#1d4ed8";
+  document.getElementById("t-accent").value = t.accent_color || "#f59e0b";
+  document.getElementById("t-header-bg").value = t.header_bg || "";
+  const mods = Array.isArray(t.modules) ? t.modules : [];
+  document.querySelectorAll(".mod-chk").forEach(c => { c.checked = mods.includes(c.value); });
+  const settings = t.settings || {};
+  document.getElementById("t-home-url").value = settings.home_url || "";
+  document.getElementById("t-exam-brand").value = settings.exam_brand || "";
+  document.getElementById("t-show-rank").checked = !!(settings.show_rank);
+  openModal("tenant-modal");
+}
+
+async function saveTenant() {
+  const id = document.getElementById("t-id").value.trim();
+  const name = document.getElementById("t-name").value.trim();
+  if (!id) { toast("Tenant ID is required", "error"); return; }
+  if (!name) { toast("Name is required", "error"); return; }
+
+  const selectedMods = Array.from(document.querySelectorAll(".mod-chk"))
+    .filter(c => c.checked).map(c => c.value);
+
+  const payload = {
+    name,
+    tagline:       document.getElementById("t-tagline").value.trim(),
+    logo_emoji:    document.getElementById("t-emoji").value.trim() || "🏢",
+    primary_color: document.getElementById("t-primary").value,
+    primary_dark:  document.getElementById("t-primary-dark").value,
+    accent_color:  document.getElementById("t-accent").value,
+    header_bg:     document.getElementById("t-header-bg").value.trim(),
+    modules:       selectedMods,
+    settings: {
+      home_url:   document.getElementById("t-home-url").value.trim(),
+      show_rank:  document.getElementById("t-show-rank").checked,
+      exam_brand: document.getElementById("t-exam-brand").value.trim(),
+    },
+  };
+
+  const btn = document.getElementById("save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  const r = await api.put(`/superadmin/tenants/${id}`, payload);
+  btn.disabled = false;
+  btn.textContent = "Save Tenant";
+
+  if (!r.ok) {
+    toast(r.data?.error || "Failed to save tenant", "error");
+    return;
+  }
+  toast("Tenant saved successfully", "success");
+  closeModal("tenant-modal");
   loadTenants();
 }
 
-window.loadTenants = async function() {
-  const tbody = document.getElementById("tenants-tbody");
-  if (!tbody) return;
-  const r = await adminApi("/tenants");
-  if (!r.ok) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#888">Failed to load</td></tr>`; return; }
-  const tenants = r.data.tenants || [];
-  if (!tenants.length) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🏢</div><div class="empty-title">No tenants</div></div></td></tr>`;
-    return;
-  }
-  const TIER_COLORS = { free:"badge-gray",starter:"badge-blue",pro:"badge-purple",enterprise:"badge-orange" };
-  tbody.innerHTML = tenants.map(t => `
-    <tr>
-      <td><code style="font-size:11px">${t.tenant_id}</code></td>
-      <td style="font-weight:600">${t.name}</td>
-      <td><span class="badge ${TIER_COLORS[t.tier]||'badge-gray'}">${t.tier}</span></td>
-      <td style="font-size:12px">${(t.modules||[]).join(", ")}</td>
-      <td class="td-actions">
-        <button class="btn btn-secondary btn-xs" onclick="editTenant('${t.tenant_id}','${(t.name||'').replace(/'/g,"\\'")}','${t.tier||'free'}','${(t.modules||[]).join(',')}')">Edit</button>
-      </td>
-    </tr>`).join("");
-};
+async function deleteTenant(id) {
+  if (id === "mtp-main") { toast("Cannot delete the main tenant", "error"); return; }
+  if (!confirm(`Delete tenant "${id}"? This cannot be undone.`)) return;
+  const r = await api.del(`/superadmin/tenants/${id}`);
+  if (!r.ok) { toast(r.data?.error || "Failed to delete tenant", "error"); return; }
+  toast("Tenant deleted", "success");
+  loadTenants();
+}
 
-window.openCreate = function() {
-  document.getElementById("t-modal-title").textContent = "New Tenant";
-  document.getElementById("t-edit-id").value = "";
-  document.getElementById("t-id").value = "";
-  document.getElementById("t-id").readOnly = false;
-  document.getElementById("t-name").value = "";
-  document.getElementById("t-tier").value = "free";
-  document.getElementById("t-modules").value = "exam-engine";
-  document.getElementById("tenant-modal").classList.remove("hidden");
-};
-window.editTenant = function(id, name, tier, modules) {
-  document.getElementById("t-modal-title").textContent = "Edit Tenant";
-  document.getElementById("t-edit-id").value = id;
-  document.getElementById("t-id").value = id;
-  document.getElementById("t-id").readOnly = true;
-  document.getElementById("t-name").value = name;
-  document.getElementById("t-tier").value = tier;
-  document.getElementById("t-modules").value = modules;
-  document.getElementById("tenant-modal").classList.remove("hidden");
-};
-window.closeModal = function() { document.getElementById("tenant-modal").classList.add("hidden"); };
-window.saveTenant = async function() {
-  const editId = document.getElementById("t-edit-id").value;
-  const id     = document.getElementById("t-id").value.trim();
-  const name   = document.getElementById("t-name").value.trim();
-  if (!id || !name) { toast("Tenant ID and Name required","error"); return; }
-  const body = {
-    tenant_id: id, name,
-    tier:      document.getElementById("t-tier").value,
-    modules:   document.getElementById("t-modules").value.split(",").map(s=>s.trim()).filter(Boolean),
-  };
-  const r = editId
-    ? await adminApi(`/tenants/${editId}`, { method: "PUT", body })
-    : await adminApi("/tenants", { method: "POST", body });
-  if (r.ok) { toast(editId?"Updated":"Created","success"); closeModal(); loadTenants(); }
-  else toast(r.data.error||"Failed","error");
-};
+document.addEventListener("DOMContentLoaded", () => {
+  loadTenants();
+});
 </script>
 </body>
 </html>

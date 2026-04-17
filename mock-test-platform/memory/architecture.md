@@ -165,6 +165,11 @@ v3.5 → read replicas
 | Auth config per module | identifiers, 2FA, lockout, devices, admin — all dynamic |
 | RBAC fully dynamic | roles + permissions defined per module config |
 | Admin platforms dynamic | desktop/web/mobile capabilities per module |
+| local-db = dev-only stand-in | platform/local-db/server.js mirrors all workers; never deployed |
+| home_url in every auth response | tenantAuthPayload() returns settings.home_url; clients redirect to it |
+| Password hash = scrypt | crypto.scrypt 64-byte key, stored as salt:hex; timingSafeEqual compare |
+| Super admin = cross-tenant | /superadmin/* endpoints have no tenant filter; role must be super_admin |
+| Tenant CRUD by super admin | seed.js is dev bootstrap only; real tenants managed via superadmin panel |
 
 ## Evolution Path
 ```

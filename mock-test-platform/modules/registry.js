@@ -48,4 +48,12 @@ export const MODULES = [
     apiPrefix: "/rrb-gd",
     home:      "/modules/rrb-group-d/fe/web/home.html",
   },
+  {
+    id:        "rrb-ntpc",
+    name:      "RRB NTPC",
+    icon:      "🚆",
+    port:      8793,
+    apiPrefix: "/rrb-ntpc",
+    home:      "/modules/rrb-ntpc/fe/web/home.html",
+  },
 ];

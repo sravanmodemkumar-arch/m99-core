@@ -3,151 +3,276 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home — Mock Test Platform</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css">
+<title>Dashboard</title>
 <style>
-  :root {
-    --bg: #F8FAFC; --surface: #FFFFFF; --surface-2: #F1F5F9;
-    --primary: #2563EB; --primary-dark: #1D4ED8;
-    --text: #0F172A; --text-muted: #64748B;
-    --border: #E2E8F0; --danger: #DC2626; --success: #16A34A;
-    --radius: 12px; --radius-sm: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.08); --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; background: #f0f4f8; }
 
-  /* Header */
-  .header { background: var(--surface); border-bottom: 1px solid var(--border); height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 1.25rem; position: sticky; top: 0; z-index: 10; box-shadow: var(--shadow); }
-  .header-title { font-weight: 700; font-size: 1.125rem; color: var(--primary); }
-  .header-user { display: flex; align-items: center; gap: 0.75rem; }
-  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; }
-  .btn-logout { font-size: 0.8125rem; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 0.375rem 0.75rem; border-radius: var(--radius-sm); }
-  .btn-logout:hover { background: var(--surface-2); color: var(--danger); }
+/* ── Header ──────────────────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  color: #fff; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.header-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 58px;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo  { font-size: 24px; }
+.brand-name  { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+.brand-sub   { font-size: 11px; opacity: .75; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.hdr-username { font-size: 13px; opacity: .9; }
+.hdr-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; overflow: hidden;
+}
+.btn-logout {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: #fff; border-radius: 6px; padding: 5px 12px;
+  font-size: 12px; cursor: pointer; transition: background .15s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.28); }
 
-  /* Content */
-  .container { max-width: 960px; margin: 0 auto; padding: 1.5rem 1.25rem; }
-  .greeting { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.25rem; }
-  .greeting-sub { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 2rem; }
+/* ── Hero ────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  padding: 24px 20px 36px; color: #fff;
+}
+.hero-inner { max-width: 1100px; margin: 0 auto; }
+.hero-greet { font-size: 13px; opacity: .8; margin-bottom: 4px; }
+.hero-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+.hero-sub   { font-size: 13px; opacity: .75; }
 
-  /* Module grid */
-  .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 1rem; }
-  .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+/* ── Content ─────────────────────────────────────────── */
+.content { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
 
-  /* Module card */
-  .module-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; min-height: 44px; }
-  .module-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
-  .module-icon { font-size: 2rem; margin-bottom: 0.75rem; }
-  .module-name { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
-  .module-desc { font-size: 0.8125rem; color: var(--text-muted); }
-  .module-badge { display: inline-block; margin-top: 0.75rem; padding: 0.25rem 0.625rem; background: #EFF6FF; color: var(--primary); font-size: 0.75rem; font-weight: 600; border-radius: 20px; }
+.sec-title {
+  font-size: 12px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; color: #546e7a; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sec-title::after { content: ""; display: block; width: 36px; height: 2px; background: #1565c0; border-radius: 2px; }
 
-  /* Empty state */
-  .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
-  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+/* ── Module cards ────────────────────────────────────── */
+.modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; margin-bottom: 36px; }
 
-  /* Skeleton */
-  .skeleton { background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); }
-  @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+.module-card {
+  background: #fff; border-radius: 14px;
+  border: 1.5px solid #e3e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  padding: 22px; cursor: pointer;
+  transition: box-shadow .2s, transform .15s, border-color .15s;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.module-card:hover { box-shadow: 0 8px 24px rgba(21,101,192,.13); transform: translateY(-2px); border-color: #1565c0; }
+.module-card:focus { outline: 2px solid #1565c0; outline-offset: 2px; }
 
-  /* Responsive */
-  @media (max-width: 639px) {
-    .modules-grid { grid-template-columns: 1fr; }
-    .container { padding: 1rem; }
-    .greeting { font-size: 1.125rem; }
-  }
-  @media (min-width: 640px) and (max-width: 1023px) {
-    .modules-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (min-width: 1024px) {
-    .modules-grid { grid-template-columns: repeat(3, 1fr); }
-  }
+.module-icon-row { display: flex; align-items: center; justify-content: space-between; }
+.module-icon { font-size: 36px; }
+.module-arrow { font-size: 18px; color: #b0bec5; transition: color .15s; }
+.module-card:hover .module-arrow { color: #1565c0; }
+
+.module-name { font-size: 16px; font-weight: 700; color: #1a237e; }
+.module-desc { font-size: 12px; color: #78909c; line-height: 1.5; }
+
+.module-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.module-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  background: #e8eaf6; color: #283593;
+}
+.module-cta { font-size: 12px; font-weight: 700; color: #1565c0; }
+
+/* ── Quick stats row ──────────────────────────────────── */
+.stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 32px; }
+.stat-card {
+  flex: 1; min-width: 140px;
+  background: #fff; border-radius: 12px; border: 1.5px solid #e3e8f0;
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 4px;
+}
+.stat-label { font-size: 11px; color: #90a4ae; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+.stat-value { font-size: 24px; font-weight: 800; color: #1a237e; }
+.stat-sub   { font-size: 11px; color: #b0bec5; }
+
+/* ── Skeleton ────────────────────────────────────────── */
+.skel { background: linear-gradient(90deg, #f0f2f5 25%, #e3e8f0 50%, #f0f2f5 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; }
+@keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+@media (max-width: 600px) {
+  .content { padding: 20px 14px; }
+  .hero { padding: 20px 14px 28px; }
+  .hero-title { font-size: 20px; }
+  .modules-grid { grid-template-columns: 1fr; }
+  .stats-row { gap: 10px; }
+}
 </style>
-<link rel="stylesheet" href="../desktop/desktop.css">
-<script src="../desktop/desktop-adapter.js"></script>
 </head>
 <body>
+
 <header class="header">
-  <div class="header-title" id="tenant-name">Mock Test Platform</div>
-  <div class="header-user">
-    <div class="avatar" id="user-avatar">U</div>
-    <button class="btn-logout" onclick="logout()">Sign out</button>
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="brand-logo" id="hdr-logo">📋</div>
+      <div>
+        <div class="brand-name" id="hdr-brand">Mock Test Platform</div>
+        <div class="brand-sub" id="hdr-tagline">Prepare Smart. Score High.</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="hdr-username" id="hdr-name"></span>
+      <div class="hdr-avatar" id="hdr-avatar">U</div>
+      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
   </div>
 </header>
 
-<main class="container">
-  <div class="greeting">Welcome back, <span id="user-name">Student</span></div>
-  <div class="greeting-sub">Select a test to begin</div>
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-greet">Welcome back</div>
+    <div class="hero-title">Hello, <span id="hero-name">Student</span> 👋</div>
+    <div class="hero-sub">Choose a test series below to start your practice session</div>
+  </div>
+</section>
 
-  <div class="section-title">Your Tests</div>
-  <div class="modules-grid" id="modules-grid">
-    <!-- Skeleton loaders -->
-    <div class="module-card" style="pointer-events:none">
-      <div class="skeleton" style="height:2rem;width:2rem;margin-bottom:0.75rem;border-radius:50%"></div>
-      <div class="skeleton" style="height:1rem;width:60%;margin-bottom:0.5rem"></div>
-      <div class="skeleton" style="height:0.75rem;width:80%"></div>
+<div class="content">
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row" style="display:none">
+    <div class="stat-card">
+      <div class="stat-label">Total Attempts</div>
+      <div class="stat-value" id="s-attempts">—</div>
     </div>
-    <div class="module-card" style="pointer-events:none">
-      <div class="skeleton" style="height:2rem;width:2rem;margin-bottom:0.75rem;border-radius:50%"></div>
-      <div class="skeleton" style="height:1rem;width:60%;margin-bottom:0.5rem"></div>
-      <div class="skeleton" style="height:0.75rem;width:80%"></div>
+    <div class="stat-card">
+      <div class="stat-label">Best Score</div>
+      <div class="stat-value" id="s-best">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Accuracy</div>
+      <div class="stat-value" id="s-acc">—</div>
+    </div>
+    <div class="stat-card" style="flex:0;display:flex;align-items:center;justify-content:center;padding:16px 20px">
+      <a href="#" style="font-size:13px;font-weight:700;color:#1565c0;text-decoration:none">📈 View Analysis</a>
     </div>
   </div>
-</main>
+
+  <!-- Modules -->
+  <div class="sec-title">Your Test Series</div>
+  <div class="modules-grid" id="modules-grid">
+    <!-- skeleton placeholders -->
+    <div class="module-card" style="pointer-events:none">
+      <div class="skel" style="height:36px;width:36px;border-radius:8px"></div>
+      <div class="skel" style="height:16px;width:60%"></div>
+      <div class="skel" style="height:12px;width:85%"></div>
+    </div>
+    <div class="module-card" style="pointer-events:none">
+      <div class="skel" style="height:36px;width:36px;border-radius:8px"></div>
+      <div class="skel" style="height:16px;width:55%"></div>
+      <div class="skel" style="height:12px;width:80%"></div>
+    </div>
+  </div>
+
+</div>
 
 <script>
-function init() {
-  const token = localStorage.getItem("auth_token");
-  if (!token) { window.location.href = "/modules/auth/fe/web/login.html"; return; }
-
-  const cached = JSON.parse(localStorage.getItem("modules") || "[]");
-  const phone  = localStorage.getItem("phone") || "";
-
-  const initial = phone ? phone.slice(-4, -3) : "U";
-  document.getElementById("user-avatar").textContent = initial;
-
-  // Render from cache immediately, then refresh from API
-  if (cached.length) renderModules(cached);
-  loadProfile(token);
-}
-
-async function loadProfile(token) {
-  try {
-    const res = await fetch("/auth/me", { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { logout(); return; }
-    const data = await res.json();
-    localStorage.setItem("modules", JSON.stringify(data.modules));
-    renderModules(data.modules);
-    if (data.phone) {
-      document.getElementById("user-avatar").textContent = data.phone.slice(-4, -3);
-    }
-  } catch {}
-}
-
-function renderModules(modules) {
-  const grid = document.getElementById("modules-grid");
-  if (!modules || modules.length === 0) {
-    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📭</div><div style="font-weight:600;margin-bottom:0.5rem">No active subscription</div><div style="font-size:0.875rem">Contact your institute for access</div></div>`;
-    return;
-  }
-  // m.icon and m.home come from the API (server reads registry.js) — no client-side lookup
-  grid.innerHTML = modules.map(m => `
-    <div class="module-card" onclick="location.href='${m.home || `/modules/${m.id}/fe/web/home.html`}'"
-         role="button" tabindex="0"
-         onkeydown="if(event.key==='Enter')location.href='${m.home || `/modules/${m.id}/fe/web/home.html`}'">
-      <div class="module-icon">${m.icon || "📋"}</div>
-      <div class="module-name">${m.name || m.id}</div>
-      <span class="module-badge">Start Test →</span>
-    </div>
-  `).join("");
-}
+const TOKEN = localStorage.getItem("auth_token");
+if (!TOKEN) location.href = "/modules/auth/fe/web/login.html";
 
 function logout() {
   localStorage.clear();
-  window.location.href = "/modules/auth/fe/web/login.html";
+  location.href = "/modules/auth/fe/web/login.html";
 }
 
-document.addEventListener("DOMContentLoaded", init);
+const MODULE_META = {
+  "rrb":       { desc: "All Railway Exam Mock Tests — NTPC, Group-D, JE" },
+  "rrb-ntpc":  { desc: "Non-Technical Popular Categories CBT 1 & CBT 2" },
+  "rrb-group-d": { desc: "Level 1 Posts — Computer Based Test" },
+  "exam-engine": { desc: "All available mock tests across exams" },
+  "admin":     { desc: "Question bank, exam management, analytics" },
+};
+
+function renderModules(modules) {
+  const grid = document.getElementById("modules-grid");
+  if (!modules || !modules.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:#90a4ae"><div style="font-size:40px;margin-bottom:12px">📭</div><div style="font-size:15px;font-weight:700;color:#546e7a;margin-bottom:6px">No modules available</div><div>Contact your administrator for access</div></div>`;
+    return;
+  }
+  grid.innerHTML = modules.map(m => {
+    const meta = MODULE_META[m.id] || {};
+    const dest = m.home || `/modules/${m.id}/fe/web/home.html`;
+    return `
+    <div class="module-card" tabindex="0" role="button"
+         onclick="location.href='${dest}'"
+         onkeydown="if(event.key==='Enter')location.href='${dest}'">
+      <div class="module-icon-row">
+        <div class="module-icon">${m.icon || "📋"}</div>
+        <div class="module-arrow">→</div>
+      </div>
+      <div class="module-name">${m.name || m.id}</div>
+      <div class="module-desc">${meta.desc || "Practice tests &amp; analysis"}</div>
+      <div class="module-footer">
+        <span class="module-badge">Start Practice</span>
+        <span class="module-cta">Go →</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function init() {
+  // Restore cached modules immediately
+  const cached = JSON.parse(localStorage.getItem("modules") || "[]");
+  if (cached.length) renderModules(cached);
+
+  // User display
+  const name  = localStorage.getItem("name") || "";
+  const phone = localStorage.getItem("phone") || "";
+  const photo = localStorage.getItem("avatar_url") || "";
+  const displayName = name || (phone ? phone.slice(-4) : "Student");
+
+  document.getElementById("hdr-name").textContent  = displayName;
+  document.getElementById("hero-name").textContent = (name || "Student").split(" ")[0];
+  const av = document.getElementById("hdr-avatar");
+  if (photo) {
+    av.innerHTML = `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    av.textContent = displayName.slice(0, 1).toUpperCase() || "U";
+  }
+
+  // Fresh data from API
+  try {
+    const res = await fetch("/auth/me", { headers: { Authorization: `Bearer ${TOKEN}` } });
+    if (!res.ok) { logout(); return; }
+    const data = await res.json();
+
+    localStorage.setItem("modules", JSON.stringify(data.modules || []));
+    if (data.name) {
+      localStorage.setItem("name", data.name);
+      document.getElementById("hdr-name").textContent  = data.name;
+      document.getElementById("hero-name").textContent = data.name.split(" ")[0];
+      av.textContent = data.name.slice(0, 1).toUpperCase() || "U";
+    }
+
+    renderModules(data.modules || []);
+
+    // Tenant branding
+    try {
+      const tr = await fetch("/tenant/config");
+      if (tr.ok) {
+        const tc = await tr.json();
+        if (tc.logo_emoji) document.getElementById("hdr-logo").textContent    = tc.logo_emoji;
+        if (tc.name)       document.getElementById("hdr-brand").textContent   = tc.name;
+        if (tc.tagline)    document.getElementById("hdr-tagline").textContent = tc.tagline;
+      }
+    } catch {}
+  } catch {
+    // Use cached if API fails
+  }
+}
+
+init();
 </script>
 </body>
 </html>

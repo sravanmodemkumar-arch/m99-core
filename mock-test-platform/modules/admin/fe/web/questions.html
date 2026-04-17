@@ -3,152 +3,464 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Questions</title>
-<link rel="stylesheet" href="../shared/admin.css">
+<title>Super Admin — Questions</title>
+<script src="./admin-common.js"></script>
 </head>
 <body>
-<script type="module">
-import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
-
-await initAdminShell({ title: "Questions" });
-
-document.getElementById("topbar-actions").innerHTML = `
-  <a href="./question-editor.html" class="btn btn-primary">+ New Question</a>
-  <a href="./bulk-import.html" class="btn btn-secondary">📥 Bulk Import</a>`;
-
-const pageBody = document.getElementById("page-body");
-pageBody.innerHTML = `
-  <div class="card">
-    <div class="card-body" style="padding-bottom:0">
-      <div class="search-bar">
-        <input id="q-search" class="search-input" placeholder="Search by preview text…" oninput="debounceSearch()">
-        <select id="q-subject" class="form-control" style="width:160px" onchange="loadQuestions(1)">
-          <option value="">All Subjects</option>
-        </select>
-        <select id="q-type" class="form-control" style="width:130px" onchange="loadQuestions(1)">
-          <option value="">All Types</option>
-          <option value="S">MCQ Single</option>
-          <option value="M">MCQ Multi</option>
-          <option value="N">Numerical</option>
-          <option value="T">True/False</option>
-          <option value="P">Passage</option>
-          <option value="MA">Match</option>
-          <option value="AR">Assert-Reason</option>
-          <option value="SC">Statements</option>
-          <option value="FI">Fill Blank</option>
-          <option value="SA">Short Ans</option>
-          <option value="LA">Long Ans</option>
-          <option value="DI">Data Interp</option>
-          <option value="GR">Graph</option>
-          <option value="CB">Caselet</option>
-          <option value="CD">Code</option>
-          <option value="EX">Experiment</option>
-          <option value="IM">Image</option>
-          <option value="AU">Audio</option>
-          <option value="SI">Sequence</option>
-        </select>
-        <select id="q-lang" class="form-control" style="width:110px" onchange="loadQuestions(1)">
-          <option value="">All Langs</option>
-          <option value="en">English</option>
-          <option value="hi">Hindi</option>
-          <option value="te">Telugu</option>
-        </select>
+<div class="admin-wrap">
+  <aside id="admin-sidebar"></aside>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">Question Bank</div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openCreate()">+ Add Question</button>
       </div>
-    </div>
-    <div class="card-body" style="padding-top:0;padding:0">
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th style="width:80px">QID</th>
-            <th style="width:60px">Type</th>
-            <th>Preview</th>
-            <th>Subject</th>
-            <th>Topic</th>
-            <th style="width:60px">Lang</th>
-            <th style="text-align:right">Actions</th>
-          </tr></thead>
-          <tbody id="q-tbody"><tr><td colspan="7" class="loading-row"><div class="spin"></div></td></tr></tbody>
+    </header>
+    <div class="page-content">
+
+      <div class="filter-bar">
+        <select id="filter-tenant" onchange="loadQuestions()">
+          <option value="">All Tenants</option>
+        </select>
+        <select id="filter-module" onchange="loadQuestions()">
+          <option value="">All Modules</option>
+          <option value="rrb-ntpc">RRB NTPC</option>
+          <option value="rrb-group-d">RRB Group-D</option>
+          <option value="rrb">RRB (hub)</option>
+          <option value="exam-engine">Exam Engine</option>
+          <option value="admin">Admin</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search subject, topic…" oninput="applyClientFilter()" />
+      </div>
+
+      <div class="table-card">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Topic</th>
+              <th>Preview</th>
+              <th>Answer</th>
+              <th>Difficulty</th>
+              <th>Module</th>
+              <th>Tenant</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="questions-tbody">
+            <tr><td colspan="9" class="empty-row">Loading…</td></tr>
+          </tbody>
         </table>
+        <div class="pagination" id="pagination"></div>
       </div>
-      <div id="q-pagination"></div>
+
     </div>
-  </div>`;
+  </div>
+</div>
 
-const TYPE_LABELS = { S:"MCQ-S",M:"MCQ-M",N:"Num",T:"T/F",P:"Pass",MA:"Match",AR:"A-R",SC:"Stmt",FI:"Fill",SA:"ShortA",LA:"LongA",DI:"DI",GR:"Graph",CB:"Case",CD:"Code",EX:"Expt",IM:"Img",AU:"Audio",SI:"Seq" };
-const TYPE_COLORS = { S:"badge-blue",M:"badge-purple",N:"badge-orange",T:"badge-yellow",P:"badge-gray" };
+<!-- Question Modal -->
+<div id="q-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal('q-modal')">
+  <div class="modal-box" style="max-width:700px;">
+    <div class="modal-head">
+      <div class="modal-title" id="q-modal-title">Add Question</div>
+      <button class="modal-close" onclick="closeModal('q-modal')">×</button>
+    </div>
+    <div class="modal-body">
 
-let page = 1;
-let searchTimer;
+      <div class="fld-row2" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Tenant <span style="color:#dc2626">*</span></label>
+          <select id="q-tenant" required>
+            <option value="">— Select Tenant —</option>
+          </select>
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Module <span style="color:#dc2626">*</span></label>
+          <select id="q-module" required>
+            <option value="">— Select Module —</option>
+            <option value="rrb-ntpc">RRB NTPC</option>
+            <option value="rrb-group-d">RRB Group-D</option>
+            <option value="rrb">RRB (hub)</option>
+            <option value="exam-engine">Exam Engine</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
 
-window.debounceSearch = function() {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => loadQuestions(1), 350);
-};
+      <div class="fld-row2" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Subject</label>
+          <input type="text" id="q-subject" placeholder="Mathematics" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Topic</label>
+          <input type="text" id="q-topic" placeholder="Percentages" />
+        </div>
+      </div>
 
-async function loadSubjects() {
-  const r = await adminApi("/subjects");
+      <div class="fld">
+        <label>Question Body <span style="color:#dc2626">*</span></label>
+        <textarea id="q-body" rows="3" placeholder="Question text. Use \n for line breaks." required></textarea>
+      </div>
+
+      <div class="fld">
+        <label>Image URL (optional)</label>
+        <input type="text" id="q-img" placeholder="https://… or leave blank" />
+      </div>
+
+      <div class="fld-row2" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Math / LaTeX (optional)</label>
+          <input type="text" id="q-math" placeholder="\frac{1}{2} etc." />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>YouTube ID (optional)</label>
+          <input type="text" id="q-youtube" placeholder="dQw4w9WgXcQ" />
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <div class="section-title-text" style="margin-bottom:10px;">Options</div>
+        <div class="fld-row2" style="margin-bottom:10px;">
+          <div class="fld" style="margin-bottom:0;">
+            <label>Option A <span style="color:#dc2626">*</span></label>
+            <input type="text" id="q-opt-a" required />
+          </div>
+          <div class="fld" style="margin-bottom:0;">
+            <label>Option B <span style="color:#dc2626">*</span></label>
+            <input type="text" id="q-opt-b" required />
+          </div>
+        </div>
+        <div class="fld-row2">
+          <div class="fld" style="margin-bottom:0;">
+            <label>Option C <span style="color:#dc2626">*</span></label>
+            <input type="text" id="q-opt-c" required />
+          </div>
+          <div class="fld" style="margin-bottom:0;">
+            <label>Option D <span style="color:#dc2626">*</span></label>
+            <input type="text" id="q-opt-d" required />
+          </div>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Correct Answer <span style="color:#dc2626">*</span></label>
+        <div style="display:flex;gap:18px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="radio" name="q-answer" value="A" /> A
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="radio" name="q-answer" value="B" /> B
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="radio" name="q-answer" value="C" /> C
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;">
+            <input type="radio" name="q-answer" value="D" /> D
+          </label>
+        </div>
+      </div>
+
+      <div class="fld-row2" style="margin-bottom:0;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Difficulty</label>
+          <select id="q-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div class="fld" style="margin-bottom:0;"></div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('q-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuestion()" id="q-save-btn">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODULES = [
+  { id: "rrb-ntpc",    name: "RRB NTPC"    },
+  { id: "rrb-group-d", name: "RRB Group-D" },
+  { id: "rrb",         name: "RRB (hub)"   },
+  { id: "exam-engine", name: "Exam Engine" },
+  { id: "admin",       name: "Admin"       },
+];
+
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return "—";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${String(d.getDate()).padStart(2,"0")} ${months[d.getMonth()]} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function diffBadge(d) {
+  const map = { easy: "bg-green", medium: "bg-orange", hard: "bg-red" };
+  return `<span class="badge ${map[d] || "bg-gray"}">${d || "—"}</span>`;
+}
+
+function bodyPreview(body) {
+  if (!body || !body.length) return "—";
+  const first = body.find(b => b.t === "tx");
+  if (!first) return "—";
+  const v = first.v || "";
+  return v.length > 60 ? v.slice(0, 60) + "…" : v;
+}
+
+function moduleName(id) {
+  const m = MODULES.find(m => m.id === id);
+  return m ? m.name : (id || "—");
+}
+
+let page       = 1;
+const LIMIT    = 25;
+let total      = 0;
+let editingId  = null;
+let tenants    = [];
+let rawRows    = [];   // server-fetched page
+let clientRows = [];   // after client-side search filter
+
+async function loadTenantsForFilter() {
+  const r = await api.get("/superadmin/tenants");
   if (!r.ok) return;
-  const sel = document.getElementById("q-subject");
-  (r.data.subjects || []).forEach(s => {
-    const o = document.createElement("option");
-    o.value = s.id; o.textContent = s.label;
-    sel.appendChild(o);
+  tenants = r.data.tenants || [];
+  const filterSel = document.getElementById("filter-tenant");
+  const modalSel  = document.getElementById("q-tenant");
+  tenants.forEach(t => {
+    [filterSel, modalSel].forEach(sel => {
+      const o = document.createElement("option");
+      o.value = t.id;
+      o.textContent = t.name;
+      sel.appendChild(o);
+    });
   });
 }
 
-window.loadQuestions = async function(p = page) {
-  page = p;
-  const tbody = document.getElementById("q-tbody");
-  tbody.innerHTML = `<tr><td colspan="7" class="loading-row"><div class="spin"></div></td></tr>`;
-  const params = new URLSearchParams({
-    page,
-    limit: 50,
-    q:       document.getElementById("q-search").value.trim(),
-    subject: document.getElementById("q-subject").value,
-    type:    document.getElementById("q-type").value,
-    lang:    document.getElementById("q-lang").value,
-  });
-  const r = await adminApi(`/questions?${params}`);
-  if (!r.ok) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#888">Failed to load</td></tr>`; return; }
-  const { questions = [], total = 0, limit = 50 } = r.data;
-  if (!questions.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">❓</div><div class="empty-title">No questions found</div></div></td></tr>`;
-    document.getElementById("q-pagination").innerHTML = "";
+async function loadQuestions() {
+  const tenant = document.getElementById("filter-tenant").value;
+  const module = document.getElementById("filter-module").value;
+  let url = `/superadmin/questions?page=${page}&limit=${LIMIT}`;
+  if (tenant) url += `&tenant=${encodeURIComponent(tenant)}`;
+  if (module) url += `&module=${encodeURIComponent(module)}`;
+
+  const r = await api.get(url);
+  if (!r.ok) { toast("Failed to load questions", "error"); return; }
+  rawRows = r.data.questions || [];
+  total   = r.data.total || 0;
+  applyClientFilter();
+}
+
+function applyClientFilter() {
+  const search = document.getElementById("filter-search").value.trim().toLowerCase();
+  if (!search) {
+    clientRows = rawRows;
+  } else {
+    clientRows = rawRows.filter(q => {
+      const hay = `${q.subject || ""} ${q.topic || ""}`.toLowerCase();
+      return hay.includes(search);
+    });
+  }
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("questions-tbody");
+  if (!clientRows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-row">No questions found</td></tr>`;
+    renderPagination();
     return;
   }
-  tbody.innerHTML = questions.map(q => `
+  tbody.innerHTML = clientRows.map(q => `
     <tr>
-      <td><code style="font-size:11px;color:#555">${q.qid}</code></td>
-      <td><span class="badge ${TYPE_COLORS[q.type] || 'badge-gray'}">${TYPE_LABELS[q.type] || q.type}</span></td>
-      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${q.preview || "—"}</td>
-      <td style="font-size:12px">${q.subject || "—"}</td>
-      <td style="font-size:12px">${q.topic || "—"}</td>
-      <td><span class="badge badge-gray">${q.lang || "en"}</span></td>
-      <td class="td-actions">
-        <a href="./question-editor.html?qid=${q.qid}" class="btn btn-secondary btn-xs">Edit</a>
-        <button class="btn btn-danger btn-xs" onclick="deleteQ('${q.qid}')">Del</button>
+      <td style="font-weight:500;">${q.subject || "—"}</td>
+      <td style="color:#64748b;font-size:12px;">${q.topic || "—"}</td>
+      <td>
+        <div class="truncate" style="max-width:160px;font-size:12px;color:#475569;" title="${bodyPreview(q.body).replace(/"/g,"&quot;")}">
+          ${bodyPreview(q.body)}
+        </div>
       </td>
-    </tr>`).join("");
+      <td><span class="badge bg-blue">${q.answer || "—"}</span></td>
+      <td>${diffBadge(q.difficulty)}</td>
+      <td><span class="badge bg-gray" style="font-size:10px;">${moduleName(q.module_id)}</span></td>
+      <td><span class="badge bg-gray">${q.tenant_id || "—"}</span></td>
+      <td style="font-size:12px;color:#64748b;">${fmtDate(q.created_at)}</td>
+      <td>
+        <div class="tbl-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEdit('${q.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q.id}')">Del</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+  renderPagination();
+}
 
-  // Pagination
-  const totalPages = Math.ceil(total / limit);
-  const pg = document.getElementById("q-pagination");
-  if (totalPages <= 1) { pg.innerHTML = ""; return; }
-  pg.innerHTML = `<div class="pagination">
-    <button class="page-btn" ${page<=1?"disabled":""} onclick="loadQuestions(${page-1})">‹</button>
-    <span style="padding:5px 10px;font-size:12px;color:#888">${page} / ${totalPages}</span>
-    <button class="page-btn" ${page>=totalPages?"disabled":""} onclick="loadQuestions(${page+1})">›</button>
-  </div>`;
-};
+function renderPagination() {
+  const el    = document.getElementById("pagination");
+  const pages = Math.ceil(total / LIMIT);
+  if (pages <= 1) { el.innerHTML = ""; return; }
+  const start = (page - 1) * LIMIT + 1;
+  const end   = Math.min(page * LIMIT, total);
+  el.innerHTML = `
+    <span class="pg-info">${start}–${end} of ${total}</span>
+    <button class="pg-btn" onclick="goPage(${page - 1})" ${page <= 1 ? "disabled" : ""}>← Prev</button>
+    <button class="pg-btn" onclick="goPage(${page + 1})" ${page >= pages ? "disabled" : ""}>Next →</button>
+  `;
+}
 
-window.deleteQ = async function(qid) {
-  if (!confirm(`Delete question ${qid}?`)) return;
-  const r = await adminApi(`/questions/${qid}`, { method: "DELETE" });
-  if (r.ok) { toast("Deleted", "success"); loadQuestions(page); }
-  else toast(r.data.error || "Delete failed", "error");
-};
+function goPage(p) {
+  const pages = Math.ceil(total / LIMIT);
+  if (p < 1 || p > pages) return;
+  page = p;
+  loadQuestions();
+}
 
-await Promise.all([loadSubjects(), loadQuestions(1)]);
+function buildBody(text, imgUrl, mathTex) {
+  const body = [{ t: "tx", v: text }];
+  if (imgUrl.trim()) body.push({ t: "img", src: imgUrl.trim(), alt: "", w: "90%" });
+  if (mathTex.trim()) body.push({ t: "math", v: mathTex.trim(), display: true });
+  return body;
+}
+
+function buildOptions(a, b, c, d) {
+  return ["A", "B", "C", "D"].map((k, i) => ({
+    key: k,
+    body: [{ t: "tx", v: [a, b, c, d][i] }],
+  }));
+}
+
+function clearForm() {
+  document.getElementById("q-tenant").value     = "";
+  document.getElementById("q-module").value     = "";
+  document.getElementById("q-subject").value    = "";
+  document.getElementById("q-topic").value      = "";
+  document.getElementById("q-body").value       = "";
+  document.getElementById("q-img").value        = "";
+  document.getElementById("q-math").value       = "";
+  document.getElementById("q-youtube").value    = "";
+  document.getElementById("q-opt-a").value      = "";
+  document.getElementById("q-opt-b").value      = "";
+  document.getElementById("q-opt-c").value      = "";
+  document.getElementById("q-opt-d").value      = "";
+  document.getElementById("q-difficulty").value = "medium";
+  document.querySelectorAll("input[name='q-answer']").forEach(r => r.checked = false);
+}
+
+function openCreate() {
+  editingId = null;
+  document.getElementById("q-modal-title").textContent = "Add Question";
+  clearForm();
+  openModal("q-modal");
+}
+
+async function openEdit(id) {
+  editingId = id;
+  document.getElementById("q-modal-title").textContent = "Edit Question";
+  clearForm();
+  openModal("q-modal");
+
+  const r = await api.get(`/superadmin/questions/${id}`);
+  if (!r.ok) { toast("Failed to load question", "error"); return; }
+  const q = r.data;
+
+  document.getElementById("q-tenant").value     = q.tenant_id  || "";
+  document.getElementById("q-module").value     = q.module_id  || "";
+  document.getElementById("q-subject").value    = q.subject    || "";
+  document.getElementById("q-topic").value      = q.topic      || "";
+  document.getElementById("q-difficulty").value = q.difficulty || "medium";
+  document.getElementById("q-youtube").value    = q.youtube_id || "";
+
+  if (q.body && q.body.length) {
+    const tx  = q.body.find(b => b.t === "tx");
+    const img = q.body.find(b => b.t === "img");
+    const mt  = q.body.find(b => b.t === "math");
+    if (tx)  document.getElementById("q-body").value = tx.v  || "";
+    if (img) document.getElementById("q-img").value  = img.src || "";
+    if (mt)  document.getElementById("q-math").value = mt.v  || "";
+  }
+
+  if (q.options && q.options.length) {
+    const keys = ["a","b","c","d"];
+    q.options.forEach((opt, i) => {
+      const el = document.getElementById(`q-opt-${keys[i]}`);
+      if (el) {
+        const tx = Array.isArray(opt.body) ? opt.body.find(b => b.t === "tx") : null;
+        el.value = tx ? tx.v : (opt.text || "");
+      }
+    });
+  }
+
+  if (q.answer) {
+    const radio = document.querySelector(`input[name='q-answer'][value='${q.answer}']`);
+    if (radio) radio.checked = true;
+  }
+}
+
+async function saveQuestion() {
+  const tenant = document.getElementById("q-tenant").value;
+  const module = document.getElementById("q-module").value;
+  const body   = document.getElementById("q-body").value.trim();
+  const optA   = document.getElementById("q-opt-a").value.trim();
+  const optB   = document.getElementById("q-opt-b").value.trim();
+  const optC   = document.getElementById("q-opt-c").value.trim();
+  const optD   = document.getElementById("q-opt-d").value.trim();
+  const answer = document.querySelector("input[name='q-answer']:checked")?.value;
+
+  if (!tenant) { toast("Tenant is required", "error"); return; }
+  if (!module) { toast("Module is required", "error"); return; }
+  if (!body)   { toast("Question body is required", "error"); return; }
+  if (!optA || !optB || !optC || !optD) { toast("All 4 options are required", "error"); return; }
+  if (!answer) { toast("Please select the correct answer", "error"); return; }
+
+  const payload = {
+    tenant_id:  tenant,
+    module_id:  module,
+    subject:    document.getElementById("q-subject").value.trim(),
+    topic:      document.getElementById("q-topic").value.trim(),
+    body:       buildBody(body, document.getElementById("q-img").value, document.getElementById("q-math").value),
+    options:    buildOptions(optA, optB, optC, optD),
+    answer,
+    difficulty: document.getElementById("q-difficulty").value,
+    youtube_id: document.getElementById("q-youtube").value.trim(),
+  };
+
+  const btn = document.getElementById("q-save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  let r;
+  if (editingId) {
+    r = await api.put(`/superadmin/questions/${editingId}`, payload);
+  } else {
+    r = await api.post("/superadmin/questions", payload);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Save Question";
+
+  if (!r.ok) { toast(r.data?.error || "Failed to save question", "error"); return; }
+  toast(editingId ? "Question updated" : "Question created", "success");
+  closeModal("q-modal");
+  loadQuestions();
+}
+
+async function deleteQuestion(id) {
+  if (!confirm("Delete this question? This cannot be undone.")) return;
+  const r = await api.del(`/superadmin/questions/${id}`);
+  if (!r.ok) { toast(r.data?.error || "Failed to delete question", "error"); return; }
+  toast("Question deleted", "success");
+  loadQuestions();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadTenantsForFilter();
+  loadQuestions();
+});
 </script>
 </body>
 </html>

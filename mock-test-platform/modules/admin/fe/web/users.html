@@ -3,108 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Users</title>
-<link rel="stylesheet" href="../shared/admin.css">
+<title>Super Admin — Users</title>
+<script src="./admin-common.js"></script>
 </head>
 <body>
-<div id="role-modal" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-header">Set Admin Role <button class="modal-close" onclick="closeRoleModal()">✕</button></div>
+<div class="admin-wrap">
+  <aside id="admin-sidebar"></aside>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">Users</div>
+      <div class="topbar-right">
+        <span id="user-count-info" style="font-size:13px;color:#64748b;"></span>
+      </div>
+    </header>
+    <div class="page-content">
+
+      <div class="filter-bar">
+        <select id="filter-tenant" onchange="onTenantChange()">
+          <option value="">All Tenants</option>
+        </select>
+        <select id="filter-role" onchange="applyFilters()">
+          <option value="">All Roles</option>
+          <option value="user">user</option>
+          <option value="product_admin">product_admin</option>
+          <option value="super_admin">super_admin</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search name, email, phone…" oninput="applyFilters()" />
+      </div>
+
+      <div class="table-card">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Tenant</th>
+              <th>Plan</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="7" class="empty-row">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- User Edit Modal -->
+<div id="user-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal('user-modal')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">Edit User</div>
+      <button class="modal-close" onclick="closeModal('user-modal')">×</button>
+    </div>
     <div class="modal-body">
-      <input type="hidden" id="r-uid">
-      <div class="form-group"><label class="form-label">UID</label><input id="r-uid-display" class="form-control" readonly></div>
-      <div class="form-group"><label class="form-label">Role</label>
-        <select id="r-role" class="form-control">
-          <option value="">No admin access</option>
+      <div class="fld">
+        <label>Name</label>
+        <input type="text" id="u-name" placeholder="Full name" />
+      </div>
+      <div class="fld">
+        <label>Email</label>
+        <input type="email" id="u-email" placeholder="user@example.com" />
+      </div>
+      <div class="fld">
+        <label>Role</label>
+        <select id="u-role">
+          <option value="user">user</option>
           <option value="product_admin">product_admin</option>
           <option value="super_admin">super_admin</option>
         </select>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeRoleModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRole()">Save Role</button>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()" id="user-save-btn">Save Changes</button>
     </div>
   </div>
 </div>
 
-<script type="module">
-import { initAdminShell, adminApi, toast } from "../shared/admin-shell.js";
-await initAdminShell({ title: "Users" });
+<script>
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return "—";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${String(d.getDate()).padStart(2,"0")} ${months[d.getMonth()]} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
 
-const pageBody = document.getElementById("page-body");
-pageBody.innerHTML = `
-  <div class="card">
-    <div class="card-body" style="padding-bottom:0">
-      <div class="search-bar">
-        <input id="user-search" class="search-input" placeholder="Search by name or phone…" oninput="debounce()">
-        <button class="btn btn-secondary btn-sm" onclick="loadUsers(1)">Search</button>
-      </div>
-    </div>
-    <div class="card-body" style="padding-top:0;padding:0">
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>UID</th><th>Name</th><th>Phone</th><th>Role</th><th style="text-align:right">Actions</th></tr></thead>
-          <tbody id="users-tbody"><tr><td colspan="5" class="loading-row"><div class="spin"></div></td></tr></tbody>
-        </table>
-      </div>
-      <div id="users-pagination"></div>
-    </div>
-  </div>`;
+let allUsers   = [];
+let filtered   = [];
+let page       = 1;
+const LIMIT    = 20;
+let editingUid = null;
 
-let page = 1, searchTimer;
-window.debounce = function() { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadUsers(1), 350); };
+function roleBadge(role) {
+  const map = { super_admin: "bg-purple", product_admin: "bg-blue", user: "bg-gray" };
+  return `<span class="badge ${map[role] || "bg-gray"}">${role || "—"}</span>`;
+}
 
-window.loadUsers = async function(p = page) {
-  page = p;
-  const tbody = document.getElementById("users-tbody");
-  tbody.innerHTML = `<tr><td colspan="5" class="loading-row"><div class="spin"></div></td></tr>`;
-  const params = new URLSearchParams({ page, limit: 20, q: document.getElementById("user-search").value.trim() });
-  const r = await adminApi(`/users?${params}`);
-  if (!r.ok) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#888">Failed to load</td></tr>`; return; }
-  const { users = [], total = 0, limit = 20 } = r.data;
-  if (!users.length) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No users found</div></div></td></tr>`;
-    document.getElementById("users-pagination").innerHTML = "";
+function planBadge(plan) {
+  return `<span class="badge ${plan === "pro" ? "bg-green" : "bg-gray"}">${plan || "free"}</span>`;
+}
+
+function roleColor(role) {
+  const map = { super_admin: "#7c3aed", product_admin: "#2563eb", user: "#64748b" };
+  return map[role] || "#64748b";
+}
+
+function initials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+async function loadTenantsForFilter() {
+  const r = await api.get("/superadmin/tenants");
+  if (!r.ok) return;
+  const tenants = r.data.tenants || [];
+  const sel = document.getElementById("filter-tenant");
+  tenants.forEach(t => {
+    const o = document.createElement("option");
+    o.value = t.id;
+    o.textContent = t.name;
+    sel.appendChild(o);
+  });
+}
+
+async function loadUsers() {
+  const tenant = document.getElementById("filter-tenant").value;
+  let url = `/superadmin/users?limit=9999`;
+  if (tenant) url += `&tenant=${encodeURIComponent(tenant)}`;
+
+  const r = await api.get(url);
+  if (!r.ok) { toast("Failed to load users", "error"); return; }
+  allUsers = r.data.users || [];
+  page = 1;
+  applyFilters();
+}
+
+function applyFilters() {
+  const role   = document.getElementById("filter-role").value;
+  const search = document.getElementById("filter-search").value.trim().toLowerCase();
+
+  filtered = allUsers.filter(u => {
+    if (role && u.role !== role) return false;
+    if (search) {
+      const hay = `${u.name || ""} ${u.email || ""} ${u.phone || ""}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  page = 1;
+  renderTable();
+}
+
+function renderTable() {
+  const start  = (page - 1) * LIMIT;
+  const end    = start + LIMIT;
+  const slice  = filtered.slice(start, end);
+  const tbody  = document.getElementById("users-tbody");
+  const total  = filtered.length;
+
+  document.getElementById("user-count-info").textContent = `${total} user${total !== 1 ? "s" : ""}`;
+
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No users found</td></tr>`;
+    renderPagination(total);
     return;
   }
-  tbody.innerHTML = users.map(u => `
+
+  tbody.innerHTML = slice.map(u => `
     <tr>
-      <td><code style="font-size:11px">${u.uid}</code></td>
-      <td style="font-weight:600">${u.name || "—"}</td>
-      <td>${u.phone || "—"}</td>
-      <td><span class="badge ${u.role === "super_admin" ? "badge-red" : u.role === "product_admin" ? "badge-orange" : "badge-gray"}">${u.role || "user"}</span></td>
-      <td class="td-actions">
-        <button class="btn btn-secondary btn-xs" onclick="openRoleModal('${u.uid}','${(u.role||'')}')">Set Role</button>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:${roleColor(u.role)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">
+            ${u.avatar_url
+              ? `<img src="${u.avatar_url}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.previousSibling.style.display='flex';" />`
+              : initials(u.name)
+            }
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px;">${u.name || "—"}</div>
+            <div style="font-size:11px;color:#94a3b8;">${u.phone || "—"}</div>
+          </div>
+        </div>
       </td>
-    </tr>`).join("");
+      <td style="font-size:12px;color:#475569;">${u.email || "—"}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td><span class="badge bg-gray">${u.tenant_id || "—"}</span></td>
+      <td>${planBadge(u.plan)}</td>
+      <td style="font-size:12px;color:#64748b;">${fmtDate(u.created_at)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openEditUser(${JSON.stringify(u).replace(/"/g, "&quot;")})">Edit</button>
+      </td>
+    </tr>
+  `).join("");
 
-  const pg = document.getElementById("users-pagination");
-  const totalPages = Math.ceil(total / limit);
-  if (totalPages <= 1) { pg.innerHTML = ""; return; }
-  pg.innerHTML = `<div class="pagination">
-    <button class="page-btn" ${page<=1?"disabled":""} onclick="loadUsers(${page-1})">‹</button>
-    <span style="padding:5px 10px;font-size:12px;color:#888">${page} / ${totalPages}</span>
-    <button class="page-btn" ${page>=totalPages?"disabled":""} onclick="loadUsers(${page+1})">›</button>
-  </div>`;
-};
+  renderPagination(total);
+}
 
-window.openRoleModal = function(uid, role) {
-  document.getElementById("r-uid").value = uid;
-  document.getElementById("r-uid-display").value = uid;
-  document.getElementById("r-role").value = role || "";
-  document.getElementById("role-modal").classList.remove("hidden");
-};
-window.closeRoleModal = function() { document.getElementById("role-modal").classList.add("hidden"); };
-window.saveRole = async function() {
-  const uid  = document.getElementById("r-uid").value;
-  const role = document.getElementById("r-role").value || null;
-  const r = await adminApi(`/users/${uid}/role`, { method: "PUT", body: { role } });
-  if (r.ok) { toast("Role updated", "success"); closeRoleModal(); loadUsers(page); }
-  else toast(r.data.error || "Failed", "error");
-};
+function renderPagination(total) {
+  const pages = Math.ceil(total / LIMIT);
+  const el    = document.getElementById("pagination");
+  if (pages <= 1) { el.innerHTML = ""; return; }
 
-await loadUsers(1);
+  const start = (page - 1) * LIMIT + 1;
+  const end   = Math.min(page * LIMIT, total);
+
+  el.innerHTML = `
+    <span class="pg-info">${start}–${end} of ${total}</span>
+    <button class="pg-btn" onclick="goPage(${page - 1})" ${page <= 1 ? "disabled" : ""}>← Prev</button>
+    <button class="pg-btn" onclick="goPage(${page + 1})" ${page >= pages ? "disabled" : ""}>Next →</button>
+  `;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / LIMIT);
+  if (p < 1 || p > pages) return;
+  page = p;
+  renderTable();
+}
+
+function onTenantChange() {
+  loadUsers();
+}
+
+function openEditUser(u) {
+  editingUid = u.uid;
+  document.getElementById("u-name").value  = u.name  || "";
+  document.getElementById("u-email").value = u.email || "";
+  document.getElementById("u-role").value  = u.role  || "user";
+  openModal("user-modal");
+}
+
+async function saveUser() {
+  if (!editingUid) return;
+  const payload = {
+    name:  document.getElementById("u-name").value.trim(),
+    email: document.getElementById("u-email").value.trim(),
+    role:  document.getElementById("u-role").value,
+  };
+
+  const btn = document.getElementById("user-save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  const r = await api.put(`/superadmin/users/${editingUid}`, payload);
+  btn.disabled = false;
+  btn.textContent = "Save Changes";
+
+  if (!r.ok) { toast(r.data?.error || "Failed to update user", "error"); return; }
+  toast("User updated", "success");
+  closeModal("user-modal");
+
+  // Update local copy
+  const idx = allUsers.findIndex(u => u.uid === editingUid);
+  if (idx !== -1) {
+    allUsers[idx] = { ...allUsers[idx], ...payload };
+    applyFilters();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadTenantsForFilter();
+  loadUsers();
+});
 </script>
 </body>
 </html>

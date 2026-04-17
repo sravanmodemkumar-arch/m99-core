@@ -3,70 +3,217 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Dashboard</title>
-<link rel="stylesheet" href="../shared/admin.css">
+<title>Super Admin — Dashboard</title>
+<script src="./admin-common.js"></script>
 </head>
 <body>
-<script type="module">
-import { initAdminShell, adminApi } from "../shared/admin-shell.js";
+<div class="admin-wrap">
+  <aside id="admin-sidebar"></aside>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <span id="live-clock" style="font-size:13px;color:#64748b;font-variant-numeric:tabular-nums;"></span>
+      </div>
+    </header>
+    <div class="page-content">
 
-const me = await initAdminShell({ title: "Dashboard" });
-const body = document.getElementById("page-body");
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🏢</div>
+          <div class="stat-num" id="s-tenants">—</div>
+          <div class="stat-lbl">Tenants</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-num" id="s-users">—</div>
+          <div class="stat-lbl">Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">❓</div>
+          <div class="stat-num" id="s-questions">—</div>
+          <div class="stat-lbl">Questions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-num" id="s-exams">—</div>
+          <div class="stat-lbl">Exams</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-num" id="s-sessions">—</div>
+          <div class="stat-lbl">Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-num" id="s-completed">—</div>
+          <div class="stat-lbl">Completed</div>
+        </div>
+      </div>
 
-body.innerHTML = `
-  <div class="stats-grid" id="stats-grid">
-    <div class="loading-row" style="grid-column:1/-1"><div class="spin"></div> Loading…</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+        <!-- Tenants Table -->
+        <div>
+          <div class="section-header">
+            <div class="section-title-text">Tenants</div>
+            <a href="tenants.html" class="btn btn-ghost btn-sm">Manage →</a>
+          </div>
+          <div class="table-card">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Tenant</th>
+                  <th>Users</th>
+                  <th>Exams</th>
+                  <th>Modules</th>
+                </tr>
+              </thead>
+              <tbody id="tenants-tbody">
+                <tr><td colspan="4" class="empty-row">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Sessions Table -->
+        <div>
+          <div class="section-header">
+            <div class="section-title-text">Recent Sessions</div>
+            <a href="sessions.html" class="btn btn-ghost btn-sm">View All →</a>
+          </div>
+          <div class="table-card">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Session ID</th>
+                  <th>Tenant</th>
+                  <th>Status</th>
+                  <th>Started</th>
+                </tr>
+              </thead>
+              <tbody id="sessions-tbody">
+                <tr><td colspan="4" class="empty-row">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-    <div class="card">
-      <div class="card-header">Recent Activity</div>
-      <div class="card-body" id="activity-list">
-        <div class="loading-row"><div class="spin"></div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">Quick Actions</div>
-      <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
-        <a href="./exams.html" class="btn btn-primary">+ New Exam</a>
-        <a href="./questions.html" class="btn btn-secondary">+ New Question</a>
-        <a href="./bulk-import.html" class="btn btn-secondary">📥 Bulk Import</a>
-        <a href="./bundles.html" class="btn btn-secondary">📦 Manage Bundles</a>
-        <a href="./users.html" class="btn btn-secondary">👥 Manage Users</a>
-      </div>
-    </div>
-  </div>`;
+</div>
 
-const [overviewRes, examsRes] = await Promise.all([
-  adminApi("/reports/overview"),
-  adminApi("/exams"),
-]);
-
-const sg = document.getElementById("stats-grid");
-if (overviewRes.ok) {
-  const d = overviewRes.data;
-  const exams = examsRes.ok ? (examsRes.data.exams || []) : [];
-  const published = exams.filter(e => e.status === "published").length;
-  sg.innerHTML = `
-    <div class="stat-card"><div class="stat-label">Total Exams</div><div class="stat-value">${exams.length}</div></div>
-    <div class="stat-card"><div class="stat-label">Published</div><div class="stat-value">${published}</div></div>
-    <div class="stat-card"><div class="stat-label">Drafts</div><div class="stat-value">${exams.length - published}</div></div>
-    <div class="stat-card"><div class="stat-label">Role</div><div class="stat-value" style="font-size:16px">${me.role}</div></div>`;
-} else {
-  sg.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Could not load stats</div>`;
+<script>
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return "—";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mon = months[d.getMonth()];
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${dd} ${mon} ${hh}:${mm}`;
 }
 
-const al = document.getElementById("activity-list");
-if (examsRes.ok) {
-  const recent = (examsRes.data.exams || []).slice(0, 8);
-  al.innerHTML = recent.length ? recent.map(e => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5">
-      <span class="badge ${e.status === 'published' ? 'badge-green' : 'badge-gray'}">${e.status}</span>
-      <span style="flex:1;font-size:13px">${e.title}</span>
-      <span style="font-size:11px;color:#aaa">${e.total_qs || 0}Q</span>
-    </div>`).join("") : `<div class="empty-state"><div>No exams yet</div></div>`;
-} else {
-  al.innerHTML = `<div class="empty-state">Could not load</div>`;
+function statusBadge(s) {
+  const map = {
+    completed: "bg-green", submitted: "bg-green",
+    active: "bg-blue", started: "bg-blue",
+    abandoned: "bg-red",
+    pending: "bg-orange"
+  };
+  return `<span class="badge ${map[s] || "bg-gray"}">${s || "—"}</span>`;
 }
+
+async function loadStats() {
+  const r = await api.get("/superadmin/stats");
+  if (!r.ok) { toast("Failed to load stats", "error"); return; }
+  const s = r.data;
+  document.getElementById("s-tenants").textContent   = s.tenants   ?? "—";
+  document.getElementById("s-users").textContent     = s.users     ?? "—";
+  document.getElementById("s-questions").textContent = s.questions ?? "—";
+  document.getElementById("s-exams").textContent     = s.exams     ?? "—";
+  document.getElementById("s-sessions").textContent  = s.sessions  ?? "—";
+  document.getElementById("s-completed").textContent = s.completed ?? "—";
+}
+
+async function loadTenants() {
+  const r = await api.get("/superadmin/tenants");
+  if (!r.ok) { toast("Failed to load tenants", "error"); return; }
+  const tenants = r.data.tenants || [];
+  const tbody = document.getElementById("tenants-tbody");
+  if (!tenants.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">No tenants found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = tenants.map(t => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;line-height:1;">${t.logo_emoji || "🏢"}</span>
+          <div>
+            <div style="font-weight:600;font-size:13px;">${t.name}</div>
+            <div style="font-size:11px;color:#94a3b8;">${t.id}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge bg-blue">${t.user_count ?? 0}</span></td>
+      <td><span class="badge bg-green">${t.exam_count ?? 0}</span></td>
+      <td><span class="badge bg-gray">${Array.isArray(t.modules) ? t.modules.length : 0}</span></td>
+    </tr>
+  `).join("");
+}
+
+async function loadSessions() {
+  const r = await api.get("/superadmin/sessions?limit=8");
+  if (!r.ok) { toast("Failed to load sessions", "error"); return; }
+  const sessions = r.data.sessions || [];
+  const tbody = document.getElementById("sessions-tbody");
+  if (!sessions.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">No sessions found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = sessions.map(s => `
+    <tr>
+      <td>
+        <span style="font-family:monospace;font-size:11px;color:#64748b;" title="${s.id || ""}">
+          ${s.id ? s.id.slice(0, 12) + "…" : "—"}
+        </span>
+      </td>
+      <td><span class="badge bg-gray">${s.tenant_id || "—"}</span></td>
+      <td>${statusBadge(s.status)}</td>
+      <td style="font-size:12px;color:#64748b;">${fmtDate(s.started_at)}</td>
+    </tr>
+  `).join("");
+}
+
+function startClock() {
+  const el = document.getElementById("live-clock");
+  const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function tick() {
+    const now = new Date();
+    const day = DAYS[now.getDay()];
+    const d   = String(now.getDate()).padStart(2, "0");
+    const mon = MONTHS[now.getMonth()];
+    const hh  = String(now.getHours()).padStart(2, "0");
+    const mm  = String(now.getMinutes()).padStart(2, "0");
+    const ss  = String(now.getSeconds()).padStart(2, "0");
+    el.textContent = `${day}, ${d} ${mon}  ${hh}:${mm}:${ss}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  startClock();
+  loadStats();
+  loadTenants();
+  loadSessions();
+});
 </script>
 </body>
 </html>

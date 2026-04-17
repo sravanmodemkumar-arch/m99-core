@@ -44,6 +44,8 @@ mock-test-platform/
 ├── memory/                 ← THIS FOLDER (canonical)
 ├── platform/
 │   ├── gateway/            ← CF Worker: routing + wrangler.toml
+│   ├── local-db/           ← DEV ONLY: SQLite server (server.js port 3000, seed.js, test.js, schema.sql)
+│   │                           Replaces all CF Workers + Lambda in local dev. 80/80 E2E tests passing.
 │   └── lambda/             ← SAM stack
 │       ├── shared/         ← config.py, db.py, models.py
 │       ├── tenant/tps/     ← ACTIVE
@@ -62,7 +64,7 @@ mock-test-platform/
 │   │   ├── backend/        ← worker.js, otp.js, jwt.js, access.js, config.js
 │   │   ├── wrangler.toml
 │   │   └── fe/
-│   │       ├── web/        ← 15 HTML screens
+│   │       ├── web/        ← 15 HTML screens (login.html: pw+OTP tabs, signup.html: new)
 │   │       ├── mobile/     ← 15 screens (React Native, plain JS)
 │   │       ├── desktop/    ← main.js, preload.js, desktop.css
 │   │       └── shared/     ← api.js, base.css, components.js, themes.js (25×2), landing-layouts.js (25)
@@ -73,6 +75,8 @@ mock-test-platform/
 │   │       └── web/        ← 12 pages: dashboard, exams, questions, question-editor,
 │   │                           subjects, bulk-import, bundles, users, subscriptions,
 │   │                           reports, settings, tenants
+│   │                       ← admin-common.js (super admin shared: auth guard, api, sidebar CSS)
+│   │                       ← superadmin pages: dashboard, tenants, users, questions, exams
 │   ├── exam-engine/        ← COMPLETE — replaces rrb-group-d as active exam module
 │   │   ├── backend/        ← worker.js (start/sync/submit/resume/stats/history/bundle)
 │   │   ├── wrangler.toml
@@ -164,6 +168,11 @@ TypeScript ONLY at shared boundaries — never in leaf nodes:
 
 ## Build / v1 Status
 - Branch: `build/v1` (current active build branch)
+- local-db dev server (platform/local-db/): COMPLETE — SQLite-backed Node HTTP server, replaces all CF workers + Lambda in local dev. Routes: /auth/otp/request, /auth/otp/verify, /auth/login, /auth/register, /auth/me, /tenant/config, /superadmin/* (15 endpoints), /admin/* (all admin routes), /rrb-gd/*, /rrb-ntpc/*. E2E tests: 80/80 pass (test.js, no external deps).
+- Auth: password login (POST /auth/login, scrypt hash) + registration (POST /auth/register) added. OTP secondary. home_url from tenant settings returned in every auth response.
+- Tenant-based redirect: tenantAuthPayload(tid) returns home_url + modules; all auth handlers use it; client stores in localStorage.
+- Super admin module: dashboard.html, tenants.html, users.html, questions.html, exams.html + admin-common.js (shared auth guard + api + CSS). Role: super_admin. Routes: /superadmin/*.
+- Auth pages: login.html rewritten (split layout, pw tab + OTP tab), signup.html new, home.html (post-login hub with module cards).
 - exam-engine module: COMPLETE — backend + web (home/exam/result/analysis + PWA sw.js) + desktop (Electron + local HTMX server) + mobile (Login/Home/Exam/Result/Analysis + CDN sync)
 - admin module: COMPLETE — CF Worker (35 routes) + Lambda handler + 12 web pages + shared CSS/JS shell
 - CDN delta sync: manifest.json pattern — desktop (sync.js files), mobile (utils/sync.js AsyncStorage), web (sw.js message handler)

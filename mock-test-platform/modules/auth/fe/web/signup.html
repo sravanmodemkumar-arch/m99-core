@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+body { display: flex; min-height: 100vh; background: #f0f4f8; }
+
+.hero {
+  display: none;
+  flex: 1;
+  background: linear-gradient(145deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
+  padding: 48px;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+@media (min-width: 900px) { .hero { display: flex; } }
+.hero-logo { font-size: 48px; margin-bottom: 24px; }
+.hero-title { font-size: 30px; font-weight: 800; color: #fff; line-height: 1.3; margin-bottom: 14px; }
+.hero-sub { font-size: 15px; color: rgba(255,255,255,.8); line-height: 1.65; margin-bottom: 36px; }
+.hero-steps { display: flex; flex-direction: column; gap: 16px; }
+.step-item { display: flex; align-items: flex-start; gap: 14px; }
+.step-num { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0; margin-top: 2px; }
+.step-text { color: rgba(255,255,255,.9); font-size: 14px; line-height: 1.5; }
+.step-text strong { display: block; margin-bottom: 2px; }
+
+.form-panel {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 24px;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0,0,0,.06);
+  overflow-y: auto;
+}
+@media (min-width: 900px) { .form-panel { padding: 48px 40px; } }
+@media (max-width: 899px) { .form-panel { max-width: 100%; box-shadow: none; } }
+
+.brand { margin-bottom: 28px; }
+.brand-name { font-size: 20px; font-weight: 800; color: #0d47a1; display: flex; align-items: center; gap: 8px; }
+.brand-sub { font-size: 13px; color: #78909c; margin-top: 4px; }
+
+.form-title { font-size: 20px; font-weight: 700; color: #1a237e; margin-bottom: 6px; }
+.form-sub { font-size: 13px; color: #78909c; margin-bottom: 24px; }
+
+.field { margin-bottom: 15px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: #546e7a; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.field input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #cfd8dc;
+  border-radius: 8px; font-size: 14px; color: #1a237e; background: #fff;
+  transition: border-color .15s, box-shadow .15s; outline: none;
+}
+.field input:focus { border-color: #0d47a1; box-shadow: 0 0 0 3px rgba(13,71,161,.1); }
+.field input::placeholder { color: #b0bec5; }
+.field-optional { font-size: 11px; color: #b0bec5; font-weight: 400; margin-left: 4px; }
+
+.input-wrap { position: relative; }
+.input-wrap input { padding-right: 44px; }
+.eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #90a4ae; padding: 2px; }
+.phone-prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; font-weight: 600; color: #546e7a; }
+.with-prefix { padding-left: 42px !important; }
+
+.field-error { font-size: 12px; color: #e53935; margin-top: 5px; min-height: 16px; }
+.field-hint  { font-size: 11px; color: #90a4ae; margin-top: 5px; }
+
+.pw-strength { margin-top: 6px; display: flex; gap: 4px; }
+.pw-bar { flex: 1; height: 3px; border-radius: 2px; background: #e3e8f0; transition: background .2s; }
+
+.btn-primary {
+  width: 100%; padding: 13px; background: #0d47a1; color: #fff;
+  border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: background .15s; margin-top: 8px;
+}
+.btn-primary:hover:not(:disabled) { background: #0a3680; }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+.link-row { text-align: center; font-size: 13px; color: #78909c; margin-top: 20px; }
+.link-row a { color: #0d47a1; font-weight: 600; text-decoration: none; }
+.link-row a:hover { text-decoration: underline; }
+
+.terms-note { font-size: 11px; color: #b0bec5; text-align: center; margin-top: 12px; line-height: 1.5; }
+
+.global-error {
+  background: #fff3f3; border: 1.5px solid #ffcdd2; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; color: #c62828; margin-bottom: 16px; display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-logo">🎯</div>
+  <div class="hero-title">Start Your Exam<br>Prep Journey</div>
+  <div class="hero-sub">Join 50,000+ railway aspirants preparing smarter with real-pattern mock tests.</div>
+  <div class="hero-steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>Create your free account</strong>Takes less than 60 seconds</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>Pick your exam</strong>RRB NTPC, Group-D, and more</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>Start practicing</strong>120+ full-length & sectional tests</div>
+    </div>
+  </div>
+</div>
+
+<div class="form-panel">
+  <div class="brand">
+    <div class="brand-name">🚂 RailwayMock</div>
+    <div class="brand-sub">Free account — no credit card needed</div>
+  </div>
+
+  <div class="form-title">Create your account</div>
+  <div class="form-sub">Fill in your details to get started</div>
+
+  <div class="global-error" id="global-error"></div>
+
+  <div class="field">
+    <label>Full Name</label>
+    <input type="text" id="reg-name" placeholder="Your full name" autocomplete="name"
+           onkeydown="if(event.key==='Enter')document.getElementById('reg-phone').focus()">
+    <div class="field-error" id="reg-name-error"></div>
+  </div>
+
+  <div class="field">
+    <label>Mobile Number</label>
+    <div class="input-wrap">
+      <span class="phone-prefix">+91</span>
+      <input type="tel" id="reg-phone" class="with-prefix" maxlength="10" inputmode="numeric"
+             placeholder="10-digit mobile"
+             onkeydown="if(event.key==='Enter')document.getElementById('reg-email').focus()">
+    </div>
+    <div class="field-error" id="reg-phone-error"></div>
+  </div>
+
+  <div class="field">
+    <label>Email <span class="field-optional">(optional)</span></label>
+    <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"
+           onkeydown="if(event.key==='Enter')document.getElementById('reg-password').focus()">
+    <div class="field-error" id="reg-email-error"></div>
+  </div>
+
+  <div class="field">
+    <label>Password</label>
+    <div class="input-wrap">
+      <input type="password" id="reg-password" placeholder="Min. 6 characters"
+             autocomplete="new-password" oninput="checkStrength()"
+             onkeydown="if(event.key==='Enter')document.getElementById('reg-confirm').focus()">
+      <button class="eye-btn" type="button" onclick="toggleEye('reg-password',this)">👁</button>
+    </div>
+    <div class="pw-strength" id="pw-strength">
+      <div class="pw-bar" id="bar0"></div>
+      <div class="pw-bar" id="bar1"></div>
+      <div class="pw-bar" id="bar2"></div>
+      <div class="pw-bar" id="bar3"></div>
+    </div>
+    <div class="field-error" id="reg-pw-error"></div>
+  </div>
+
+  <div class="field">
+    <label>Confirm Password</label>
+    <div class="input-wrap">
+      <input type="password" id="reg-confirm" placeholder="Re-enter password"
+             autocomplete="new-password"
+             onkeydown="if(event.key==='Enter')doRegister()">
+      <button class="eye-btn" type="button" onclick="toggleEye('reg-confirm',this)">👁</button>
+    </div>
+    <div class="field-error" id="reg-confirm-error"></div>
+  </div>
+
+  <button class="btn-primary" id="reg-btn" onclick="doRegister()">Create Account</button>
+
+  <div class="terms-note">By signing up, you agree to our Terms of Service and Privacy Policy.</div>
+
+  <div class="link-row">
+    Already have an account? <a href="./login.html">Sign in</a>
+  </div>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(location.search);
+const TENANT_ID = urlParams.get("tenant") || "mtp-main";
+
+function toggleEye(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const isPass = inp.type === "password";
+  inp.type = isPass ? "text" : "password";
+  btn.textContent = isPass ? "🙈" : "👁";
+}
+
+function checkStrength() {
+  const pw = document.getElementById("reg-password").value;
+  const scores = [pw.length >= 6, pw.length >= 10, /[A-Z]/.test(pw) || /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)];
+  const level = scores.filter(Boolean).length;
+  const colors = ["#e53935", "#fb8c00", "#43a047", "#1565c0"];
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`bar${i}`).style.background = i < level ? colors[level - 1] : "#e3e8f0";
+  }
+}
+
+function storeAuth(data) {
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("uid",        data.uid);
+  localStorage.setItem("role",       data.role);
+  if (data.name)    localStorage.setItem("name",    data.name);
+  if (data.modules) localStorage.setItem("modules", JSON.stringify(data.modules));
+  const dest = data.home_url || "/modules/auth/fe/web/home.html";
+  localStorage.setItem("home_url", dest);
+  return dest;
+}
+
+async function doRegister() {
+  const name     = document.getElementById("reg-name").value.trim();
+  const phone    = document.getElementById("reg-phone").value.trim();
+  const email    = document.getElementById("reg-email").value.trim();
+  const password = document.getElementById("reg-password").value;
+  const confirm  = document.getElementById("reg-confirm").value;
+
+  // Clear errors
+  ["reg-name-error","reg-phone-error","reg-email-error","reg-pw-error","reg-confirm-error","global-error"]
+    .forEach(id => { document.getElementById(id).textContent = ""; });
+  document.getElementById("global-error").style.display = "none";
+
+  let valid = true;
+  if (!name) { document.getElementById("reg-name-error").textContent = "Full name is required"; valid = false; }
+  if (!/^\d{10}$/.test(phone)) { document.getElementById("reg-phone-error").textContent = "Enter a valid 10-digit number"; valid = false; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById("reg-email-error").textContent = "Enter a valid email address"; valid = false; }
+  if (password.length < 6) { document.getElementById("reg-pw-error").textContent = "Password must be at least 6 characters"; valid = false; }
+  if (password !== confirm) { document.getElementById("reg-confirm-error").textContent = "Passwords do not match"; valid = false; }
+  if (!valid) return;
+
+  const btn = document.getElementById("reg-btn");
+  btn.disabled = true;
+  btn.textContent = "Creating account…";
+
+  try {
+    const res = await fetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, email: email || undefined, password, tenantId: TENANT_ID }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Registration failed");
+    location.href = storeAuth(data);
+  } catch (err) {
+    const el = document.getElementById("global-error");
+    el.textContent = err.message;
+    el.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Create Account";
+  }
+}
+</script>
+</body>
+</html>

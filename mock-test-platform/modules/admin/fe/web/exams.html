@@ -3,235 +3,498 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Exams</title>
-<link rel="stylesheet" href="../shared/admin.css">
+<title>Super Admin — Exams</title>
+<script src="./admin-common.js"></script>
 </head>
 <body>
-<!-- Create/Edit Modal -->
-<div id="exam-modal" class="modal-overlay hidden">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <span id="modal-title">New Exam</span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="f-id">
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Title *</label><input id="f-title" class="form-control" placeholder="e.g. RRB Group D Full Mock 1"></div>
-        <div class="form-group"><label class="form-label">Type</label>
-          <select id="f-type" class="form-control">
-            <option value="full">Full Mock</option><option value="sectional">Sectional</option>
-            <option value="topic">Topic Test</option><option value="practice">Practice</option>
-          </select>
-        </div>
+<div class="admin-wrap">
+  <aside id="admin-sidebar"></aside>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">Exams</div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openCreate()">+ New Exam</button>
       </div>
-      <div class="form-row form-row-3">
-        <div class="form-group"><label class="form-label">Duration (seconds)</label><input id="f-duration" class="form-control" type="number" value="3600" min="60"></div>
-        <div class="form-group"><label class="form-label">Total Marks</label><input id="f-marks" class="form-control" type="number" placeholder="Optional"></div>
-        <div class="form-group"><label class="form-label">Module ID</label><input id="f-module" class="form-control" value="exam-engine"></div>
+    </header>
+    <div class="page-content">
+
+      <div class="filter-bar">
+        <select id="filter-tenant" onchange="loadExams()">
+          <option value="">All Tenants</option>
+        </select>
+        <select id="filter-module" onchange="loadExams()">
+          <option value="">All Modules</option>
+          <option value="rrb-ntpc">RRB NTPC</option>
+          <option value="rrb-group-d">RRB Group-D</option>
+          <option value="rrb">RRB (hub)</option>
+          <option value="exam-engine">Exam Engine</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select id="filter-status" onchange="loadExams()">
+          <option value="">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Correct Marks</label><input id="f-correct" class="form-control" type="number" value="1" step="0.01"></div>
-        <div class="form-group"><label class="form-label">Wrong Marks</label><input id="f-wrong" class="form-control" type="number" value="-0.333" step="0.001"></div>
+
+      <div class="table-card">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Module</th>
+              <th>Tenant</th>
+              <th>Questions</th>
+              <th>Duration</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="exams-tbody">
+            <tr><td colspan="9" class="empty-row">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
       </div>
-      <div style="display:flex;gap:16px">
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input id="f-shuffle-qs" type="checkbox" checked> Shuffle questions
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input id="f-shuffle-opts" type="checkbox" checked> Shuffle options
-        </label>
-      </div>
-      <div style="margin-top:20px">
-        <div style="font-size:13px;font-weight:700;color:#1a237e;margin-bottom:10px">Sections</div>
-        <div id="sections-list"></div>
-        <button class="btn btn-secondary btn-sm" onclick="addSection()">+ Add Section</button>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveExam()">Save Exam</button>
+
     </div>
   </div>
 </div>
 
-<script type="module">
-import { initAdminShell, adminApi, toast, showModal, hideModal } from "../shared/admin-shell.js";
-
-await initAdminShell({ title: "Exams" });
-
-document.getElementById("topbar-actions").innerHTML = `<button class="btn btn-primary" onclick="openCreate()">+ New Exam</button>`;
-
-const pageBody = document.getElementById("page-body");
-pageBody.innerHTML = `
-  <div class="card">
-    <div class="card-header">All Exams <span id="exam-count" style="font-size:12px;font-weight:400;color:#888"></span></div>
-    <div class="card-body" style="padding:0">
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Title</th><th>Type</th><th>Questions</th><th>Duration</th><th>Status</th><th style="text-align:right">Actions</th>
-          </tr></thead>
-          <tbody id="exams-tbody"><tr><td colspan="6" class="loading-row"><div class="spin"></div> Loading…</td></tr></tbody>
-        </table>
-      </div>
+<!-- Exam Modal -->
+<div id="exam-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal('exam-modal')">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-head">
+      <div class="modal-title" id="exam-modal-title">New Exam</div>
+      <button class="modal-close" onclick="closeModal('exam-modal')">×</button>
     </div>
-  </div>`;
+    <div class="modal-body">
 
-let exams = [];
+      <div class="fld-row2" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Tenant <span style="color:#dc2626">*</span></label>
+          <select id="e-tenant" required>
+            <option value="">— Select Tenant —</option>
+          </select>
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Module <span style="color:#dc2626">*</span></label>
+          <select id="e-module" required>
+            <option value="">— Select Module —</option>
+            <option value="rrb-ntpc">RRB NTPC</option>
+            <option value="rrb-group-d">RRB Group-D</option>
+            <option value="rrb">RRB (hub)</option>
+            <option value="exam-engine">Exam Engine</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
 
-async function loadExams() {
-  const r = await adminApi("/exams");
-  exams = r.ok ? (r.data.exams || []) : [];
-  document.getElementById("exam-count").textContent = `(${exams.length})`;
-  const tbody = document.getElementById("exams-tbody");
-  if (!exams.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No exams yet</div></div></td></tr>`;
-    return;
-  }
-  const _dur = s => { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? `${h}h ${m}m` : `${m}m`; };
-  const _badge = s => s === "published" ? "badge-green" : s === "draft" ? "badge-gray" : "badge-orange";
-  tbody.innerHTML = exams.map(e => `
-    <tr>
-      <td style="font-weight:600">${e.title}</td>
-      <td><span class="badge badge-blue">${e.type || "full"}</span></td>
-      <td>${e.total_qs || 0}</td>
-      <td>${_dur(e.duration_s || 3600)}</td>
-      <td><span class="badge ${_badge(e.status || 'draft')}">${e.status || "draft"}</span></td>
-      <td class="td-actions">
-        <button class="btn btn-secondary btn-xs" onclick="editExam('${e.id}')">Edit</button>
-        <button class="btn btn-success btn-xs" onclick="publishExam('${e.id}','${e.title.replace(/'/g,"\\'")}')">Publish</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteExam('${e.id}','${e.title.replace(/'/g,"\\'")}')">Delete</button>
-      </td>
-    </tr>`).join("");
+      <div class="fld">
+        <label>Title <span style="color:#dc2626">*</span></label>
+        <input type="text" id="e-title" placeholder="RRB NTPC General Awareness Mock Test 1" required />
+      </div>
+
+      <div class="fld-row3" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Type</label>
+          <select id="e-type">
+            <option value="full">Full</option>
+            <option value="sectional">Sectional</option>
+            <option value="topic">Topic</option>
+            <option value="practice">Practice</option>
+          </select>
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Duration Hours</label>
+          <input type="number" id="e-hours" value="1" min="0" max="12" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Duration Minutes</label>
+          <input type="number" id="e-minutes" value="30" min="0" max="59" />
+        </div>
+      </div>
+
+      <div class="fld-row2" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Shuffle Questions</label>
+          <select id="e-shuffle-qs">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Shuffle Options</label>
+          <select id="e-shuffle-opts">
+            <option value="true">Yes</option>
+            <option value="false" selected>No</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Status</label>
+        <select id="e-status">
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin:16px 0;"></div>
+      <div style="font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;">Marking Scheme</div>
+
+      <div class="fld-row3" style="margin-bottom:14px;">
+        <div class="fld" style="margin-bottom:0;">
+          <label>Correct</label>
+          <input type="number" id="e-mark-correct" value="1" step="0.001" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Wrong</label>
+          <input type="number" id="e-mark-wrong" value="-0.333" step="0.001" />
+        </div>
+        <div class="fld" style="margin-bottom:0;">
+          <label>Skipped</label>
+          <input type="number" id="e-mark-skipped" value="0" step="0.001" />
+        </div>
+      </div>
+
+      <div style="border-top:1px solid #e2e8f0;margin:16px 0;"></div>
+      <div class="section-header" style="margin-bottom:10px;">
+        <div class="section-title-text">Sections <span style="font-weight:400;font-size:12px;color:#94a3b8;">(auto-assigns questions from bank)</span></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="addSection()">+ Add Section</button>
+      </div>
+
+      <div id="sections-container"></div>
+      <div id="no-sections-hint" class="fld-hint" style="margin-top:4px;">No sections added — will use one default "General" section.</div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('exam-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExam()" id="exam-save-btn">Save Exam</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODULES = [
+  { id: "rrb-ntpc",    name: "RRB NTPC"    },
+  { id: "rrb-group-d", name: "RRB Group-D" },
+  { id: "rrb",         name: "RRB (hub)"   },
+  { id: "exam-engine", name: "Exam Engine" },
+  { id: "admin",       name: "Admin"       },
+];
+
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return "—";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${String(d.getDate()).padStart(2,"0")} ${months[d.getMonth()]} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-await loadExams();
+function fmtDur(s) {
+  if (!s && s !== 0) return "—";
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h ? h + "h " + (m ? m + "m" : "") : m + "m";
+}
 
+function typeBadge(t) {
+  const map = { full: "bg-blue", sectional: "bg-orange", topic: "bg-green", practice: "bg-yellow" };
+  return `<span class="badge ${map[t] || "bg-gray"}">${t || "—"}</span>`;
+}
+
+function statusBadge(s) {
+  return `<span class="badge ${s === "published" ? "bg-green" : "bg-gray"}">${s || "draft"}</span>`;
+}
+
+function moduleName(id) {
+  const m = MODULES.find(m => m.id === id);
+  return m ? m.name : (id || "—");
+}
+
+let page         = 1;
+const LIMIT      = 20;
+let total        = 0;
+let editingId    = null;
+let tenants      = [];
 let sectionCount = 0;
+let examsData    = [];
 
-window.openCreate = function() {
-  document.getElementById("modal-title").textContent = "New Exam";
-  document.getElementById("f-id").value = "";
-  document.getElementById("f-title").value = "";
-  document.getElementById("f-type").value = "full";
-  document.getElementById("f-duration").value = "3600";
-  document.getElementById("f-marks").value = "";
-  document.getElementById("f-module").value = "exam-engine";
-  document.getElementById("f-correct").value = "1";
-  document.getElementById("f-wrong").value = "-0.333";
-  document.getElementById("f-shuffle-qs").checked = true;
-  document.getElementById("f-shuffle-opts").checked = true;
-  document.getElementById("sections-list").innerHTML = "";
-  sectionCount = 0;
-  addSection();
-  document.getElementById("exam-modal").classList.remove("hidden");
-};
+async function loadTenantsForFilter() {
+  const r = await api.get("/superadmin/tenants");
+  if (!r.ok) return;
+  tenants = r.data.tenants || [];
+  const filterSel = document.getElementById("filter-tenant");
+  const modalSel  = document.getElementById("e-tenant");
+  tenants.forEach(t => {
+    [filterSel, modalSel].forEach(sel => {
+      const o = document.createElement("option");
+      o.value = t.id;
+      o.textContent = t.name;
+      sel.appendChild(o);
+    });
+  });
+}
 
-window.editExam = async function(id) {
-  const r = await adminApi(`/exams/${id}`);
-  if (!r.ok) { toast("Failed to load exam", "error"); return; }
-  const e = r.data.exam;
-  document.getElementById("modal-title").textContent = "Edit Exam";
-  document.getElementById("f-id").value = e.id;
-  document.getElementById("f-title").value = e.title;
-  document.getElementById("f-type").value = e.type || "full";
-  document.getElementById("f-duration").value = e.duration_s || 3600;
-  document.getElementById("f-marks").value = e.marks || "";
-  document.getElementById("f-module").value = e.module_id || "exam-engine";
-  document.getElementById("f-correct").value = e.marking?.correct ?? 1;
-  document.getElementById("f-wrong").value = e.marking?.wrong ?? -0.333;
-  document.getElementById("f-shuffle-qs").checked = e.shuffle_qs !== false;
-  document.getElementById("f-shuffle-opts").checked = e.shuffle_opts !== false;
-  const sl = document.getElementById("sections-list");
-  sl.innerHTML = "";
-  sectionCount = 0;
-  (e.sections || []).forEach(s => addSection(s));
-  document.getElementById("exam-modal").classList.remove("hidden");
-};
+async function loadExams() {
+  const tenant = document.getElementById("filter-tenant").value;
+  const module = document.getElementById("filter-module").value;
+  const status = document.getElementById("filter-status").value;
+  let url = `/superadmin/exams?page=${page}&limit=${LIMIT}`;
+  if (tenant) url += `&tenant=${encodeURIComponent(tenant)}`;
+  if (module) url += `&module=${encodeURIComponent(module)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
 
-window.addSection = function(s = null) {
+  const r = await api.get(url);
+  if (!r.ok) { toast("Failed to load exams", "error"); return; }
+  examsData = r.data.exams || [];
+  total     = r.data.total || 0;
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("exams-tbody");
+  if (!examsData.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-row">No exams found</td></tr>`;
+    renderPagination();
+    return;
+  }
+  tbody.innerHTML = examsData.map(e => {
+    const isPublished = e.status === "published";
+    return `
+      <tr>
+        <td style="font-weight:600;max-width:180px;">
+          <div class="truncate" title="${(e.title || "").replace(/"/g,"&quot;")}">${e.title || "—"}</div>
+        </td>
+        <td>${typeBadge(e.type)}</td>
+        <td>${statusBadge(e.status)}</td>
+        <td><span class="badge bg-gray" style="font-size:10px;">${moduleName(e.module_id)}</span></td>
+        <td><span class="badge bg-gray">${e.tenant_id || "—"}</span></td>
+        <td style="text-align:center;">${e.total_qs ?? "—"}</td>
+        <td style="font-size:12px;color:#64748b;">${fmtDur(e.duration_s)}</td>
+        <td style="font-size:12px;color:#64748b;">${fmtDate(e.created_at)}</td>
+        <td>
+          <div class="tbl-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEdit(${JSON.stringify(e).replace(/"/g,"&quot;")})">Edit</button>
+            <button class="btn ${isPublished ? "btn-warn" : "btn-success"} btn-sm" onclick="togglePublish('${e.id}', ${isPublished})">
+              ${isPublished ? "Unpublish" : "Publish"}
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteExam('${e.id}')">Del</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+  renderPagination();
+}
+
+function renderPagination() {
+  const el    = document.getElementById("pagination");
+  const pages = Math.ceil(total / LIMIT);
+  if (pages <= 1) { el.innerHTML = ""; return; }
+  const start = (page - 1) * LIMIT + 1;
+  const end   = Math.min(page * LIMIT, total);
+  el.innerHTML = `
+    <span class="pg-info">${start}–${end} of ${total}</span>
+    <button class="pg-btn" onclick="goPage(${page - 1})" ${page <= 1 ? "disabled" : ""}>← Prev</button>
+    <button class="pg-btn" onclick="goPage(${page + 1})" ${page >= pages ? "disabled" : ""}>Next →</button>
+  `;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(total / LIMIT);
+  if (p < 1 || p > pages) return;
+  page = p;
+  loadExams();
+}
+
+// Section builder
+function addSection(label = "", count = "") {
   sectionCount++;
-  const i = sectionCount;
-  const sl = document.getElementById("sections-list");
-  const div = document.createElement("div");
-  div.id = `section-${i}`;
-  div.style = "background:#f8f9fc;border:1.5px solid #e3e8f0;border-radius:8px;padding:14px;margin-bottom:10px";
-  div.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <span style="font-size:12px;font-weight:700;color:#555">Section ${i}</span>
-      <button class="btn btn-danger btn-xs" onclick="document.getElementById('section-${i}').remove()">Remove</button>
-    </div>
-    <div class="form-row form-row-3">
-      <div class="form-group"><label class="form-label">Section ID</label><input class="form-control sec-id" value="${s?.id || `sec${i}`}"></div>
-      <div class="form-group"><label class="form-label">Label</label><input class="form-control sec-label" value="${s?.label || `Section ${i}`}"></div>
-      <div class="form-group"><label class="form-label">Count (0 = all)</label><input class="form-control sec-count" type="number" value="${s?.count || 0}" min="0"></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Question IDs (one per line or comma-separated)</label>
-      <textarea class="form-control sec-qids" rows="3">${(s?.question_ids || []).join("\n")}</textarea>
-    </div>`;
-  sl.appendChild(div);
-};
+  const idx = sectionCount;
+  const container = document.getElementById("sections-container");
+  const row = document.createElement("div");
+  row.className = "sec-row";
+  row.id = `sec-row-${idx}`;
+  row.innerHTML = `
+    <input type="text" placeholder="Section label, e.g. Mathematics" value="${label}" id="sec-label-${idx}" style="flex:2;" />
+    <input type="number" placeholder="Questions count" value="${count}" id="sec-count-${idx}" min="1" style="flex:1;" />
+    <button type="button" class="del-sec" onclick="removeSection(${idx})" title="Remove section">×</button>
+  `;
+  container.appendChild(row);
+  document.getElementById("no-sections-hint").style.display = "none";
+}
 
-window.closeModal = function() {
-  document.getElementById("exam-modal").classList.add("hidden");
-};
+function removeSection(idx) {
+  const row = document.getElementById(`sec-row-${idx}`);
+  if (row) row.remove();
+  const container = document.getElementById("sections-container");
+  if (!container.querySelector(".sec-row")) {
+    document.getElementById("no-sections-hint").style.display = "";
+  }
+}
 
-window.saveExam = async function() {
-  const id     = document.getElementById("f-id").value.trim();
-  const title  = document.getElementById("f-title").value.trim();
-  if (!title) { toast("Title is required", "error"); return; }
+function clearSections() {
+  sectionCount = 0;
+  document.getElementById("sections-container").innerHTML = "";
+  document.getElementById("no-sections-hint").style.display = "";
+}
 
-  const sections = Array.from(document.getElementById("sections-list").children).map(div => ({
-    id:           div.querySelector(".sec-id").value.trim(),
-    label:        div.querySelector(".sec-label").value.trim(),
-    count:        parseInt(div.querySelector(".sec-count").value) || 0,
-    question_ids: div.querySelector(".sec-qids").value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean),
-  }));
+function getSections() {
+  const rows = document.querySelectorAll("#sections-container .sec-row");
+  const sections = [];
+  rows.forEach((row, i) => {
+    const label = row.querySelector(`input[id^="sec-label-"]`)?.value.trim() || "";
+    const count = parseInt(row.querySelector(`input[id^="sec-count-"]`)?.value) || 0;
+    sections.push({ id: `sec_${i}`, label: label || "Section " + (i + 1), count });
+  });
+  return sections;
+}
 
-  const body = {
+function clearForm() {
+  document.getElementById("e-tenant").value        = "";
+  document.getElementById("e-module").value        = "";
+  document.getElementById("e-title").value         = "";
+  document.getElementById("e-type").value          = "full";
+  document.getElementById("e-hours").value         = "1";
+  document.getElementById("e-minutes").value       = "30";
+  document.getElementById("e-shuffle-qs").value    = "true";
+  document.getElementById("e-shuffle-opts").value  = "false";
+  document.getElementById("e-status").value        = "draft";
+  document.getElementById("e-mark-correct").value  = "1";
+  document.getElementById("e-mark-wrong").value    = "-0.333";
+  document.getElementById("e-mark-skipped").value  = "0";
+  clearSections();
+}
+
+function openCreate() {
+  editingId = null;
+  document.getElementById("exam-modal-title").textContent = "New Exam";
+  clearForm();
+  openModal("exam-modal");
+}
+
+function openEdit(e) {
+  editingId = e.id;
+  document.getElementById("exam-modal-title").textContent = "Edit Exam";
+  clearForm();
+
+  document.getElementById("e-tenant").value = e.tenant_id  || "";
+  document.getElementById("e-module").value = e.module_id  || "";
+  document.getElementById("e-title").value  = e.title      || "";
+  document.getElementById("e-type").value   = e.type       || "full";
+  document.getElementById("e-status").value = e.status     || "draft";
+
+  if (e.duration_s != null) {
+    document.getElementById("e-hours").value   = Math.floor(e.duration_s / 3600);
+    document.getElementById("e-minutes").value = Math.floor((e.duration_s % 3600) / 60);
+  }
+
+  if (e.marking) {
+    document.getElementById("e-mark-correct").value  = e.marking.correct  ?? 1;
+    document.getElementById("e-mark-wrong").value    = e.marking.wrong    ?? -0.333;
+    document.getElementById("e-mark-skipped").value  = e.marking.skipped  ?? 0;
+  }
+
+  const shuffleQs   = e.shuffle_qs   != null ? String(e.shuffle_qs)   : "true";
+  const shuffleOpts = e.shuffle_opts != null ? String(e.shuffle_opts) : "false";
+  document.getElementById("e-shuffle-qs").value   = shuffleQs;
+  document.getElementById("e-shuffle-opts").value = shuffleOpts;
+
+  if (Array.isArray(e.sections) && e.sections.length) {
+    e.sections.forEach(s => addSection(s.label, s.count));
+  }
+
+  openModal("exam-modal");
+}
+
+async function saveExam() {
+  const tenant = document.getElementById("e-tenant").value;
+  const module = document.getElementById("e-module").value;
+  const title  = document.getElementById("e-title").value.trim();
+
+  if (!tenant) { toast("Tenant is required", "error"); return; }
+  if (!module) { toast("Module is required", "error"); return; }
+  if (!title)  { toast("Title is required", "error"); return; }
+
+  const hours   = parseInt(document.getElementById("e-hours").value)   || 0;
+  const minutes = parseInt(document.getElementById("e-minutes").value) || 0;
+  const duration_s = hours * 3600 + minutes * 60;
+
+  let sections = getSections();
+  if (!sections.length) {
+    const estimatedQs = Math.round(duration_s / 60);
+    sections = [{ id: "sec_0", label: "General", count: estimatedQs || 100 }];
+  }
+  const total_qs = sections.reduce((sum, s) => sum + (s.count || 0), 0);
+
+  const payload = {
+    tenant_id:   tenant,
+    module_id:   module,
     title,
-    type:         document.getElementById("f-type").value,
-    duration_s:   parseInt(document.getElementById("f-duration").value) || 3600,
-    marks:        parseInt(document.getElementById("f-marks").value) || null,
-    module_id:    document.getElementById("f-module").value.trim(),
-    marking:      { correct: parseFloat(document.getElementById("f-correct").value) || 1, wrong: parseFloat(document.getElementById("f-wrong").value) || -0.333, skipped: 0 },
-    shuffle_qs:   document.getElementById("f-shuffle-qs").checked,
-    shuffle_opts: document.getElementById("f-shuffle-opts").checked,
+    type:        document.getElementById("e-type").value,
+    duration_s,
+    status:      document.getElementById("e-status").value,
+    shuffle_qs:  document.getElementById("e-shuffle-qs").value === "true",
+    shuffle_opts: document.getElementById("e-shuffle-opts").value === "true",
+    marking: {
+      correct:  parseFloat(document.getElementById("e-mark-correct").value)  || 1,
+      wrong:    parseFloat(document.getElementById("e-mark-wrong").value)    || 0,
+      skipped:  parseFloat(document.getElementById("e-mark-skipped").value)  || 0,
+    },
     sections,
+    total_qs,
   };
 
-  const r = id
-    ? await adminApi(`/exams/${id}`, { method: "PUT", body })
-    : await adminApi("/exams", { method: "POST", body });
+  const btn = document.getElementById("exam-save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
 
-  if (r.ok) {
-    toast(id ? "Exam updated" : "Exam created", "success");
-    closeModal();
-    loadExams();
+  let r;
+  if (editingId) {
+    r = await api.put(`/superadmin/exams/${editingId}`, payload);
   } else {
-    toast(r.data.error || "Failed to save", "error");
+    r = await api.post("/superadmin/exams", payload);
   }
-};
 
-window.publishExam = async function(id, title) {
-  if (!confirm(`Publish "${title}"? This will rebuild the question bank from assigned question IDs.`)) return;
-  const r = await adminApi(`/exams/${id}/publish`, { method: "POST" });
-  if (r.ok) {
-    toast(`Published: ${r.data.total_qs} questions`, "success");
-    loadExams();
-  } else {
-    toast(r.data.error || "Publish failed", "error");
+  btn.disabled = false;
+  btn.textContent = "Save Exam";
+
+  if (!r.ok) { toast(r.data?.error || "Failed to save exam", "error"); return; }
+  toast(editingId ? "Exam updated" : "Exam created", "success");
+  closeModal("exam-modal");
+  loadExams();
+}
+
+async function togglePublish(id, currentlyPublished) {
+  const publish = !currentlyPublished;
+  const r = await api.post(`/superadmin/exams/${id}/publish`, { publish });
+  if (!r.ok) { toast(r.data?.error || "Failed to update exam status", "error"); return; }
+  toast(publish ? "Exam published" : "Exam unpublished", "success");
+
+  // Update local state and re-render
+  const exam = examsData.find(e => e.id === id);
+  if (exam) {
+    exam.status = publish ? "published" : "draft";
+    renderTable();
   }
-};
+}
 
-window.deleteExam = async function(id, title) {
-  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
-  const r = await adminApi(`/exams/${id}`, { method: "DELETE" });
-  if (r.ok) { toast("Exam deleted", "success"); loadExams(); }
-  else toast(r.data.error || "Delete failed", "error");
-};
+async function deleteExam(id) {
+  if (!confirm("Delete this exam? This cannot be undone.")) return;
+  const r = await api.del(`/superadmin/exams/${id}`);
+  if (!r.ok) { toast(r.data?.error || "Failed to delete exam", "error"); return; }
+  toast("Exam deleted", "success");
+  loadExams();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadTenantsForFilter();
+  loadExams();
+});
 </script>
 </body>
 </html>
