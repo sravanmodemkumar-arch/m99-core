@@ -144,7 +144,7 @@ TypeScript ONLY at shared boundaries — never in leaf nodes:
 - CDN delta sync: manifest.json pattern — desktop (sync.js files), mobile (utils/sync.js AsyncStorage), web (sw.js message handler)
 - Per-question timing in exam.html: qTimings map, stored in sessionStorage for analysis page
 - Seed scripts: seed-exam-data.js (40 Qs, 2 exams, KV+R2), gen-cdn-manifest.js (post-publish manifest)
-- Tests: exam-engine integration tests updated; rrb-group-d tests removed (module retired)
+- Tests: 101/101 passing (branch build/admin-clients) — unit (scoring, qstate) + integration (auth 40, exam-engine 40, admin 61). Key fixes: crypto polyfill (always assign globalThis.crypto in Node 18), bank fixture uses q.answer not q.answer_key.answer, integer scoring (-1.332 not -4/3), admin role="none" treated as delete.
 - app-shell module: placeholder only (not needed for v1 launch)
 - Branch `build/admin-clients`: admin desktop + admin mobile COMPLETE
 - admin desktop: main.js (Electron + app menu + tray), server.js (static file server for admin HTML), preload.js, package.json, electron-builder.json, app-config.json
