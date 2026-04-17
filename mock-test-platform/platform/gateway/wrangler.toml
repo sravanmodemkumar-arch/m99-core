@@ -1,0 +1,28 @@
+name = "mtp-gateway"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Routes — slug-based (CF manages SSL automatically)
+routes = [
+  { pattern = "*.m99-core.com/*", zone_name = "m99-core.com" },
+  { pattern = "m99-core.com/*", zone_name = "m99-core.com" }
+]
+
+# KV namespace — routing + feature flags
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+# Service bindings — one per module worker
+# Add 2 lines per new module:
+[[services]]
+binding = "MODULE_AUTH"
+service = "mtp-auth"
+
+[[services]]
+binding = "MODULE_RRB_GROUP_D"
+service = "mtp-rrb-group-d"
+
+[vars]
+ENVIRONMENT = "production"
