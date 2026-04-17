@@ -1,0 +1,28 @@
+appId: com.mocktestplatform.rrb
+name: Token persists across app restarts
+
+---
+
+# First launch — log in
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "email-input"
+    optional: true
+- inputText: "alice@example.com"
+- tapOn:
+    id: "password-input"
+    optional: true
+- inputText: "password123"
+- tapOn:
+    text: "Login"
+- assertVisible: "Start Exam"
+
+# Kill and relaunch — should go straight to home
+- stopApp
+- launchApp:
+    clearState: false
+
+# Home screen should show without re-login
+- assertVisible: "Start Exam"
+- assertNotVisible: "Login"

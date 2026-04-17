@@ -1,0 +1,18 @@
+name = "mtp-rrb-group-d"
+main = "backend/worker.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace — stores TSF, JWT claims (shared with auth worker via same namespace)
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+# R2 bucket — stores question bundles, EPS files, exam results
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "mtp-exam-data"
+preview_bucket_name = "mtp-exam-data-preview"
+
+[vars]
+ENVIRONMENT = "production"

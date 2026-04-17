@@ -57,5 +57,5 @@
 - Terse — no trailing summaries
 - No emoji unless asked
 - Reference files with line numbers
-- No TypeScript — pure JS everywhere in FE
+- TypeScript everywhere in FE (shared, mobile, desktop). Web HTML inline scripts need Vite build step → compile TS → CDN bundle. Mobile uses Expo TS natively. Desktop uses tsc.
 - One task in_progress at a time

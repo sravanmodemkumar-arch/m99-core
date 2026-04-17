@@ -1,0 +1,36 @@
+appId: com.mocktestplatform.rrb
+name: Login flow — correct credentials
+
+---
+
+- launchApp:
+    clearState: true
+
+# Auth screen should show login form
+- assertVisible: "RRB Group D"
+
+# Enter credentials
+- tapOn:
+    text: "Email"
+    optional: true
+- tapOn:
+    id: "email-input"
+    optional: true
+- inputText: "alice@example.com"
+
+- tapOn:
+    text: "Password"
+    optional: true
+- tapOn:
+    id: "password-input"
+    optional: true
+- inputText: "password123"
+
+- tapOn:
+    text: "Login"
+
+# Should reach home screen after successful login
+- assertVisible:
+    text: "RRB Group D"
+    index: 0
+- assertNotVisible: "Login"
