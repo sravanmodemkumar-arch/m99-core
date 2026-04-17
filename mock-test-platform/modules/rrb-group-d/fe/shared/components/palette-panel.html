@@ -1,0 +1,21 @@
+<!-- Question palette panel — full sidebar or drawer -->
+<div class="palette-panel" id="palette-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+    <div style="font-size:0.875rem;font-weight:700;color:var(--text)">Questions</div>
+    <button class="btn btn-sm btn-outline" onclick="__submitExam()" style="font-size:0.8125rem">Submit</button>
+  </div>
+
+  <!-- section tabs inside palette -->
+  <div id="palette-section-tabs" style="margin-bottom:0.75rem"></div>
+  <!-- palette grid for active section -->
+  <div class="palette-grid" id="palette-grid"></div>
+
+  <!-- legend -->
+  <div class="palette-legend" style="margin-top:0.75rem">
+    <div class="legend-item"><span class="palette-btn q-answered small"></span><span>Answered</span></div>
+    <div class="legend-item"><span class="palette-btn q-skipped small"></span><span>Not Answered</span></div>
+    <div class="legend-item"><span class="palette-btn q-marked small"></span><span>Marked</span></div>
+    <div class="legend-item"><span class="palette-btn q-answered-marked small"></span><span>Ans+Marked</span></div>
+    <div class="legend-item"><span class="palette-btn q-not-visited small"></span><span>Not Visited</span></div>
+  </div>
+</div>
