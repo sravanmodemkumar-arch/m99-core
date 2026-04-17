@@ -89,6 +89,57 @@ v3.5 → read replicas
 7. (v2.5) EPS triggers CGS → weakness map → PG + CCDN R2
 ```
 
+## Auth Config (per module in KV)
+```json
+{
+  "auth": {
+    "identifiers": ["phone","email","username","userid","module_username"],
+    "identity_mode": "combined",
+    "registration": { "self": true, "admin_import": true },
+    "second_factor": { "otp_required": false, "totp_enabled": false },
+    "forgot_password": { "via": ["email","phone"] },
+    "lockout": { "attempts": 3, "duration_mins": 60 },
+    "devices": { "max_same_location": 3, "max_diff_location": 1, "location": "city", "diff_location_wait_hrs": 6 },
+    "social": ["google"],
+    "admin": {
+      "roles": [],
+      "platforms": { "desktop": "full", "web": "full", "mobile": "view_only" },
+      "login": { "separate": true, "require_totp": true },
+      "audit": "full",
+      "notifications": { "failed_logins": true, "new_registrations": true, "session_anomalies": true }
+    }
+  }
+}
+```
+
+## Auth Screens (24 total)
+| # | Screen | Notes |
+|---|---|---|
+| 1 | Splash | auto-redirect |
+| 2 | Welcome | first launch |
+| 3 | Login | dynamic identifiers + password + social |
+| 4 | OTP Verify | shared — login/register/reset/change |
+| 5 | TOTP Verify | 6-digit authenticator |
+| 6 | Register Step 1 | name, phone, email, password, DOB, gender |
+| 7 | Register Step 2 | state, city, pincode, address |
+| 8 | Register Step 3 | category, optional module fields |
+| 9 | Register OTP | phone verify |
+| 10 | Social Complete | phone + missing fields after Google OAuth |
+| 11 | First Login | admin-created user sets password |
+| 12 | TOTP Setup | QR + confirm |
+| 13 | Forgot Password | dynamic identifier based on module config |
+| 14 | Reset Password | new password after verify |
+| 15 | Profile | view only |
+| 16 | Edit Profile | name, photo, email |
+| 17 | Security | change password, phone, TOTP |
+| 18 | Change Identifier | old verify → new → OTP confirm |
+| 19 | Delete Account | confirm + re-auth |
+| 20 | Settings | root |
+| 21 | Notifications | per module toggles |
+| 22 | App Info | version, terms, privacy |
+| 23 | My Subscriptions | active modules, expiry |
+| 24 | Help | FAQ + contact |
+
 ## Key Decisions
 | Decision | Rule |
 |---|---|
@@ -102,6 +153,9 @@ v3.5 → read replicas
 | Append-only results | INSERT only, PK: (uid, qid, attempt_no) |
 | tenant_id on all tables | future-proof for shared-DB migration |
 | pg_host resolved dynamically | never hardcoded |
+| Auth config per module | identifiers, 2FA, lockout, devices, admin — all dynamic |
+| RBAC fully dynamic | roles + permissions defined per module config |
+| Admin platforms dynamic | desktop/web/mobile capabilities per module |
 
 ## Evolution Path
 ```
