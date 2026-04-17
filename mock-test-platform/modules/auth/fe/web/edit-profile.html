@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Profile</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .pw-wrap{position:relative;} .pw-wrap input{padding-right:2.75rem;}
+  .pw-toggle{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);}
+  .avatar-edit{position:relative;width:80px;height:80px;margin:0 auto 1.25rem;cursor:pointer;}
+  .avatar-edit .avatar{width:80px;height:80px;font-size:2rem;}
+  .avatar-edit-btn{position:absolute;bottom:0;right:0;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:0.75rem;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  #reauth-gate{display:none;border-top:1px solid var(--border);margin-top:1.25rem;padding-top:1.25rem;}
+  .otp-row input{padding:0.75rem 0.25rem;}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <button class="back-btn" onclick="history.back()">←</button>
+  <div class="page-header-title">Edit Profile</div>
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="container">
+  <!-- Avatar -->
+  <div style="text-align:center;margin-bottom:1.25rem">
+    <div class="avatar-edit" onclick="document.getElementById('photo-input').click()">
+      <div class="avatar" id="avatar" style="width:80px;height:80px;font-size:2rem">U</div>
+      <button class="avatar-edit-btn" type="button">✏️</button>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="previewPhoto()">
+    <div style="font-size:0.75rem;color:var(--text-muted)">Tap to change photo</div>
+  </div>
+
+  <!-- Fields -->
+  <div class="info-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:1rem">Personal</div>
+    <div class="field-row">
+      <div class="field"><label>First Name *</label><input type="text" id="first-name" autocomplete="given-name"><div class="error" id="fname-error"></div></div>
+      <div class="field"><label>Last Name *</label><input type="text" id="last-name" autocomplete="family-name"><div class="error" id="lname-error"></div></div>
+    </div>
+    <div class="field"><label>Phone *</label><input type="tel" id="phone" maxlength="10" inputmode="numeric"><div class="error" id="phone-error"></div></div>
+    <div class="field"><label>Email *</label><input type="email" id="email" autocomplete="email"><div class="error" id="email-error"></div></div>
+    <div class="field-row">
+      <div class="field"><label>Date of Birth</label><input type="date" id="dob"></div>
+      <div class="field"><label>Gender</label><select id="gender"><option value="">Select</option><option value="M">Male</option><option value="F">Female</option><option value="O">Other</option></select></div>
+    </div>
+    <div class="field"><label>Category</label><select id="category"><option value="">Select</option><option value="GEN">General</option><option value="OBC">OBC</option><option value="SC">SC</option><option value="ST">ST</option><option value="EWS">EWS</option></select></div>
+  </div>
+
+  <div class="info-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:1rem">Address</div>
+    <div class="field"><label>Pincode</label><input type="tel" id="pincode" maxlength="6" inputmode="numeric" oninput="lookupPin()"><div class="helper" id="pin-status"></div></div>
+    <div class="field-row">
+      <div class="field"><label>State</label><input type="text" id="state"></div>
+      <div class="field"><label>City</label><input type="text" id="city"></div>
+    </div>
+    <div class="field"><label>Full Address</label><textarea id="address" rows="2"></textarea></div>
+  </div>
+
+  <!-- Dynamic module fields -->
+  <div id="module-fields"></div>
+
+  <button class="btn btn-primary" id="save-btn" onclick="initSave()">Save Changes</button>
+  <div class="error" id="save-error" style="margin-top:0.75rem;text-align:center"></div>
+
+  <!-- Re-auth gate (inline) -->
+  <div id="reauth-gate">
+    <div style="font-size:0.875rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Confirm your identity to save</div>
+    <div class="field">
+      <label>Password *</label>
+      <div class="pw-wrap">
+        <input type="password" id="reauth-pw" placeholder="Enter current password">
+        <button class="pw-toggle" onclick="const i=document.getElementById('reauth-pw');i.type=i.type==='password'?'text':'password'">👁️</button>
+      </div>
+      <div class="error" id="reauth-pw-error"></div>
+    </div>
+    <!-- OTP (if module requires) -->
+    <div id="reauth-otp-section" style="display:none">
+      <div class="field">
+        <label>OTP <span style="color:var(--text-muted);font-weight:400">(sent to your phone)</span></label>
+        <div class="otp-row" id="reauth-otp-row">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+        </div>
+        <div class="error" id="reauth-otp-error"></div>
+      </div>
+    </div>
+    <!-- TOTP (if user has it) -->
+    <div id="reauth-totp-section" style="display:none">
+      <div class="field">
+        <label>Authenticator Code</label>
+        <div class="otp-row" id="reauth-totp-row">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+        </div>
+        <div class="error" id="reauth-totp-error"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="confirm-save-btn" onclick="confirmSave()">Confirm & Save</button>
+  </div>
+</div>
+
+<script type="module">
+import { boot, api, showError, setLoading, otpAutoAdvance, getOtpValue, requireAuth } from "./app.js";
+let cfg = {}, original = {}, changedSensitive = false;
+let pinTimer;
+
+async function init() {
+  cfg = await boot();
+  if (!requireAuth()) return;
+  const { ok, data } = await api("/auth/me/profile");
+  if (!ok) return;
+  original = data;
+  populate(data);
+  if (cfg.profile_edit_reauth?.require_otp) { document.getElementById("reauth-otp-section").style.display="block"; otpAutoAdvance("#reauth-otp-row"); }
+  if (cfg.profile_edit_reauth?.require_totp || data.totp_enabled) { document.getElementById("reauth-totp-section").style.display="block"; otpAutoAdvance("#reauth-totp-row"); }
+}
+
+function populate(d) {
+  ["first-name","last-name","phone","email","dob","gender","category","pincode","state","city"].forEach(id => {
+    const el = document.getElementById(id);
+    const key = id.replace(/-([a-z])/g, (_,c)=>c.toUpperCase());
+    if (el && d[key] !== undefined) el.value = d[key] || "";
+  });
+  if (d.address) document.getElementById("address").value = d.address;
+  document.getElementById("avatar").textContent = (d.first_name||"U")[0].toUpperCase();
+  if (d.photo) document.getElementById("avatar").innerHTML = `<img src="${d.photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+}
+
+window.lookupPin = () => {
+  clearTimeout(pinTimer);
+  const pin = document.getElementById("pincode").value;
+  if (pin.length !== 6) return;
+  pinTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const d = await res.json();
+      if (d[0].Status === "Success") { const p=d[0].PostOffice[0]; document.getElementById("state").value=p.State; document.getElementById("city").value=p.District; document.getElementById("pin-status").textContent="✓ "+p.Name; }
+    } catch {}
+  }, 600);
+};
+
+window.previewPhoto = () => {
+  const file = document.getElementById("photo-input").files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById("avatar").innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`; };
+  reader.readAsDataURL(file);
+};
+
+window.initSave = function() {
+  const newPhone = document.getElementById("phone").value;
+  const newEmail = document.getElementById("email").value;
+  changedSensitive = newPhone !== original.phone || newEmail !== original.email;
+  document.getElementById("reauth-gate").style.display = "block";
+  document.getElementById("reauth-pw").focus();
+  document.getElementById("save-btn").style.display = "none";
+};
+
+window.confirmSave = async function() {
+  const pw = document.getElementById("reauth-pw").value;
+  if (!pw) { showError("reauth-pw-error","Required"); return; }
+  showError("reauth-pw-error","");
+  const payload = {
+    password: pw,
+    first_name: document.getElementById("first-name").value,
+    last_name: document.getElementById("last-name").value,
+    phone: document.getElementById("phone").value,
+    email: document.getElementById("email").value,
+    dob: document.getElementById("dob").value,
+    gender: document.getElementById("gender").value,
+    category: document.getElementById("category").value,
+    state: document.getElementById("state").value,
+    city: document.getElementById("city").value,
+    pincode: document.getElementById("pincode").value,
+    address: document.getElementById("address").value,
+  };
+  if (cfg.profile_edit_reauth?.require_otp) {
+    const otp = getOtpValue("#reauth-otp-row");
+    if (otp.length !== 6) { showError("reauth-otp-error","Enter all 6 digits"); return; }
+    payload.otp = otp;
+  }
+  if (cfg.profile_edit_reauth?.require_totp || original.totp_enabled) {
+    const totp = getOtpValue("#reauth-totp-row");
+    if (totp.length !== 6) { showError("reauth-totp-error","Enter all 6 digits"); return; }
+    payload.totp = totp;
+  }
+  setLoading("confirm-save-btn", true, "Confirm & Save");
+  const { ok, data } = await api("/auth/profile/update", { method:"POST", body: JSON.stringify(payload) });
+  setLoading("confirm-save-btn", false, "Confirm & Save");
+  if (!ok) { showError("reauth-pw-error", data.error || "Failed"); return; }
+  window.location.href = "profile.html";
+};
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

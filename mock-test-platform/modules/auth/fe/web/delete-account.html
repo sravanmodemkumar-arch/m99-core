@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delete Account</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .pw-wrap{position:relative;} .pw-wrap input{padding-right:2.75rem;}
+  .pw-toggle{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);}
+  .otp-row input{padding:0.75rem 0.25rem;}
+  #step-auth,#step-done{display:none;}
+  .warning-box{background:#FEF2F2;border:1.5px solid var(--danger);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1.25rem;}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <button class="back-btn" onclick="history.back()">←</button>
+  <div class="page-header-title">Delete Account</div>
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="page-center" style="min-height:calc(100vh - 56px)">
+<div class="auth-card card">
+
+  <!-- Step 1: Warning + confirm -->
+  <div id="step-confirm">
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div style="font-size:3rem;margin-bottom:0.75rem">⚠️</div>
+      <div style="font-size:1.125rem;font-weight:700;color:var(--danger)">Delete Account</div>
+    </div>
+    <div class="warning-box">
+      <div style="font-weight:600;color:var(--danger);margin-bottom:0.5rem">This cannot be undone</div>
+      <ul style="font-size:0.875rem;color:#991B1B;padding-left:1.25rem;line-height:1.7">
+        <li>All your exam results will be deleted</li>
+        <li>All subscriptions will be cancelled</li>
+        <li>Your profile and data will be removed</li>
+        <li>You cannot recover this account</li>
+      </ul>
+    </div>
+    <div class="field">
+      <label>Type <strong>DELETE</strong> to confirm</label>
+      <input type="text" id="confirm-text" placeholder="Type DELETE">
+      <div class="error" id="confirm-error"></div>
+    </div>
+    <button class="btn btn-danger" id="proceed-btn" onclick="proceed()">Continue to Delete</button>
+    <button class="btn btn-secondary" style="margin-top:0.75rem" onclick="history.back()">Cancel</button>
+  </div>
+
+  <!-- Step 2: Re-auth (all enabled factors) -->
+  <div id="step-auth">
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:0.25rem">Verify your identity</div>
+      <div style="font-size:0.875rem;color:var(--text-muted)">Confirm all factors before we delete your account</div>
+    </div>
+    <div class="field">
+      <label>Password *</label>
+      <div class="pw-wrap">
+        <input type="password" id="del-pw" placeholder="Current password">
+        <button class="pw-toggle" onclick="const i=document.getElementById('del-pw');i.type=i.type==='password'?'text':'password'">👁️</button>
+      </div>
+      <div class="error" id="del-pw-error"></div>
+    </div>
+    <div id="del-otp-section" style="display:none">
+      <div class="field">
+        <label>OTP <span style="color:var(--text-muted);font-weight:400">(sent to your phone)</span></label>
+        <div class="otp-row" id="del-otp-row">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+        </div>
+        <div class="error" id="del-otp-error"></div>
+      </div>
+    </div>
+    <div id="del-totp-section" style="display:none">
+      <div class="field">
+        <label>Authenticator Code *</label>
+        <div class="otp-row" id="del-totp-row">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+          <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+        </div>
+        <div class="error" id="del-totp-error"></div>
+      </div>
+    </div>
+    <div class="error" id="del-submit-error" style="text-align:center"></div>
+    <button class="btn btn-danger" id="delete-btn" onclick="deleteAccount()">Delete My Account</button>
+    <button class="btn btn-secondary" style="margin-top:0.75rem" onclick="history.back()">Cancel</button>
+  </div>
+
+  <!-- Step 3: Done -->
+  <div id="step-done" style="text-align:center;padding:1rem 0">
+    <div style="font-size:3rem;margin-bottom:1rem">👋</div>
+    <div style="font-size:1.125rem;font-weight:700;margin-bottom:0.5rem">Account Deleted</div>
+    <div style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1.5rem">Your account and all data have been removed.</div>
+    <button class="btn btn-secondary" onclick="window.location.href='landing.html'">Back to Home</button>
+  </div>
+
+</div>
+</div>
+
+<script type="module">
+import { boot, api, showError, setLoading, otpAutoAdvance, getOtpValue, requireAuth } from "./app.js";
+let cfg = {}, profile = {};
+
+async function init() {
+  cfg = await boot();
+  if (!requireAuth()) return;
+  const { ok, data } = await api("/auth/me/profile");
+  if (ok) profile = data;
+}
+
+function goStep(step) {
+  ["confirm","auth","done"].forEach(s => document.getElementById(`step-${s}`).style.display = s===step?"block":"none");
+}
+
+window.proceed = function() {
+  if (document.getElementById("confirm-text").value !== "DELETE") { showError("confirm-error","Type DELETE exactly"); return; }
+  showError("confirm-error","");
+  document.getElementById("step-confirm").style.display="none";
+  document.getElementById("step-auth").style.display="block";
+  if (cfg.sensitive_action_reauth?.require_otp || true) {
+    document.getElementById("del-otp-section").style.display="block";
+    otpAutoAdvance("#del-otp-row");
+    api("/auth/otp/send-delete",{method:"POST"});
+  }
+  if (profile.totp_enabled) {
+    document.getElementById("del-totp-section").style.display="block";
+    otpAutoAdvance("#del-totp-row");
+  }
+};
+
+window.deleteAccount = async function() {
+  const pw = document.getElementById("del-pw").value;
+  if (!pw) { showError("del-pw-error","Required"); return; }
+  showError("del-pw-error",""); showError("del-submit-error","");
+  const payload = { password: pw };
+  const otp = getOtpValue("#del-otp-row");
+  if (otp.length === 6) payload.otp = otp;
+  else if (document.getElementById("del-otp-section").style.display !== "none") { showError("del-otp-error","Enter all 6 digits"); return; }
+  if (profile.totp_enabled) {
+    const totp = getOtpValue("#del-totp-row");
+    if (totp.length !== 6) { showError("del-totp-error","Enter all 6 digits"); return; }
+    payload.totp = totp;
+  }
+  setLoading("delete-btn", true, "Delete My Account");
+  const { ok, data } = await api("/auth/delete-account", { method:"POST", body: JSON.stringify(payload) });
+  setLoading("delete-btn", false, "Delete My Account");
+  if (!ok) { showError("del-submit-error", data.error || "Failed"); return; }
+  localStorage.clear();
+  goStep("done");
+};
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

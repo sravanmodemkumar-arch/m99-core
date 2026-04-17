@@ -1,0 +1,12 @@
+<!--
+  HTMX shared component: Social Login Buttons
+  Params: ?provider=google  (extensible for future providers)
+  Shown only when cfg.social.google_enabled
+-->
+<div class="social-buttons" data-component="social-buttons">
+  <div class="divider"><span>or</span></div>
+  <button type="button" class="btn-social" data-social-google hx-on:click="initGoogleLogin()">
+    <img src="https://www.google.com/favicon.ico" width="18" height="18" alt="">
+    Continue with Google
+  </button>
+</div>

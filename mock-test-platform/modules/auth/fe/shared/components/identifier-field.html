@@ -1,0 +1,17 @@
+<!--
+  HTMX shared component: Dynamic Identifier Field
+  Adapts label + input type based on module config (phone/email/username/userid)
+  Params: ?type=phone|email|username|userid  ?label=<label>
+-->
+<div class="field" data-component="identifier-field">
+  <label data-identifier-label>Phone / Email / Username</label>
+  <input
+    data-identifier-input
+    type="text"
+    inputmode="text"
+    autocomplete="username"
+    placeholder="Enter your identifier"
+  >
+  <div class="helper" data-identifier-helper></div>
+  <div class="error" data-identifier-error></div>
+</div>

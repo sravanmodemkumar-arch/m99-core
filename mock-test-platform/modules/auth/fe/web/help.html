@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Help & FAQ</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.625rem;overflow:hidden;}
+  .faq-question{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;cursor:pointer;font-weight:500;font-size:0.9375rem;transition:background 0.15s;}
+  .faq-question:hover{background:var(--surface-2);}
+  .faq-arrow{color:var(--text-muted);transition:transform 0.2s;font-size:1.125rem;flex-shrink:0;margin-left:0.75rem;}
+  .faq-answer{display:none;padding:0 1.25rem 1rem;font-size:0.875rem;color:var(--text-muted);line-height:1.6;border-top:1px solid var(--border);}
+  .faq-item.open .faq-answer{display:block;}
+  .faq-item.open .faq-arrow{transform:rotate(90deg);}
+  .contact-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;display:flex;align-items:center;gap:1rem;cursor:pointer;transition:border-color 0.15s;text-decoration:none;color:inherit;margin-bottom:0.75rem;}
+  .contact-card:hover{border-color:var(--primary);}
+  .contact-icon{font-size:1.75rem;flex-shrink:0;}
+  .contact-title{font-weight:600;font-size:0.9375rem;margin-bottom:0.125rem;}
+  .contact-desc{font-size:0.8125rem;color:var(--text-muted);}
+  .search-wrap{position:relative;margin-bottom:1.25rem;}
+  .search-wrap input{padding-left:2.5rem;}
+  .search-icon{position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <button class="back-btn" onclick="history.back()">←</button>
+  <div class="page-header-title">Help & FAQ</div>
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="container">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="search" id="faq-search" placeholder="Search questions…" oninput="filterFaq()">
+  </div>
+
+  <div id="faq-list"></div>
+
+  <div style="margin-top:2rem">
+    <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:1rem">Contact Support</div>
+    <a class="contact-card" id="whatsapp-link" href="#" onclick="openWhatsApp()">
+      <div class="contact-icon">💬</div>
+      <div><div class="contact-title">WhatsApp Support</div><div class="contact-desc">Chat with us — usually replies within 1 hour</div></div>
+    </a>
+    <a class="contact-card" id="email-link" href="#" onclick="openEmail()">
+      <div class="contact-icon">📧</div>
+      <div><div class="contact-title">Email Support</div><div class="contact-desc" id="support-email">support@m99-core.com</div></div>
+    </a>
+  </div>
+</div>
+
+<script type="module">
+import { boot, api } from "./app.js";
+const DEFAULT_FAQS = [
+  { q:"How do I start a test?", a:"Go to Home, tap on a test module, and press Start Test. Your progress is saved automatically." },
+  { q:"Can I pause a test and resume later?", a:"Yes. Your answers and timer are saved. Open the app and tap Resume to continue from where you left off." },
+  { q:"How is my score calculated?", a:"Each correct answer earns full marks. Wrong answers may have negative marking depending on the exam pattern (typically -1/3). Unattempted questions score 0." },
+  { q:"Why is my result not syncing?", a:"Results sync automatically when you have internet. You'll see a 'Synced' note once done. Try refreshing or reconnecting to internet." },
+  { q:"I forgot my password. What do I do?", a:"Tap 'Forgot password?' on the login screen. Enter your registered phone or email to receive a reset link or OTP." },
+  { q:"How do I change my phone number?", a:"Go to Settings → Security → Change Phone. You'll need to verify both your old and new number." },
+  { q:"What is the Authenticator app (TOTP)?", a:"TOTP adds extra security. After entering your password, you also enter a 6-digit code from an app like Google Authenticator. Enable it in Settings → Security." },
+  { q:"Why was my account locked?", a:"Too many failed login attempts trigger a temporary lock (usually 1 hour). Wait and try again, or use Forgot Password to reset." },
+  { q:"Can I use the platform on multiple devices?", a:"Yes, up to the limit set by your institute (usually 3 devices). Different city logins may require a 6-hour wait for security." },
+  { q:"How do I contact my institute?", a:"Use the Contact Support section below, or reach out directly to your coaching centre." },
+];
+let allFaqs = DEFAULT_FAQS;
+
+async function init() {
+  const cfg = await boot();
+  if (cfg.support?.whatsapp) document.getElementById("whatsapp-link").href = `https://wa.me/${cfg.support.whatsapp}`;
+  if (cfg.support?.email) document.getElementById("support-email").textContent = cfg.support.email;
+  try {
+    const res = await fetch("/auth/faqs");
+    if (res.ok) { const d = await res.json(); if (d.faqs?.length) allFaqs = d.faqs; }
+  } catch {}
+  renderFaqs(allFaqs);
+}
+
+function renderFaqs(faqs) {
+  document.getElementById("faq-list").innerHTML = faqs.map((f,i) => `
+    <div class="faq-item" id="faq-${i}">
+      <div class="faq-question" onclick="toggleFaq(${i})">
+        <span>${f.q}</span><span class="faq-arrow">›</span>
+      </div>
+      <div class="faq-answer">${f.a}</div>
+    </div>`).join("");
+}
+
+window.toggleFaq = function(i) {
+  document.getElementById(`faq-${i}`).classList.toggle("open");
+};
+
+window.filterFaq = function() {
+  const q = document.getElementById("faq-search").value.toLowerCase();
+  renderFaqs(q ? allFaqs.filter(f => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q)) : allFaqs);
+};
+
+window.openWhatsApp = function() {
+  const el = document.getElementById("whatsapp-link");
+  if (el.href && el.href !== "#") window.open(el.href, "_blank");
+};
+window.openEmail = function() {
+  const email = document.getElementById("support-email").textContent;
+  window.location.href = `mailto:${email}`;
+};
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .settings-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden;}
+  .settings-group-title{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);padding:0.75rem 1.25rem;background:var(--surface-2);border-bottom:1px solid var(--border);}
+  .settings-row{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border);min-height:56px;}
+  .settings-row:last-child{border-bottom:none;}
+  .settings-row-link{cursor:pointer;} .settings-row-link:hover{background:var(--surface-2);}
+  .settings-label{font-size:0.9375rem;font-weight:500;}
+  .settings-value{font-size:0.875rem;color:var(--text-muted);}
+  .toggle{position:relative;width:44px;height:24px;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:background 0.2s;}
+  .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s;}
+  .toggle input:checked + .toggle-slider{background:var(--primary);}
+  .toggle input:checked + .toggle-slider:before{transform:translateX(20px);}
+  .settings-arrow{color:var(--text-muted);font-size:1.25rem;}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <button class="back-btn" onclick="history.back()">←</button>
+  <div class="page-header-title">Settings</div>
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="container">
+
+  <!-- Appearance -->
+  <div class="settings-group">
+    <div class="settings-group-title">Appearance</div>
+    <div class="settings-row">
+      <div><div class="settings-label">Dark Mode</div><div class="settings-value">Switch between light and dark</div></div>
+      <label class="toggle">
+        <input type="checkbox" id="dark-toggle" onchange="toggleDarkMode()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-row" id="language-row" style="display:none">
+      <div><div class="settings-label">Language</div><div class="settings-value" id="lang-value">English</div></div>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <select id="language-select" onchange="changeLanguage()" style="width:auto;padding:0.375rem 0.625rem;font-size:0.875rem">
+          <option value="en">English</option>
+          <option value="hi">हिंदी</option>
+          <option value="te">తెలుగు</option>
+          <option value="ta">தமிழ்</option>
+          <option value="kn">ಕನ್ನಡ</option>
+          <option value="mr">मराठी</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="settings-group">
+    <div class="settings-group-title">Notifications</div>
+    <div class="settings-row">
+      <div><div class="settings-label">Push Notifications</div><div class="settings-value">Exam reminders, results</div></div>
+      <label class="toggle"><input type="checkbox" id="notif-push" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">SMS Alerts</div><div class="settings-value">OTP and important updates</div></div>
+      <label class="toggle"><input type="checkbox" id="notif-sms" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">Email Notifications</div><div class="settings-value">Weekly performance reports</div></div>
+      <label class="toggle"><input type="checkbox" id="notif-email" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">Exam Reminders</div><div class="settings-value">Before scheduled tests</div></div>
+      <label class="toggle"><input type="checkbox" id="notif-reminders" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <!-- Account -->
+  <div class="settings-group">
+    <div class="settings-group-title">Account</div>
+    <a href="profile.html" class="settings-row settings-row-link" style="text-decoration:none;color:inherit">
+      <div class="settings-label">Profile</div><span class="settings-arrow">›</span>
+    </a>
+    <a href="security.html" class="settings-row settings-row-link" style="text-decoration:none;color:inherit">
+      <div class="settings-label">Security</div><span class="settings-arrow">›</span>
+    </a>
+    <a href="subscriptions.html" class="settings-row settings-row-link" style="text-decoration:none;color:inherit">
+      <div class="settings-label">My Subscriptions</div><span class="settings-arrow">›</span>
+    </a>
+  </div>
+
+  <!-- App Info -->
+  <div class="settings-group">
+    <div class="settings-group-title">About</div>
+    <div class="settings-row"><div class="settings-label">Version</div><span class="settings-value" id="app-version">v1.0.0</span></div>
+    <a href="help.html" class="settings-row settings-row-link" style="text-decoration:none;color:inherit">
+      <div class="settings-label">Help & FAQ</div><span class="settings-arrow">›</span>
+    </a>
+    <div class="settings-row settings-row-link" onclick="openLink('terms')"><div class="settings-label">Terms of Service</div><span class="settings-arrow">›</span></div>
+    <div class="settings-row settings-row-link" onclick="openLink('privacy')"><div class="settings-label">Privacy Policy</div><span class="settings-arrow">›</span></div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="settings-group">
+    <div class="settings-group-title">Danger Zone</div>
+    <div class="settings-row settings-row-link" onclick="logout()" style="color:var(--danger);cursor:pointer">
+      <div class="settings-label" style="color:var(--danger)">Sign Out</div>
+    </div>
+    <a href="delete-account.html" class="settings-row settings-row-link" style="text-decoration:none;color:var(--danger)">
+      <div class="settings-label" style="color:var(--danger)">Delete Account</div>
+    </a>
+  </div>
+
+</div>
+
+<script type="module">
+import { boot, api, getSavedMode, toggleMode, applyTheme, requireAuth, toast } from "./app.js";
+import { toggleMode as toggleThemeMode, getSavedMode as getMode } from "../shared/themes.js";
+let cfg = {};
+
+async function init() {
+  cfg = await boot();
+  if (!requireAuth()) return;
+  document.getElementById("dark-toggle").checked = getMode() === "dark";
+  if (cfg.mode_control === "force_light" || cfg.mode_control === "force_dark") {
+    document.getElementById("dark-toggle").disabled = true;
+  }
+  if (cfg.language_enabled) document.getElementById("language-row").style.display = "flex";
+  loadNotifPrefs();
+  if (cfg.version) document.getElementById("app-version").textContent = cfg.version;
+}
+
+window.toggleDarkMode = function() {
+  const mode = toggleThemeMode();
+  import("../shared/themes.js").then(({ applyTheme, DEFAULT_THEME }) => {
+    applyTheme(cfg.theme || DEFAULT_THEME, mode);
+  });
+};
+
+window.changeLanguage = function() {
+  const lang = document.getElementById("language-select").value;
+  localStorage.setItem("language", lang);
+  toast("Language updated");
+};
+
+async function loadNotifPrefs() {
+  const prefs = JSON.parse(localStorage.getItem("notif_prefs") || "{}");
+  ["push","sms","email","reminders"].forEach(k => {
+    const el = document.getElementById(`notif-${k}`);
+    if (el) el.checked = prefs[k] !== false;
+  });
+}
+
+window.saveNotif = async function() {
+  const prefs = { push: document.getElementById("notif-push").checked, sms: document.getElementById("notif-sms").checked, email: document.getElementById("notif-email").checked, reminders: document.getElementById("notif-reminders").checked };
+  localStorage.setItem("notif_prefs", JSON.stringify(prefs));
+  await api("/auth/notifications/prefs", { method:"POST", body: JSON.stringify(prefs) }).catch(()=>{});
+};
+
+window.logout = function() { localStorage.clear(); window.location.href = "login.html"; };
+window.openLink = function(type) { window.open(type === "terms" ? "/terms" : "/privacy", "_blank"); };
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
