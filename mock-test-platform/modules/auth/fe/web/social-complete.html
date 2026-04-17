@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complete Profile</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  #step-otp { display:none; }
+  .pw-wrap { position:relative; }
+  .pw-wrap input { padding-right:2.75rem; }
+  .pw-toggle { position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="page-center">
+<div class="auth-card card">
+  <div style="text-align:center;margin-bottom:1.5rem">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">👋</div>
+    <div style="font-size:1.125rem;font-weight:700;margin-bottom:0.25rem">Almost there!</div>
+    <div style="font-size:0.875rem;color:var(--text-muted)">Complete your profile to continue</div>
+  </div>
+
+  <!-- Pre-filled from Google -->
+  <div style="display:flex;align-items:center;gap:0.875rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:0.875rem;margin-bottom:1.25rem">
+    <img id="google-avatar" src="" alt="" style="width:40px;height:40px;border-radius:50%;display:none">
+    <div id="google-initials" class="avatar" style="width:40px;height:40px;font-size:1rem"></div>
+    <div>
+      <div style="font-weight:600;font-size:0.9375rem" id="google-name"></div>
+      <div style="font-size:0.8125rem;color:var(--text-muted)" id="google-email"></div>
+    </div>
+  </div>
+
+  <!-- Step 1: Missing fields -->
+  <div id="step-fields">
+    <div class="field">
+      <label>Phone Number *</label>
+      <input type="tel" id="phone" maxlength="10" inputmode="numeric" autocomplete="tel" placeholder="10-digit mobile number">
+      <div class="error" id="phone-error"></div>
+    </div>
+    <div class="field">
+      <label>Password *</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" autocomplete="new-password" placeholder="Set a password">
+        <button class="pw-toggle" onclick="const i=document.getElementById('password');i.type=i.type==='password'?'text':'password'">👁️</button>
+      </div>
+      <div class="error" id="pw-error"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date of Birth *</label><input type="date" id="dob"><div class="error" id="dob-error"></div></div>
+      <div class="field">
+        <label>Gender *</label>
+        <select id="gender"><option value="">Select</option><option value="M">Male</option><option value="F">Female</option><option value="O">Other</option></select>
+        <div class="error" id="gender-error"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Category *</label>
+      <select id="category"><option value="">Select</option><option value="GEN">General</option><option value="OBC">OBC</option><option value="SC">SC</option><option value="ST">ST</option><option value="EWS">EWS</option></select>
+      <div class="error" id="cat-error"></div>
+    </div>
+    <div class="field"><label>State *</label><input type="text" id="state" placeholder="State"><div class="error" id="state-error"></div></div>
+    <div class="field-row">
+      <div class="field"><label>City *</label><input type="text" id="city" placeholder="City"></div>
+      <div class="field"><label>Pincode *</label><input type="tel" id="pincode" maxlength="6" inputmode="numeric" placeholder="Pincode"></div>
+    </div>
+    <button class="btn btn-primary" id="continue-btn" onclick="continueToOtp()">Continue</button>
+  </div>
+
+  <!-- Step 2: OTP verify phone -->
+  <div id="step-otp">
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div style="font-size:1rem;font-weight:600;margin-bottom:0.25rem">Verify Phone</div>
+      <div style="font-size:0.875rem;color:var(--text-muted)">OTP sent to <span id="otp-phone" style="color:var(--primary);font-weight:600"></span></div>
+    </div>
+    <div class="field">
+      <div class="otp-row" id="otp-row">
+        <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric"><input type="tel" maxlength="1" inputmode="numeric">
+      </div>
+      <div class="error" id="otp-error"></div>
+    </div>
+    <button class="btn btn-primary" id="verify-btn" onclick="verifyOtp()">Verify & Finish</button>
+    <div style="text-align:center;margin-top:0.75rem">
+      <button class="link-muted" id="resend-btn" onclick="resendOtp()" disabled>Resend <span id="resend-timer">(30s)</span></button>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:1.25rem">
+    <button class="mode-toggle" id="mode-toggle">🌙</button>
+  </div>
+</div>
+</div>
+<script type="module">
+import { boot, api, showError, setLoading, otpAutoAdvance, getOtpValue } from "./app.js";
+let state = {};
+let resendInterval;
+
+async function init() {
+  await boot();
+  const profile = JSON.parse(sessionStorage.getItem("google_profile") || "{}");
+  if (profile.name) document.getElementById("google-name").textContent = profile.name;
+  if (profile.email) document.getElementById("google-email").textContent = profile.email;
+  if (profile.picture) { document.getElementById("google-avatar").src=profile.picture; document.getElementById("google-avatar").style.display="block"; document.getElementById("google-initials").style.display="none"; }
+  else { document.getElementById("google-initials").textContent = (profile.name||"U")[0].toUpperCase(); }
+  state.google_token = profile.token;
+  otpAutoAdvance("#otp-row");
+}
+
+window.continueToOtp = async function() {
+  const phone = document.getElementById("phone").value.trim();
+  const pw = document.getElementById("password").value;
+  let valid = true;
+  if (!/^\d{10}$/.test(phone)) { showError("phone-error","Valid 10-digit number required"); valid=false; } else showError("phone-error","");
+  if (!pw || pw.length < 8) { showError("pw-error","Min 8 characters"); valid=false; } else showError("pw-error","");
+  if (!document.getElementById("dob").value) { showError("dob-error","Required"); valid=false; } else showError("dob-error","");
+  if (!document.getElementById("gender").value) { showError("gender-error","Required"); valid=false; } else showError("gender-error","");
+  if (!document.getElementById("category").value) { showError("cat-error","Required"); valid=false; } else showError("cat-error","");
+  if (!document.getElementById("state").value) { showError("state-error","Required"); valid=false; } else showError("state-error","");
+  if (!valid) return;
+  setLoading("continue-btn", true, "Continue");
+  const payload = { google_token: state.google_token, phone, password: pw, dob: document.getElementById("dob").value, gender: document.getElementById("gender").value, category: document.getElementById("category").value, state: document.getElementById("state").value, city: document.getElementById("city").value, pincode: document.getElementById("pincode").value };
+  const { ok, data } = await api("/auth/social/complete", { method:"POST", body: JSON.stringify(payload) });
+  setLoading("continue-btn", false, "Continue");
+  if (!ok) { showError("phone-error", data.error || "Failed"); return; }
+  state.session_token = data.session_token;
+  document.getElementById("otp-phone").textContent = phone;
+  document.getElementById("step-fields").style.display = "none";
+  document.getElementById("step-otp").style.display = "block";
+  document.querySelector("#otp-row input").focus();
+  startTimer(30);
+};
+
+window.verifyOtp = async function() {
+  const otp = getOtpValue("#otp-row");
+  if (otp.length !== 6) { showError("otp-error","Enter all 6 digits"); return; }
+  showError("otp-error","");
+  setLoading("verify-btn", true, "Verify & Finish");
+  const { ok, data } = await api("/auth/social/verify", { method:"POST", body: JSON.stringify({ session_token: state.session_token, otp }) });
+  setLoading("verify-btn", false, "Verify & Finish");
+  if (!ok) { showError("otp-error", data.error || "Invalid OTP"); return; }
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("uid", data.uid);
+  localStorage.setItem("modules", JSON.stringify(data.modules || []));
+  window.location.href = "home.html";
+};
+
+window.resendOtp = async function() {
+  document.querySelectorAll("#otp-row input").forEach(i=>i.value="");
+  document.querySelector("#otp-row input").focus();
+  await api("/auth/otp/resend", { method:"POST", body: JSON.stringify({ session_token: state.session_token }) });
+  startTimer(30);
+};
+
+function startTimer(s) {
+  const btn=document.getElementById("resend-btn"), timer=document.getElementById("resend-timer");
+  btn.disabled=true; clearInterval(resendInterval);
+  resendInterval=setInterval(()=>{ s--; timer.textContent=s>0?`(${s}s)`:""; if(s<=0){clearInterval(resendInterval);btn.disabled=false;} },1000);
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Set Password</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .pw-wrap { position:relative; }
+  .pw-wrap input { padding-right:2.75rem; }
+  .pw-toggle { position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="page-center">
+<div class="auth-card card">
+  <div style="text-align:center;margin-bottom:1.5rem">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">🔐</div>
+    <div style="font-size:1.125rem;font-weight:700;margin-bottom:0.25rem">Welcome!</div>
+    <div style="font-size:0.875rem;color:var(--text-muted)">Your account is ready. Set a password to continue.</div>
+  </div>
+
+  <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:0.875rem;margin-bottom:1.25rem;font-size:0.875rem">
+    <div style="color:var(--text-muted);margin-bottom:0.25rem">Signed in as</div>
+    <div style="font-weight:600" id="user-identifier"></div>
+    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem" id="user-module-id"></div>
+  </div>
+
+  <div class="field">
+    <label>New Password *</label>
+    <div class="pw-wrap">
+      <input type="password" id="password" autocomplete="new-password" placeholder="Min 8 characters" oninput="checkStrength()">
+      <button class="pw-toggle" onclick="const i=document.getElementById('password');i.type=i.type==='password'?'text':'password'">👁️</button>
+    </div>
+    <div class="strength-bar" id="strength-bar"><div class="strength-segment"></div><div class="strength-segment"></div><div class="strength-segment"></div><div class="strength-segment"></div></div>
+    <div class="strength-label" id="strength-label"></div>
+    <div class="error" id="pw-error"></div>
+  </div>
+  <div class="field">
+    <label>Confirm Password *</label>
+    <div class="pw-wrap">
+      <input type="password" id="confirm-pw" autocomplete="new-password" placeholder="Repeat password">
+      <button class="pw-toggle" onclick="const i=document.getElementById('confirm-pw');i.type=i.type==='password'?'text':'password'">👁️</button>
+    </div>
+    <div class="error" id="cpw-error"></div>
+  </div>
+  <div class="error" id="submit-error"></div>
+  <button class="btn btn-primary" id="set-btn" onclick="setPassword()">Set Password & Continue</button>
+  <div style="display:flex;justify-content:flex-end;margin-top:1.25rem">
+    <button class="mode-toggle" id="mode-toggle">🌙</button>
+  </div>
+</div>
+</div>
+<script type="module">
+import { boot, api, showError, setLoading, passwordStrength } from "./app.js";
+async function init() {
+  await boot();
+  const info = JSON.parse(sessionStorage.getItem("first_login") || "{}");
+  if (info.identifier) document.getElementById("user-identifier").textContent = info.identifier;
+  if (info.module_user_id) document.getElementById("user-module-id").textContent = `ID: ${info.module_user_id}`;
+}
+window.checkStrength = () => {
+  const v = document.getElementById("password").value;
+  const s = passwordStrength(v);
+  document.getElementById("strength-bar").className = `strength-bar strength-${s}`;
+  document.getElementById("strength-label").textContent = v ? ["","Weak","Fair","Good","Strong"][s] : "";
+};
+window.setPassword = async function() {
+  const pw = document.getElementById("password").value;
+  const cpw = document.getElementById("confirm-pw").value;
+  showError("pw-error",""); showError("cpw-error",""); showError("submit-error","");
+  if (!pw || pw.length < 8) { showError("pw-error","Min 8 characters"); return; }
+  if (pw !== cpw) { showError("cpw-error","Passwords do not match"); return; }
+  setLoading("set-btn", true, "Set Password & Continue");
+  const info = JSON.parse(sessionStorage.getItem("first_login") || "{}");
+  const { ok, data } = await api("/auth/first-login", { method:"POST", body: JSON.stringify({ session_token: info.session_token, password: pw }) });
+  setLoading("set-btn", false, "Set Password & Continue");
+  if (!ok) { showError("submit-error", data.error || "Failed"); return; }
+  localStorage.setItem("auth_token", data.token);
+  sessionStorage.removeItem("first_login");
+  window.location.href = "home.html";
+};
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

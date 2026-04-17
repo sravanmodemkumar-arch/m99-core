@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — Step 3</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .otp-row input{padding:0.75rem 0.25rem;}
+  #step-otp{display:none;}
+</style>
+</head>
+<body>
+<div class="page-center">
+<div class="auth-card card">
+
+  <!-- Step 3: Exam Details -->
+  <div id="step-details">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <div>
+        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Step 3 of 3</div>
+        <div style="font-size:1.125rem;font-weight:700">Exam Details</div>
+      </div>
+      <button class="mode-toggle" id="mode-toggle">🌙</button>
+    </div>
+    <div class="progress-bar"><div class="progress-step done"></div><div class="progress-step done"></div><div class="progress-step active"></div></div>
+
+    <div class="field">
+      <label>Category *</label>
+      <select id="category">
+        <option value="">Select category</option>
+        <option value="GEN">General (UR)</option>
+        <option value="OBC">OBC</option>
+        <option value="SC">SC</option>
+        <option value="ST">ST</option>
+        <option value="EWS">EWS</option>
+      </select>
+      <div class="error" id="cat-error"></div>
+    </div>
+
+    <!-- Dynamic module fields injected here -->
+    <div id="module-fields"></div>
+
+    <!-- Profile photo (optional) -->
+    <div class="field">
+      <label>Profile Photo <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <input type="file" id="photo" accept="image/*" style="border:none;padding:0;font-size:0.875rem">
+      <div class="helper">JPG or PNG, max 2MB</div>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+      <button class="btn btn-secondary btn-sm" style="flex:1" onclick="window.location.href='register-2.html'">← Back</button>
+      <button class="btn btn-primary" style="flex:2" id="submit-btn" onclick="submitRegistration()">Create Account</button>
+    </div>
+    <div class="error" id="submit-error" style="margin-top:0.75rem;text-align:center"></div>
+  </div>
+
+  <!-- OTP Verification (inline, shown after registration) -->
+  <div id="step-otp">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:1.5rem;margin-bottom:0.75rem">📱</div>
+      <div style="font-size:1.125rem;font-weight:700;margin-bottom:0.375rem">Verify your phone</div>
+      <div style="font-size:0.875rem;color:var(--text-muted)">Enter the 6-digit code sent to <strong id="otp-target-display"></strong></div>
+    </div>
+
+    <div class="field">
+      <label>Verification Code</label>
+      <div class="otp-row" id="reg-otp-row">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+      </div>
+      <div class="error" id="otp-error"></div>
+    </div>
+
+    <div style="text-align:center;font-size:0.8125rem;color:var(--text-muted);margin-bottom:1rem">
+      Didn't receive it? <button onclick="resendOtp()" id="resend-btn" class="link-btn">Resend</button>
+      <span id="resend-timer" style="display:none"></span>
+    </div>
+
+    <button class="btn btn-primary" id="verify-btn" onclick="verifyOtp()">Verify & Finish</button>
+    <div class="error" id="verify-error" style="margin-top:0.75rem;text-align:center"></div>
+  </div>
+
+</div>
+</div>
+<script type="module">
+import { boot, api, showError, setLoading, otpAutoAdvance, getOtpValue } from "./app.js";
+let cfg = {}, regSession = "";
+
+async function init() {
+  cfg = await boot();
+  renderModuleFields(cfg.register_fields || []);
+}
+
+function renderModuleFields(fields) {
+  const container = document.getElementById("module-fields");
+  container.innerHTML = fields.map(f => `
+    <div class="field">
+      <label>${f.label}${f.required ? " *" : ""}</label>
+      <input type="${f.type || 'text'}" id="mf-${f.key}" placeholder="${f.placeholder || ''}">
+      <div class="error" id="mf-err-${f.key}"></div>
+    </div>
+  `).join("");
+}
+
+window.submitRegistration = async function() {
+  const cat = document.getElementById("category").value;
+  if (!cat) { showError("cat-error","Select category"); return; }
+  showError("cat-error","");
+
+  const s1 = JSON.parse(sessionStorage.getItem("reg_step1") || "{}");
+  const s2 = JSON.parse(sessionStorage.getItem("reg_step2") || "{}");
+  const moduleFields = {};
+  (cfg.register_fields || []).forEach(f => {
+    const el = document.getElementById(`mf-${f.key}`);
+    if (el) moduleFields[f.key] = el.value;
+  });
+
+  const payload = { ...s1, ...s2, category: cat, ...moduleFields };
+
+  setLoading("submit-btn", true, "Create Account");
+  const { ok, data } = await api("/auth/register", { method:"POST", body: JSON.stringify(payload) });
+  setLoading("submit-btn", false, "Create Account");
+  if (!ok) { showError("submit-error", data.error || "Registration failed"); return; }
+
+  regSession = data.session_token || "";
+
+  if (data.otp_required) {
+    document.getElementById("step-details").style.display = "none";
+    document.getElementById("step-otp").style.display = "block";
+    document.getElementById("otp-target-display").textContent = s1.phone || s1.email || "";
+    otpAutoAdvance("#reg-otp-row");
+    startResendTimer();
+  } else {
+    finishRegistration(data);
+  }
+};
+
+window.verifyOtp = async function() {
+  const otp = getOtpValue("#reg-otp-row");
+  if (otp.length !== 6) { showError("otp-error","Enter all 6 digits"); return; }
+  showError("otp-error","");
+  setLoading("verify-btn", true, "Verify & Finish");
+  const { ok, data } = await api("/auth/otp/verify", {
+    method:"POST",
+    body: JSON.stringify({ otp, session_token: regSession, purpose: "register" })
+  });
+  setLoading("verify-btn", false, "Verify & Finish");
+  if (!ok) { showError("otp-error", data.error || "Invalid code"); return; }
+  finishRegistration(data);
+};
+
+function finishRegistration(data) {
+  sessionStorage.removeItem("reg_step1");
+  sessionStorage.removeItem("reg_step2");
+  if (data.token) {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("uid", data.uid || "");
+    window.location.href = "home.html";
+  } else {
+    window.location.href = "login.html";
+  }
+}
+
+let resendCountdown;
+function startResendTimer() {
+  let secs = 30;
+  document.getElementById("resend-btn").style.display = "none";
+  document.getElementById("resend-timer").style.display = "inline";
+  document.getElementById("resend-timer").textContent = `Resend in ${secs}s`;
+  resendCountdown = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(resendCountdown);
+      document.getElementById("resend-btn").style.display = "inline";
+      document.getElementById("resend-timer").style.display = "none";
+    } else {
+      document.getElementById("resend-timer").textContent = `Resend in ${secs}s`;
+    }
+  }, 1000);
+}
+
+window.resendOtp = async function() {
+  const s1 = JSON.parse(sessionStorage.getItem("reg_step1") || "{}");
+  await api("/auth/otp/resend", { method:"POST", body: JSON.stringify({ session_token: regSession, phone: s1.phone }) });
+  startResendTimer();
+};
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

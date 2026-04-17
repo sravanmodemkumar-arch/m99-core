@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Subscriptions</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  .sub-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:1rem; transition:border-color 0.15s; }
+  .sub-card.active { border-color:var(--success); }
+  .sub-card.expired { border-color:var(--danger); opacity:0.7; }
+  .sub-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; }
+  .sub-icon { font-size:1.75rem; margin-right:0.75rem; }
+  .sub-name { font-size:1rem; font-weight:600; }
+  .sub-id { font-size:0.75rem; color:var(--text-muted); font-family:monospace; }
+  .sub-meta { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.75rem; }
+  .sub-meta-item { font-size:0.8125rem; }
+  .sub-meta-label { color:var(--text-muted); margin-bottom:0.125rem; }
+  .sub-meta-value { font-weight:600; font-variant-numeric:tabular-nums; }
+  .expiry-bar { height:4px; border-radius:2px; background:var(--border); margin-top:0.875rem; overflow:hidden; }
+  .expiry-fill { height:100%; border-radius:2px; transition:width 0.3s; }
+  .expiry-fill.safe { background:var(--success); }
+  .expiry-fill.warn { background:var(--warning); }
+  .expiry-fill.danger { background:var(--danger); }
+  .empty-state { text-align:center; padding:3rem 1rem; color:var(--text-muted); }
+  .empty-icon { font-size:3rem; margin-bottom:1rem; }
+  .tier-badge { font-size:0.6875rem; padding:0.125rem 0.5rem; border-radius:20px; font-weight:700; text-transform:uppercase; }
+  .tier-T1 { background:#EFF6FF; color:var(--primary); }
+  .tier-T2 { background:#F3E8FF; color:#7C3AED; }
+  .tier-T3 { background:#FFFBEB; color:#D97706; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <button class="back-btn" onclick="history.back()">←</button>
+  <div class="page-header-title">My Subscriptions</div>
+  <button class="mode-toggle" id="mode-toggle">🌙</button>
+</div>
+
+<div class="container">
+  <!-- Summary bar -->
+  <div style="display:flex;gap:0.75rem;margin-bottom:1.5rem">
+    <div class="sub-card" style="flex:1;margin-bottom:0;padding:1rem;text-align:center">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--success)" id="active-count">—</div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">Active</div>
+    </div>
+    <div class="sub-card" style="flex:1;margin-bottom:0;padding:1rem;text-align:center">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--danger)" id="expired-count">—</div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">Expired</div>
+    </div>
+    <div class="sub-card" style="flex:1;margin-bottom:0;padding:1rem;text-align:center">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--primary)" id="total-count">—</div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">Total</div>
+    </div>
+  </div>
+
+  <div id="subs-list">
+    <!-- Skeleton -->
+    <div class="sub-card"><div class="skeleton" style="height:1.25rem;width:60%;margin-bottom:0.75rem"></div><div class="skeleton" style="height:0.875rem;width:80%"></div></div>
+    <div class="sub-card"><div class="skeleton" style="height:1.25rem;width:60%;margin-bottom:0.75rem"></div><div class="skeleton" style="height:0.875rem;width:80%"></div></div>
+  </div>
+</div>
+
+<script type="module">
+import { boot, api, requireAuth } from "./app.js";
+const MODULE_ICONS = { "rrb-group-d":"🚂", default:"📋" };
+
+async function init() {
+  await boot();
+  if (!requireAuth()) return;
+  const { ok, data } = await api("/auth/subscriptions");
+  if (!ok) return;
+  renderSubs(data.subscriptions || []);
+}
+
+function renderSubs(subs) {
+  const active = subs.filter(s => s.status === "active");
+  const expired = subs.filter(s => s.status !== "active");
+  document.getElementById("active-count").textContent = active.length;
+  document.getElementById("expired-count").textContent = expired.length;
+  document.getElementById("total-count").textContent = subs.length;
+
+  if (!subs.length) {
+    document.getElementById("subs-list").innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div style="font-weight:600;margin-bottom:0.5rem">No subscriptions</div>
+        <div style="font-size:0.875rem">Contact your institute for access</div>
+      </div>`;
+    return;
+  }
+
+  document.getElementById("subs-list").innerHTML = [...active, ...expired].map(s => {
+    const isActive = s.status === "active";
+    const expiry = s.expires_at ? new Date(s.expires_at) : null;
+    const daysLeft = expiry ? Math.ceil((expiry - Date.now()) / 86400000) : null;
+    const fillPct = daysLeft !== null ? Math.max(0, Math.min(100, (daysLeft / (s.total_days || 365)) * 100)) : 100;
+    const fillClass = daysLeft === null ? "safe" : daysLeft > 30 ? "safe" : daysLeft > 7 ? "warn" : "danger";
+    return `
+      <div class="sub-card ${isActive ? "active" : "expired"}">
+        <div class="sub-header">
+          <div style="display:flex;align-items:center">
+            <span class="sub-icon">${MODULE_ICONS[s.module_id] || MODULE_ICONS.default}</span>
+            <div>
+              <div class="sub-name">${s.module_name || s.module_id}</div>
+              <div class="sub-id">${s.module_id}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.375rem">
+            <span class="badge ${isActive ? "badge-success" : "badge-danger"}">${isActive ? "Active" : "Expired"}</span>
+            <span class="tier-badge tier-${s.tier || "T1"}">${s.tier || "T1"}</span>
+          </div>
+        </div>
+        <div class="sub-meta">
+          <div class="sub-meta-item"><div class="sub-meta-label">Started</div><div class="sub-meta-value">${s.started_at ? new Date(s.started_at).toLocaleDateString("en-IN") : "—"}</div></div>
+          <div class="sub-meta-item"><div class="sub-meta-label">Expires</div><div class="sub-meta-value" style="color:${daysLeft !== null && daysLeft <= 7 ? "var(--danger)" : "inherit"}">${expiry ? expiry.toLocaleDateString("en-IN") : "Lifetime"}</div></div>
+          ${s.user_module_id ? `<div class="sub-meta-item"><div class="sub-meta-label">Student ID</div><div class="sub-meta-value" style="font-family:monospace">${s.user_module_id}</div></div>` : ""}
+          ${daysLeft !== null ? `<div class="sub-meta-item"><div class="sub-meta-label">Days left</div><div class="sub-meta-value" style="color:${daysLeft<=7?"var(--danger)":daysLeft<=30?"var(--warning)":"var(--success)"}">${daysLeft > 0 ? daysLeft : "Expired"}</div></div>` : ""}
+        </div>
+        ${daysLeft !== null ? `<div class="expiry-bar"><div class="expiry-fill ${fillClass}" style="width:${fillPct}%"></div></div>` : ""}
+      </div>`;
+  }).join("");
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
