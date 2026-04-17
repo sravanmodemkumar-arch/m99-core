@@ -417,8 +417,8 @@ async function _userGet(req, env, access, uid) {
 
 async function _userSetRole(req, env, access, uid) {
   const body = await req.json().catch(() => ({}));
-  const { role } = body; // "product_admin" | "super_admin" | null (revoke)
-  if (role) {
+  const { role } = body; // "product_admin" | "super_admin" | "none" | null (revoke)
+  if (role && role !== "none") {
     await env.KV.put(`admin:${access.tenantId}:${uid}`, role);
   } else {
     await env.KV.delete(`admin:${access.tenantId}:${uid}`);
