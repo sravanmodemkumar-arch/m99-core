@@ -1,13 +1,17 @@
 /** Auth app bootstrap — loads tenant config, applies theme, guards routes */
-import { applyTheme, getSavedMode, toggleMode, THEMES, DEFAULT_THEME } from "../shared/themes.js";
+import { applyTheme, getSavedMode, toggleMode, THEMES, DEFAULT_THEME, registerCustomTheme } from "../shared/themes.js";
+export { otpAutoAdvance, getOtpValue } from "../shared/otp-dom.js";
+export { detectIdentifier } from "../shared/validators.js";
+export { renderOtpInput, renderPasswordField, renderReauthGate, renderProgressSteps, renderModuleCard, renderFaqItem, renderDeviceItem, renderEmptyState, startResendTimer } from "../shared/components.js";
 
 const API = "";
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 export async function boot() {
   const cfg = await loadConfig();
+  if (cfg.custom_theme) registerCustomTheme(cfg.custom_theme);
   const mode = _resolveMode(cfg);
-  applyTheme(cfg.theme || DEFAULT_THEME, mode);
+  applyTheme(cfg.theme || cfg.custom_theme?.name || DEFAULT_THEME, mode);
   _injectModeToggle(cfg, mode);
   return cfg;
 }
@@ -91,37 +95,5 @@ export function toast(msg, type = "default") {
   setTimeout(() => el.remove(), 3000);
 }
 
-export function passwordStrength(pwd) {
-  let score = 0;
-  if (pwd.length >= 8) score++;
-  if (/[A-Z]/.test(pwd)) score++;
-  if (/[0-9]/.test(pwd)) score++;
-  if (/[^A-Za-z0-9]/.test(pwd)) score++;
-  return score;
-}
+export { passwordStrengthScore as passwordStrength, passwordStrengthLabel } from "../shared/validators.js";
 
-export function otpAutoAdvance(rowSelector) {
-  const digits = document.querySelectorAll(`${rowSelector} input`);
-  digits.forEach((input, i) => {
-    input.addEventListener("input", () => { if (input.value && i < digits.length - 1) digits[i + 1].focus(); });
-    input.addEventListener("keydown", (e) => { if (e.key === "Backspace" && !input.value && i > 0) digits[i - 1].focus(); });
-    input.addEventListener("paste", (e) => {
-      e.preventDefault();
-      const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, digits.length);
-      [...text].forEach((c, j) => { if (digits[i + j]) digits[i + j].value = c; });
-      const last = digits[Math.min(i + text.length, digits.length - 1)];
-      last.focus();
-    });
-  });
-}
-
-export function getOtpValue(rowSelector) {
-  return [...document.querySelectorAll(`${rowSelector} input`)].map(i => i.value).join("");
-}
-
-export function detectIdentifier(value) {
-  if (/^\d{10}$/.test(value)) return "phone";
-  if (value.includes("@")) return "email";
-  if (/^[a-zA-Z0-9_]{3,30}$/.test(value)) return "username";
-  return "userid";
-}

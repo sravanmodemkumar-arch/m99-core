@@ -1,0 +1,24 @@
+<!--
+  HTMX shared component: Subscription Module Card
+  Used in subscriptions.html. Data injected by components.js renderModuleCard(data).
+-->
+<div class="module-card" data-component="module-card">
+  <div class="module-card-header">
+    <div class="module-icon" data-module-icon></div>
+    <div class="module-info">
+      <div class="module-name" data-module-name></div>
+      <div class="module-meta" data-module-meta></div>
+    </div>
+    <div class="module-badges">
+      <span class="badge" data-status-badge></span>
+      <span class="badge badge-outline" data-tier-badge></span>
+    </div>
+  </div>
+  <div class="module-card-body">
+    <div class="module-dates" data-module-dates></div>
+    <div class="expiry-bar-wrap">
+      <div class="expiry-bar" data-expiry-bar></div>
+    </div>
+    <div class="expiry-label" data-expiry-label></div>
+  </div>
+</div>

@@ -7,7 +7,11 @@ Zero distraction. Zero confusion. Instant feedback. Works on ₹8000 phones.
 
 ## Theme System
 - 25 pre-built themes × 2 modes (light + dark) = 50 variants
-- 25 landing layouts (per module)
+- 25 landing layouts (per module) — see landing-layouts.js
+- **Custom theme**: `cfg.custom_theme = { name, light:{...tokens}, dark:{...tokens} }` → registered at boot via `registerCustomTheme()`
+- **Custom layout**: `cfg.custom_layout = { name, template:"<html with {{tokens}}>" }` → rendered by `renderLayout()` with token replacement
+- Tokens available in custom templates: `{{title}}`, `{{subtitle}}`, `{{login_label}}`, `{{register_label}}`, `{{module_name}}`, `{{announcement}}`, `{{tagline}}`, `{{stats_bar}}`, `{{features_grid}}`, `{{cta_btns}}`
+- Both custom options stack on top of presets — tenant picks preset OR custom, never both
 - 25 themes × 25 layouts = 625 unique combinations
 - Theme = TENANT-level (brand identity, all modules share it)
 - Layout + Content = MODULE-level (per exam)

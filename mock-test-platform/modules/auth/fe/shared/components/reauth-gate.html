@@ -1,0 +1,53 @@
+<!--
+  HTMX shared component: Inline Re-auth Gate
+  Config drives which sections show: pw always, OTP if require_otp, TOTP if totp_enabled
+  Params: ?require_otp=1  ?require_totp=1  ?action_label=<label>
+-->
+<div class="reauth-gate" data-component="reauth-gate" style="border-top:1px solid var(--border);margin-top:1.25rem;padding-top:1.25rem;display:none">
+  <div style="font-size:0.875rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Confirm your identity to continue</div>
+
+  <!-- Password — always required -->
+  <div class="field">
+    <label>Password *</label>
+    <div class="pw-wrap">
+      <input type="password" data-reauth-pw placeholder="Current password" autocomplete="current-password">
+      <button type="button" class="pw-toggle" data-reauth-pw-toggle>👁️</button>
+    </div>
+    <div class="error" data-reauth-pw-error></div>
+  </div>
+
+  <!-- OTP — shown when require_otp config is true -->
+  <div data-reauth-otp-section style="display:none">
+    <div class="field">
+      <label>OTP <span style="color:var(--text-muted);font-weight:400">(sent to your phone)</span></label>
+      <div class="otp-row" data-reauth-otp-row>
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+      </div>
+      <div class="error" data-reauth-otp-error></div>
+    </div>
+  </div>
+
+  <!-- TOTP — shown when user has totp_enabled -->
+  <div data-reauth-totp-section style="display:none">
+    <div class="field">
+      <label>Authenticator Code</label>
+      <div class="otp-row" data-reauth-totp-row>
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+        <input type="tel" maxlength="1" inputmode="numeric">
+      </div>
+      <div class="error" data-reauth-totp-error></div>
+    </div>
+  </div>
+
+  <div class="error" data-reauth-submit-error style="text-align:center"></div>
+  <button type="button" class="btn btn-primary" data-reauth-submit>Confirm</button>
+</div>
