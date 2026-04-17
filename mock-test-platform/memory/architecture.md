@@ -96,11 +96,14 @@ v3.5 → read replicas
     "identifiers": ["phone","email","username","userid","module_username"],
     "identity_mode": "combined",
     "registration": { "self": true, "admin_import": true },
+    "register_fields": [],
     "second_factor": { "otp_required": false, "totp_enabled": false },
     "forgot_password": { "via": ["email","phone"] },
     "lockout": { "attempts": 3, "duration_mins": 60 },
     "devices": { "max_same_location": 3, "max_diff_location": 1, "location": "city", "diff_location_wait_hrs": 6 },
     "social": ["google"],
+    "profile_edit_reauth": { "require_password": true, "require_otp": false, "require_totp": false },
+    "sensitive_action_reauth": { "require_password": true, "require_otp": true, "require_totp": true },
     "admin": {
       "roles": [],
       "platforms": { "desktop": "full", "web": "full", "mobile": "view_only" },
@@ -112,33 +115,39 @@ v3.5 → read replicas
 }
 ```
 
-## Auth Screens (24 total)
-| # | Screen | Notes |
+## Re-auth Rules (all inline, no separate page)
+| Action | Re-auth |
+|---|---|
+| Login | pw → OTP? → TOTP? (module config) |
+| Register | OTP inline after submit (phone verify) |
+| Social login | OTP inline (phone collection + verify) |
+| Edit profile (name/photo/address) | password only |
+| Edit profile (phone/email/DOB/category) | pw + OTP/TOTP (module config) |
+| Security actions (change pw/phone/TOTP) | pw + OTP/TOTP (module config) |
+| Delete account | pw + OTP + TOTP (all enabled factors) |
+| Forgot password | any identifier → OTP or email link → new pw inline |
+
+## Auth Screens (18 total — merged, no standalone OTP/TOTP pages)
+| # | Screen | What's inside |
 |---|---|---|
-| 1 | Splash | auto-redirect |
-| 2 | Welcome | first launch |
-| 3 | Login | dynamic identifiers + password + social |
-| 4 | OTP Verify | shared — login/register/reset/change |
-| 5 | TOTP Verify | 6-digit authenticator |
-| 6 | Register Step 1 | name, phone, email, password, DOB, gender |
-| 7 | Register Step 2 | state, city, pincode, address |
-| 8 | Register Step 3 | category, optional module fields |
-| 9 | Register OTP | phone verify |
-| 10 | Social Complete | phone + missing fields after Google OAuth |
-| 11 | First Login | admin-created user sets password |
-| 12 | TOTP Setup | QR + confirm |
-| 13 | Forgot Password | dynamic identifier based on module config |
-| 14 | Reset Password | new password after verify |
-| 15 | Profile | view only |
-| 16 | Edit Profile | name, photo, email |
-| 17 | Security | change password, phone, TOTP |
-| 18 | Change Identifier | old verify → new → OTP confirm |
-| 19 | Delete Account | confirm + re-auth |
-| 20 | Settings | root |
-| 21 | Notifications | per module toggles |
-| 22 | App Info | version, terms, privacy |
-| 23 | My Subscriptions | active modules, expiry |
-| 24 | Help | FAQ + contact |
+| 0 | Landing | hero+features+stats+CTA, dynamic theme+layout+content |
+| 1 | Splash | auto-redirect (token→home, else→landing) |
+| 2 | Welcome | 3-slide onboarding, skip option |
+| 3 | Login | identifier+pw → OTP step → TOTP step (all inline, dynamic) |
+| 4 | Register Step 1 | name, phone, email, pw+confirm+strength, DOB, gender, terms |
+| 5 | Register Step 2 | pincode (auto-fill city/state), address |
+| 6 | Register Step 3 | category + dynamic module fields + OTP inline |
+| 7 | Social Complete | phone + missing fields + OTP inline (after Google OAuth) |
+| 8 | First Login | admin-created user sets password inline |
+| 9 | Forgot Password | identifier → OTP/email step → new password (all inline) |
+| 10 | Home | module picker, skeleton loader, avatar |
+| 11 | Profile | ALL fields: name, phone, email, DOB, gender, category, address, module IDs, last login, devices |
+| 12 | Edit Profile | ALL fields editable + inline re-auth gate before save (pw/pw+OTP/pw+TOTP) |
+| 13 | Security | change pw + change phone/email + TOTP setup/disable — each with inline re-auth |
+| 14 | Delete Account | confirm modal + pw + OTP + TOTP inline (all enabled factors) |
+| 15 | Settings | notifications + app info + dark/light toggle + language |
+| 16 | My Subscriptions | active modules, expiry, tier, identity mode |
+| 17 | Help | FAQ accordion + WhatsApp/email contact |
 
 ## Key Decisions
 | Decision | Rule |
