@@ -1,0 +1,35 @@
+appId: com.mocktestplatform.rrb
+name: Phone palette drawer — opens, navigates, closes
+
+---
+
+- launchApp:
+    clearState: false
+
+- tapOn:
+    text: "Start Exam"
+    index: 0
+- assertVisible:
+    text: "00:"
+    timeout: 10000
+
+# The question count badge (e.g. "0/8") is the palette trigger on phone
+- tapOn:
+    id: "palette-toggle"
+    optional: true
+- tapOn:
+    text: "0/"           # fraction shown in toggle button
+    optional: true
+
+# Palette drawer should be visible
+- assertVisible:
+    text: "Question Palette"
+    optional: true
+
+# Tap question 3 in the palette to jump
+- tapOn:
+    text: "3"
+    index: 0
+
+# Drawer should close and question 3 should be visible
+- assertNotVisible: "Question Palette"

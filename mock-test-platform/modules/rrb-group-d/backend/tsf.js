@@ -23,28 +23,40 @@ const TSF_VERSION = "1";
 export async function buildTSF(params, kv, r2, cfg) {
   const { tenantId, uid, examId, sessionId } = params;
 
-  // Fetch master question bank from R2
+  // Fetch master question bank from R2 (question-schema v1.4.0 format)
   const bankKey = `${cfg.bundle_prefix}/${examId}/bank.json`;
   const bankObj  = await r2.get(bankKey);
   if (!bankObj) throw new Error(`Question bank not found: ${bankKey}`);
   const bank = await bankObj.json();
+
+  // Support both flat-array schema v1.4.0 ({questions:[...]}) and legacy ({section:[...]})
+  const allQuestions = bank.questions
+    ? bank.questions
+    : Object.values(bank).flat();
 
   // Build per-section question lists with optional shuffle
   const questionOrder = [];
   const answerKey     = {};
 
   for (const section of cfg.sections) {
-    const pool = bank[section.id] || [];
+    const pool = allQuestions
+      .filter(q => q.section === section.id)
+      .map(q => ({
+        id:      q.qid  || q.id,
+        answer:  Array.isArray(q.ans)  ? q.ans[0]  : (q.answer || q.ans),
+        options: (q.opts || q.options || []).map(o => ({
+          id:   o.id,
+          text: o.v   || o.text || o.value || String(o.id),
+        })),
+        body:    q.body || [{ t: "tx", v: q.text || "" }],
+        instr:   q.instr || "",
+      }));
+
     const selected = _pick(pool, section.count, cfg.shuffle_qs);
     for (const q of selected) {
-      const qid = q.id;
-      questionOrder.push({ id: qid, section: section.id });
-      answerKey[qid] = q.answer;
-
-      // Shuffle options if enabled
-      if (cfg.shuffle_opts && q.options) {
-        q.options = _shuffle(q.options);
-      }
+      if (cfg.shuffle_opts) q.options = _shuffle(q.options);
+      questionOrder.push({ id: q.id, section: section.id, _q: q });
+      answerKey[q.id] = q.answer;
     }
   }
 
@@ -79,6 +91,9 @@ export async function buildTSF(params, kv, r2, cfg) {
     httpMetadata: { contentType: "application/json" },
     customMetadata: { session_id: sessionId, tenant_id: tenantId },
   });
+
+  // Strip _q (question data) from question_order before writing to KV — only needed for bundle build
+  tsf.question_order = tsf.question_order.map(({ id, section }) => ({ id, section }));
 
   // Write full TSF (with answer key) to KV
   const kvKey = `tsf:${sessionId}`;
@@ -141,28 +156,30 @@ export async function lockTSF(sessionId, finalResponses, kv) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function _buildClientBundle(tsf, bank, cfg) {
-  const qMap = {};
-  for (const section of cfg.sections) {
-    for (const q of (bank[section.id] || [])) qMap[q.id] = q;
-  }
+  const questions = tsf.question_order.map(({ id, section, _q }) => ({
+    id,
+    section,
+    body:    _q?.body    || [{ t: "tx", v: id }],
+    instr:   _q?.instr   || "",
+    options: _q?.options || [],
+  }));
 
-  const questions = tsf.question_order.map(({ id, section }) => {
-    const q = qMap[id];
-    return {
-      id,
-      section,
-      text:    q.text,
-      image:   q.image  || null,
-      options: q.options,         // already shuffled if cfg.shuffle_opts
-    };
-  });
+  // Merge bank section metadata (duration_s per section, etc.) into cfg sections
+  const bankSectionMap = {};
+  for (const bs of (bank.sections || [])) bankSectionMap[bs.id] = bs;
+  const sections = cfg.sections.map(s => ({
+    ...s,
+    duration_s: bankSectionMap[s.id]?.duration_s ?? null,
+  }));
 
   return {
-    session_id:    tsf.session_id,
-    exam_id:       tsf.exam_id,
-    duration_s:    tsf.duration_s,
-    started_at:    tsf.started_at,
-    sections:      cfg.sections,
+    session_id: tsf.session_id,
+    exam_id:    tsf.exam_id,
+    duration_s: tsf.duration_s,
+    timer_mode: bank.timer_mode || "global",   // "global" | "section"
+    marking:    bank.marking    || { correct: 1, wrong: -0.333, skipped: 0 },
+    started_at: tsf.started_at,
+    sections,
     questions,
     // answer_key intentionally omitted
   };

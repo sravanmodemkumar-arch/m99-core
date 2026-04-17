@@ -1,0 +1,9 @@
+{
+  "name": "rrb-group-d-shared",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "npx esbuild scoring.ts qstate.ts useQstate.ts --bundle=false --format=esm --platform=browser --outdir=.",
+    "typecheck": "tsc --noEmit"
+  }
+}

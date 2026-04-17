@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RRB Group D — Analysis</title>
-<link rel="stylesheet" href="../../auth/fe/shared/base.css">
-<link rel="stylesheet" href="../fe/shared/exam.css">
+<link rel="stylesheet" href="/modules/auth/fe/shared/base.css">
+<link rel="stylesheet" href="/modules/rrb-group-d/fe/shared/exam.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css">
 <style>
   .page-wrap { max-width: 800px; margin: 0 auto; padding: 1.25rem; }
@@ -25,7 +25,7 @@
   .time-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
   .time-row:last-child { border-bottom: none; }
 </style>
-<script src="../desktop/desktop-adapter.js"></script>
+<script src="/modules/rrb-group-d/fe/desktop/desktop-adapter.js"></script>
 </head>
 <body>
 <div style="background:var(--bg);min-height:100vh">
@@ -89,7 +89,7 @@
 </div>
 
 <script type="module">
-import { boot, requireAuth } from "../../auth/fe/web/app.js";
+import { boot, requireAuth } from "/modules/auth/fe/web/app.js";
 
 async function init() {
   if (!requireAuth()) return;

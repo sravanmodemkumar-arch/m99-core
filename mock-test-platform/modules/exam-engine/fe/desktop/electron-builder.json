@@ -1,0 +1,33 @@
+{
+  "appId": "com.examengine.desktop",
+  "productName": "Exam Engine",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "main.js",
+    "preload.js",
+    "desktop-adapter.js",
+    "package.json",
+    "../web/**/*",
+    "../shared/**/*",
+    "../../../../modules/auth/fe/web/**/*",
+    "../../../../modules/exam-engine/fe/shared/**/*"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "assets/icon.ico"
+  },
+  "mac": {
+    "target": "dmg",
+    "icon": "assets/icon.icns"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "assets/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}

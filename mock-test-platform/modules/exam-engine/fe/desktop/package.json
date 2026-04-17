@@ -1,0 +1,20 @@
+{
+  "name": "exam-engine-desktop",
+  "version": "1.0.0",
+  "description": "Exam Engine Desktop App (Electron)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --config electron-builder.json",
+    "dev": "NODE_ENV=development electron ."
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.0"
+  },
+  "author": "Exam Engine",
+  "license": "MIT"
+}

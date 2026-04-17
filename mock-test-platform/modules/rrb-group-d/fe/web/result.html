@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RRB Group D — Result</title>
-<link rel="stylesheet" href="../../auth/fe/shared/base.css">
-<link rel="stylesheet" href="../fe/shared/exam.css">
+<link rel="stylesheet" href="/modules/auth/fe/shared/base.css">
+<link rel="stylesheet" href="/modules/rrb-group-d/fe/shared/exam.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css">
 <style>
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 1.25rem; }
@@ -32,7 +32,7 @@
     .section-row { grid-template-columns: 1fr repeat(4, auto); gap: 0.5rem; font-size: 0.8125rem; }
   }
 </style>
-<script src="../desktop/desktop-adapter.js"></script>
+<script src="/modules/rrb-group-d/fe/desktop/desktop-adapter.js"></script>
 </head>
 <body>
 <div style="background:var(--bg);min-height:100vh">
@@ -86,9 +86,9 @@
 </div>
 
 <script type="module">
-import { boot, requireAuth } from "../../auth/fe/web/app.js";
-import { renderResultCard } from "../fe/shared/components.js";
-import { formatScore } from "../fe/shared/scoring.js";
+import { boot, requireAuth } from "/modules/auth/fe/web/app.js";
+import { renderResultCard } from "/modules/rrb-group-d/fe/shared/components.js";
+import { formatScore } from "/modules/rrb-group-d/fe/shared/scoring.js";
 
 let allRows = [];
 let activeFilter = "all";

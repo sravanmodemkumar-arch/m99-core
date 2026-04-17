@@ -58,7 +58,7 @@ function _injectModeToggle(cfg, mode) {
 // ── Auth guards ────────────────────────────────────────────────────────────
 export function requireAuth() {
   const token = localStorage.getItem("auth_token");
-  if (!token) { window.location.href = "/auth/web/login.html"; return false; }
+  if (!token) { window.location.href = "/modules/auth/fe/web/login.html"; return false; }
   return true;
 }
 

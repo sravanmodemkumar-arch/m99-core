@@ -34,6 +34,15 @@ export default {
       if (request.method === "GET" && path.startsWith("/rrb/bundle/")) {
         return await handleBundle(request, env, url, uid);
       }
+      if (request.method === "GET" && path === "/rrb/exams") {
+        return await handleExams(env, tenantId);
+      }
+      if (request.method === "GET" && path === "/rrb/stats") {
+        return await handleStats(env, uid, tenantId);
+      }
+      if (request.method === "GET" && path === "/rrb/history") {
+        return await handleHistory(request, env, uid, tenantId);
+      }
 
       return _json({ error: "Not found" }, 404);
     } catch (err) {
@@ -151,8 +160,19 @@ async function handleSubmit(request, env, ctx, uid, tenantId) {
   const payload = buildEPSPayload(result, 1);
   ctx.waitUntil(writeEPSFile(payload, env.R2, session_id));
 
-  // Clean up active session marker
+  // Clean up active session marker + persist history entry
   ctx.waitUntil(env.KV.delete(`active_session:${tenantId}:${uid}`));
+  ctx.waitUntil(_appendHistory(env.KV, tenantId, uid, {
+    session_id:   session_id,
+    exam_id:      tsf.exam_id,
+    submitted_at: result.submitted_at,
+    score:        result.score,
+    correct:      result.correct,
+    wrong:        result.wrong,
+    skipped:      result.skipped,
+    total_qs:     result.total_qs,
+    rank:         null,
+  }));
 
   const response = { answer_key: answerKey, result };
 
@@ -210,27 +230,99 @@ async function handleBundle(request, env, url, uid) {
   });
 }
 
+/**
+ * GET /rrb/exams
+ * Returns the catalogue of available exams for the tenant.
+ * v1: hardcoded defaults; override with KV key `exam_catalogue:{tenantId}`.
+ */
+async function handleExams(env, tenantId) {
+  const raw = await env.KV.get(`exam_catalogue:${tenantId}`);
+  const exams = raw ? JSON.parse(raw) : _defaultExams();
+  return _json({ exams });
+}
+
+/**
+ * GET /rrb/stats
+ * Returns aggregated stats for the authenticated user.
+ */
+async function handleStats(env, uid, tenantId) {
+  const history = await _loadHistory(env.KV, tenantId, uid);
+  if (!history.length) {
+    return _json({ total_attempts: 0, best_score: null, avg_score: null, total_correct: 0 });
+  }
+  const scores = history.map(h => h.score);
+  const best   = Math.max(...scores);
+  const avg    = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const correct = history.reduce((a, h) => a + (h.correct || 0), 0);
+  return _json({
+    total_attempts: history.length,
+    best_score:     Math.round(best * 1000) / 1000,
+    avg_score:      Math.round(avg * 1000) / 1000,
+    total_correct:  correct,
+  });
+}
+
+/**
+ * GET /rrb/history?page=1&limit=10
+ * Returns paginated attempt history for the authenticated user.
+ */
+async function handleHistory(request, env, uid, tenantId) {
+  const url    = new URL(request.url);
+  const page   = Math.max(1, parseInt(url.searchParams.get("page")  || "1",  10));
+  const limit  = Math.min(50, parseInt(url.searchParams.get("limit") || "10", 10));
+  const history = await _loadHistory(env.KV, tenantId, uid);
+  const sorted  = [...history].sort((a, b) => b.submitted_at - a.submitted_at);
+  const total   = sorted.length;
+  const results = sorted.slice((page - 1) * limit, page * limit);
+  return _json({ results, total, page, limit });
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+async function _loadHistory(KV, tenantId, uid) {
+  const raw = await KV.get(`history:${tenantId}:${uid}`);
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function _appendHistory(KV, tenantId, uid, entry) {
+  const existing = await _loadHistory(KV, tenantId, uid);
+  existing.push(entry);
+  // Keep last 200 entries; KV value size limit is 25 MB — well within bounds
+  const trimmed = existing.slice(-200);
+  await KV.put(`history:${tenantId}:${uid}`, JSON.stringify(trimmed), { expirationTtl: 31536000 });
+}
+
+function _defaultExams() {
+  return [
+    { id: "rrb-gd-2024-full-1", title: "RRB Group D Full Mock Test 1", type: "full", total_qs: 100, duration_s: 5400, badge: "popular" },
+  ];
+}
 
 async function _verifyJWT(request, env) {
   const auth = request.headers.get("Authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   if (!token) { const e = new Error("No token"); e.status = 401; throw e; }
 
-  // JWT claims are stored in KV as `jwt:{token_hash}` by auth worker on login
-  const hash = await _sha256Hex(token);
-  const raw  = await env.KV.get(`jwt:${hash}`);
-  if (!raw) { const e = new Error("Invalid token"); e.status = 401; throw e; }
-  const claims = JSON.parse(raw);
-  if (claims.exp < Math.floor(Date.now() / 1000)) {
-    const e = new Error("Token expired"); e.status = 401; throw e;
-  }
+  const claims = await _verifyJwtSignature(token, env.JWT_SECRET);
+  if (!claims) { const e = new Error("Invalid token"); e.status = 401; throw e; }
   return { uid: claims.uid, tenantId: claims.tenant_id };
 }
 
-async function _sha256Hex(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+async function _verifyJwtSignature(token, secret) {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [header, body, sig] = parts;
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const expected = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${header}.${body}`));
+  const expectedB64 = btoa(String.fromCharCode(...new Uint8Array(expected)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  if (sig !== expectedB64) return null;
+  const payload = JSON.parse(atob(body.replace(/-/g, "+").replace(/_/g, "/")));
+  if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+  return payload;
 }
 
 async function _signedBundleUrl(bundleKey, env) {

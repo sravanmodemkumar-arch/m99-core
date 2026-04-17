@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis</title>
+<link rel="stylesheet" href="/modules/exam-engine/fe/shared/exam.css">
+<script src="/modules/exam-engine/fe/desktop/desktop-adapter.js" onerror="void 0"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Arial,sans-serif;background:#f0f2f5}
+
+.ana-shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── Header ── */
+.ana-hdr{
+  background:#1565c0;color:#fff;height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(0,0,0,0.25);gap:16px;
+}
+.ana-hdr-title{font-size:clamp(14px,1.1vw+5px,18px);font-weight:800;flex:1;text-align:center;letter-spacing:0.01em}
+.hdr-btn{
+  padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;
+  border:1.5px solid rgba(255,255,255,0.45);background:rgba(255,255,255,0.12);
+  color:#fff;cursor:pointer;white-space:nowrap;transition:background 0.15s;
+}
+.hdr-btn:hover{background:rgba(255,255,255,0.22)}
+.hdr-btn.home{background:rgba(21,101,192,0.6);border-color:rgba(144,202,249,0.5)}
+
+/* ── Score accent band ── */
+.score-accent{
+  background:linear-gradient(135deg,#0d1b4b 0%,#1565c0 100%);
+  padding:14px 28px;display:flex;align-items:center;gap:0;flex-shrink:0;
+  border-bottom:3px solid #0d47a1;
+}
+.acc-tiles{display:flex;gap:0;flex:1;overflow:hidden}
+.acc-tile{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 8px;border-right:1px solid rgba(255,255,255,0.15);
+  min-width:0;
+}
+.acc-tile:last-child{border-right:none}
+.acc-v{font-size:clamp(20px,2.2vw,32px);font-weight:900;color:#fff;line-height:1;text-shadow:0 2px 6px rgba(0,0,0,0.3)}
+.acc-l{font-size:10px;color:rgba(255,255,255,0.7);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;margin-top:4px}
+.acc-tile.good .acc-v{color:#a5d6a7}
+.acc-tile.warn .acc-v{color:#ffcc80}
+.acc-tile.bad  .acc-v{color:#ef9a9a}
+
+/* ── Body ── */
+.ana-body{flex:1;overflow-y:auto;padding:18px 20px 24px}
+.ana-content{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* ── Section heading ── */
+.sec-heading{
+  font-size:12px;font-weight:800;color:#5c6b8a;
+  text-transform:uppercase;letter-spacing:0.09em;
+  padding-bottom:8px;border-bottom:2px solid #e0e4ed;
+  margin-bottom:2px;display:flex;align-items:center;gap:8px;
+}
+.sec-heading::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;background:#1565c0}
+
+/* ── Dual column mid grid ── */
+.mid-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:#fff;border-radius:12px;border:1px solid #e0e4ed;box-shadow:0 2px 10px rgba(0,0,0,0.05);padding:20px}
+.card-title{font-size:13px;font-weight:800;color:#1a2a4a;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.card-title-icon{width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+.icon-blue{background:#e3f2fd;color:#1565c0}
+.icon-purple{background:#f3e5f5;color:#6a1b9a}
+.icon-green{background:#e8f5e9;color:#2e7d32}
+.icon-orange{background:#fff3e0;color:#e65100}
+
+/* ── Attempt donut ── */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-container{position:relative;flex-shrink:0}
+.donut{width:140px;height:140px;border-radius:50%;position:relative}
+.donut-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:80px;height:80px;border-radius:50%;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 0 0 3px #f0f2f5;
+}
+.donut-pct{font-size:18px;font-weight:900;color:#1565c0;line-height:1}
+.donut-sub{font-size:9px;font-weight:700;color:#90a4ae;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
+.donut-legend{display:flex;flex-direction:column;gap:10px;flex:1}
+.leg-item{display:flex;align-items:center;gap:8px}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.leg-label{font-size:12px;color:#5c6b8a;font-weight:600;flex:1}
+.leg-val{font-size:13px;font-weight:800;color:#1a2a4a}
+.leg-pct{font-size:11px;color:#90a4ae;font-weight:600;min-width:36px;text-align:right}
+
+/* ── Marks potential ── */
+.marks-stack{display:flex;flex-direction:column;gap:12px}
+.marks-bar-wrap{height:22px;border-radius:6px;overflow:hidden;display:flex;background:#f0f2f5}
+.marks-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:width 1s ease;min-width:0;overflow:hidden;white-space:nowrap}
+.marks-seg.pos{background:#2e7d32}
+.marks-seg.neg{background:#c62828}
+.marks-seg.skip{background:#90a4ae}
+.marks-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+.ml-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#5c6b8a;font-weight:600}
+.ml-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.marks-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.mstat{background:#f8f9ff;border-radius:8px;padding:10px 12px;border:1px solid #e8edf6}
+.mstat-v{font-size:16px;font-weight:900;line-height:1}
+.mstat-l{font-size:10px;font-weight:700;color:#8a9ab7;text-transform:uppercase;letter-spacing:0.05em;margin-top:3px}
+.mstat.c .mstat-v{color:#2e7d32}
+.mstat.w .mstat-v{color:#c62828}
+.mstat.s .mstat-v{color:#90a4ae}
+.mstat.t .mstat-v{color:#1565c0}
+
+/* ── Section performance ── */
+.sec-perf-list{display:flex;flex-direction:column;gap:10px}
+.sp-row{
+  background:#fff;border-radius:10px;border:1px solid #e0e4ed;
+  padding:14px 16px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04);
+  border-left:4px solid #1565c0;
+}
+.sp-rank{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;flex-shrink:0;
+  background:#f0f2f5;color:#5c6b8a;
+}
+.sp-name{font-size:13px;font-weight:700;color:#1a2a4a;min-width:0;flex:0 0 160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-bar-area{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+.sp-bar-labels{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#8a9ab7}
+.sp-bar-track{height:8px;background:#f0f2f5;border-radius:4px;overflow:hidden}
+.sp-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.sp-stats-mini{display:flex;gap:10px;flex-shrink:0}
+.sm{display:flex;flex-direction:column;align-items:center;min-width:40px}
+.sm-v{font-size:14px;font-weight:900;line-height:1}
+.sm-l{font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+.sm.c .sm-v{color:#2e7d32}.sm.w .sm-v{color:#c62828}.sm.s .sm-v{color:#90a4ae}
+.sp-score{font-size:13px;font-weight:800;color:#1a2a4a;min-width:60px;text-align:right}
+
+/* ── Strength verdict grid ── */
+.verdict-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.vcard{
+  padding:14px 16px;border-radius:10px;border:1.5px solid;
+  display:flex;flex-direction:column;gap:6px;
+}
+.vcard.strong{background:#e8f5e9;border-color:#a5d6a7}
+.vcard.moderate{background:#fff8e1;border-color:#ffe082}
+.vcard.weak{background:#ffebee;border-color:#ef9a9a}
+.vcard-badge{
+  font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;
+  display:inline-flex;align-items:center;gap:3px;align-self:flex-start;
+  text-transform:uppercase;letter-spacing:0.06em;
+}
+.vcard.strong .vcard-badge{background:#2e7d32;color:#fff}
+.vcard.moderate .vcard-badge{background:#f57f17;color:#fff}
+.vcard.weak .vcard-badge{background:#c62828;color:#fff}
+.vcard-name{font-size:13px;font-weight:700;color:#1a2a4a}
+.vcard-pct{font-size:22px;font-weight:900;line-height:1}
+.vcard.strong .vcard-pct{color:#2e7d32}
+.vcard.moderate .vcard-pct{color:#f57f17}
+.vcard.weak .vcard-pct{color:#c62828}
+.vcard-sub{font-size:11px;color:#5c6b8a;font-weight:600}
+
+/* ── Time analysis ── */
+.time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tstat{background:#fff;border-radius:10px;border:1px solid #e0e4ed;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.tstat-v{font-size:20px;font-weight:900;color:#1a2a4a;line-height:1}
+.tstat-l{font-size:10px;font-weight:700;color:#8a9ab7;text-transform:uppercase;letter-spacing:0.06em;margin-top:4px}
+.tstat.eff .tstat-v{color:#1565c0}
+
+/* ── Footer actions ── */
+.ana-footer{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:13px 24px;background:#fff;border-top:2px solid #e0e4ed;gap:12px;
+}
+.f-btn{
+  padding:11px 26px;border-radius:7px;font-size:13px;font-weight:700;
+  border:none;cursor:pointer;min-height:44px;transition:filter 0.15s;
+}
+.f-btn:hover{filter:brightness(0.9)}
+.f-btn.outline{background:#f0f2f5;color:#333;border:2px solid #c8c8c8}
+.f-btn.blue{background:#1565c0;color:#fff}
+.f-meta{font-size:12px;color:#aaa;font-weight:500;text-align:center}
+
+/* ── Topic section placeholder ── */
+.topic-placeholder{
+  background:#fff;border-radius:12px;border:1px solid #e0e4ed;
+  padding:32px;text-align:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+.tp-icon{font-size:36px;margin-bottom:8px}
+.tp-title{font-size:15px;font-weight:800;color:#1a2a4a;margin-bottom:6px}
+.tp-sub{font-size:13px;color:#8a9ab7;font-weight:500;max-width:380px;margin:0 auto}
+.tp-badge{
+  display:inline-block;margin-top:12px;
+  padding:5px 16px;border-radius:999px;
+  background:#e3f2fd;color:#1565c0;
+  font-size:12px;font-weight:700;
+}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .mid-grid{grid-template-columns:1fr}
+  .time-grid{grid-template-columns:repeat(2,1fr)}
+  .sp-name{flex:0 0 120px}
+  .verdict-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+}
+@media(max-width:600px){
+  .acc-tiles{gap:0}
+  .acc-tile{padding:8px 4px}
+  .sp-stats-mini{gap:6px}
+  .sp-name{display:none}
+  .ana-body{padding:12px 12px 20px}
+  .time-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="ana-shell">
+
+  <!-- Header -->
+  <div class="ana-hdr">
+    <button class="hdr-btn" onclick="goResult()">← Result</button>
+    <div class="ana-hdr-title" id="exam-label">Analysis</div>
+    <button class="hdr-btn home" onclick="goHome()">🏠 Home</button>
+  </div>
+
+  <!-- Metric accent band -->
+  <div class="score-accent">
+    <div class="acc-tiles">
+      <div class="acc-tile" id="tile-score">
+        <div class="acc-v" id="tile-score-v">—</div>
+        <div class="acc-l">Score</div>
+      </div>
+      <div class="acc-tile" id="tile-acc">
+        <div class="acc-v" id="tile-acc-v">—</div>
+        <div class="acc-l">Accuracy</div>
+      </div>
+      <div class="acc-tile">
+        <div class="acc-v" id="tile-time-v">—</div>
+        <div class="acc-l">Time Used</div>
+      </div>
+      <div class="acc-tile">
+        <div class="acc-v" id="tile-avg-v">—</div>
+        <div class="acc-l">Avg / Question</div>
+      </div>
+      <div class="acc-tile">
+        <div class="acc-v" id="tile-total-v">—</div>
+        <div class="acc-l">Total Qs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main scrollable body -->
+  <div class="ana-body">
+    <div class="ana-content">
+
+      <!-- Row 1: Attempt Distribution + Marks Potential -->
+      <div class="mid-grid">
+
+        <!-- Attempt Distribution -->
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon icon-blue">◉</span> Attempt Distribution</div>
+          <div class="donut-wrap">
+            <div class="donut-container">
+              <div class="donut" id="donut-chart"></div>
+              <div class="donut-center">
+                <div class="donut-pct" id="donut-pct">—</div>
+                <div class="donut-sub">Accuracy</div>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="leg-item">
+                <div class="leg-dot" style="background:#2e7d32"></div>
+                <div class="leg-label">Correct</div>
+                <div class="leg-val" id="leg-c">—</div>
+                <div class="leg-pct" id="leg-c-pct">—</div>
+              </div>
+              <div class="leg-item">
+                <div class="leg-dot" style="background:#c62828"></div>
+                <div class="leg-label">Wrong</div>
+                <div class="leg-val" id="leg-w">—</div>
+                <div class="leg-pct" id="leg-w-pct">—</div>
+              </div>
+              <div class="leg-item">
+                <div class="leg-dot" style="background:#90a4ae"></div>
+                <div class="leg-label">Skipped</div>
+                <div class="leg-val" id="leg-s">—</div>
+                <div class="leg-pct" id="leg-s-pct">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Marks Potential -->
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon icon-purple">⊕</span> Marks Analysis</div>
+          <div class="marks-stack">
+            <div>
+              <div class="marks-bar-labels" style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#8a9ab7;margin-bottom:5px">
+                <span>Score Composition</span>
+                <span id="marks-net">Net: —</span>
+              </div>
+              <div class="marks-bar-wrap" id="marks-bar">
+                <div class="marks-seg pos" id="seg-pos" style="width:0%">+</div>
+                <div class="marks-seg neg" id="seg-neg" style="width:0%">−</div>
+                <div class="marks-seg skip" id="seg-skip" style="width:0%"></div>
+              </div>
+              <div class="marks-legend">
+                <div class="ml-item"><div class="ml-dot" style="background:#2e7d32"></div>Earned</div>
+                <div class="ml-item"><div class="ml-dot" style="background:#c62828"></div>Lost (−ve)</div>
+                <div class="ml-item"><div class="ml-dot" style="background:#90a4ae"></div>Unclaimed</div>
+              </div>
+            </div>
+            <div class="marks-stats" id="marks-stats">
+              <div class="mstat t"><div class="mstat-v" id="ms-max">—</div><div class="mstat-l">Max Possible</div></div>
+              <div class="mstat c"><div class="mstat-v" id="ms-earned">—</div><div class="mstat-l">Marks Earned</div></div>
+              <div class="mstat w"><div class="mstat-v" id="ms-lost">—</div><div class="mstat-l">Lost to -ve</div></div>
+              <div class="mstat s"><div class="mstat-v" id="ms-unclaimed">—</div><div class="mstat-l">Unclaimed</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end mid-grid -->
+
+      <!-- Section-wise Performance -->
+      <div>
+        <div class="sec-heading">Section-wise Performance</div>
+        <div class="sec-perf-list" id="sec-perf-list">
+          <div style="padding:24px;text-align:center;color:#aaa;font-size:13px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Strength Analysis -->
+      <div>
+        <div class="sec-heading">Performance Verdict by Section</div>
+        <div class="verdict-grid" id="verdict-grid">
+          <div style="padding:24px;text-align:center;color:#aaa;font-size:13px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Time Analysis -->
+      <div>
+        <div class="sec-heading">Time Analysis</div>
+        <div class="time-grid">
+          <div class="tstat">
+            <div class="tstat-v" id="ts-total">—</div>
+            <div class="tstat-l">Total Time Used</div>
+          </div>
+          <div class="tstat">
+            <div class="tstat-v" id="ts-avg">—</div>
+            <div class="tstat-l">Avg per Question</div>
+          </div>
+          <div class="tstat">
+            <div class="tstat-v" id="ts-attempt">—</div>
+            <div class="tstat-l">Attempted</div>
+          </div>
+          <div class="tstat eff">
+            <div class="tstat-v" id="ts-eff">—</div>
+            <div class="tstat-l">Efficiency Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Topic Analysis placeholder -->
+      <div class="topic-placeholder">
+        <div class="tp-icon">📊</div>
+        <div class="tp-title">Topic-wise Analysis</div>
+        <div class="tp-sub">Deep topic performance trends will appear here after 5+ attempts. Keep practicing to unlock insights.</div>
+        <span class="tp-badge">Unlocks after 5 attempts</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="ana-footer">
+    <button class="f-btn outline" onclick="goResult()">← Back to Result</button>
+    <div class="f-meta" id="ana-meta"></div>
+    <button class="f-btn blue" onclick="goHome()">🏠 Back to Home</button>
+  </div>
+
+</div><!-- end ana-shell -->
+
+<script type="module">
+import { boot, requireAuth } from "/modules/auth/fe/web/app.js";
+
+const _p         = new URLSearchParams(location.search);
+const SID        = _p.get("session_id") || "";
+const SCORE      = parseFloat(_p.get("score")    || "0");
+const CORRECT    = parseInt(_p.get("correct")    || "0");
+const WRONG      = parseInt(_p.get("wrong")      || "0");
+const SKIPPED    = parseInt(_p.get("skipped")    || "0");
+const TOTAL      = parseInt(_p.get("total")      || "0");
+const PCT        = parseFloat(_p.get("pct")      || "0");
+const ELAPSED_S  = parseInt(_p.get("elapsed_s")  || "0");
+const BACK_URL   = _p.get("back_url")             || "./result.html";
+const LABEL      = _p.get("label")               || "Exam Analysis";
+const API_PREFIX = _p.get("api_prefix")           || "/exam";
+
+const COLORS = ["#1565c0","#6a1b9a","#2e7d32","#e65100","#0277bd","#ad1457","#00838f","#558b2f"];
+
+function fmt_time(s) {
+  if (!s) return "0s";
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+async function init() {
+  if (!requireAuth()) return;
+  await boot();
+
+  document.getElementById("exam-label").textContent = `Analysis — ${LABEL}`;
+
+  // Accent band tiles
+  const sign = SCORE >= 0 ? "+" : "";
+  document.getElementById("tile-score-v").textContent = `${sign}${SCORE.toFixed(2)}`;
+  document.getElementById("tile-acc-v").textContent   = `${PCT}%`;
+  document.getElementById("tile-time-v").textContent  = fmt_time(ELAPSED_S);
+  const avgSec = TOTAL > 0 ? Math.round(ELAPSED_S / TOTAL) : 0;
+  document.getElementById("tile-avg-v").textContent   = fmt_time(avgSec);
+  document.getElementById("tile-total-v").textContent = TOTAL;
+
+  // Color-code accuracy tile
+  const accTile = document.getElementById("tile-acc");
+  if (PCT >= 70)      accTile.classList.add("good");
+  else if (PCT >= 40) accTile.classList.add("warn");
+  else                accTile.classList.add("bad");
+  const scoreTile = document.getElementById("tile-score");
+  if (SCORE >= 0)  scoreTile.classList.add("good");
+  else             scoreTile.classList.add("bad");
+
+  // Attempt donut
+  renderDonut(CORRECT, WRONG, SKIPPED, TOTAL);
+
+  // Marks analysis
+  renderMarks(CORRECT, WRONG, SKIPPED, TOTAL);
+
+  // Time analysis
+  renderTime(ELAPSED_S, TOTAL, CORRECT, WRONG);
+
+  // Meta footer
+  document.getElementById("ana-meta").textContent =
+    `Session ${SID.slice(-8)} · ${LABEL}`;
+
+  // Session data for section breakdown
+  const raw = sessionStorage.getItem(`result_${SID}`);
+  if (!raw) {
+    noData("sec-perf-list"); noData("verdict-grid"); return;
+  }
+  const data = JSON.parse(raw);
+  renderSectionPerf(data.sections, data.section_defs || []);
+  renderVerdicts(data.sections, data.section_defs || []);
+}
+
+function renderDonut(c, w, s, t) {
+  if (!t) return;
+  const cPct  = (c / t) * 100;
+  const wPct  = (w / t) * 100;
+  const cDeg  = (c / t) * 360;
+  const wDeg  = (w / t) * 360;
+
+  const cStop  = cDeg.toFixed(1);
+  const cwStop = (cDeg + wDeg).toFixed(1);
+
+  document.getElementById("donut-chart").style.background =
+    `conic-gradient(#2e7d32 0deg ${cStop}deg,#c62828 ${cStop}deg ${cwStop}deg,#90a4ae ${cwStop}deg 360deg)`;
+  document.getElementById("donut-pct").textContent = `${PCT}%`;
+
+  document.getElementById("leg-c").textContent = c;
+  document.getElementById("leg-w").textContent = w;
+  document.getElementById("leg-s").textContent = s;
+  document.getElementById("leg-c-pct").textContent = t ? `${Math.round(cPct)}%` : "—";
+  document.getElementById("leg-w-pct").textContent = t ? `${Math.round(wPct)}%` : "—";
+  document.getElementById("leg-s-pct").textContent = t ? `${Math.round(((s/t)*100))}%` : "—";
+}
+
+function renderMarks(c, w, s, t) {
+  // Assuming 1 mark per correct, -0.33 per wrong
+  const earned    = c;
+  const lost      = parseFloat((w * 0.33).toFixed(2));
+  const unclaimed = s;
+  const maxPoss   = t;
+  const net       = parseFloat((earned - lost).toFixed(2));
+
+  document.getElementById("marks-net").textContent     = `Net: ${net >= 0 ? "+" : ""}${net}`;
+  document.getElementById("ms-max").textContent        = `+${maxPoss}`;
+  document.getElementById("ms-earned").textContent     = `+${earned}`;
+  document.getElementById("ms-lost").textContent       = `−${lost}`;
+  document.getElementById("ms-unclaimed").textContent  = `${unclaimed}`;
+
+  if (maxPoss > 0) {
+    const posW   = Math.round((earned / maxPoss) * 100);
+    const negW   = Math.round((lost   / maxPoss) * 100);
+    const skipW  = Math.round((unclaimed / maxPoss) * 100);
+    setTimeout(() => {
+      document.getElementById("seg-pos").style.width  = `${posW}%`;
+      document.getElementById("seg-neg").style.width  = `${negW}%`;
+      document.getElementById("seg-skip").style.width = `${skipW}%`;
+      if (posW > 8)  document.getElementById("seg-pos").textContent  = `+${earned}`;
+      if (negW > 5)  document.getElementById("seg-neg").textContent  = `−${lost}`;
+    }, 100);
+  }
+}
+
+function renderTime(elapsed, total, c, w) {
+  document.getElementById("ts-total").textContent   = fmt_time(elapsed);
+  const avgSec = total > 0 ? Math.round(elapsed / total) : 0;
+  document.getElementById("ts-avg").textContent     = fmt_time(avgSec);
+  document.getElementById("ts-attempt").textContent = `${c + w} / ${total}`;
+
+  // Efficiency: (correct - 0.33*wrong) / total * 100, capped at 100
+  const eff = total > 0 ? Math.max(0, Math.round(((c - w * 0.33) / total) * 100)) : 0;
+  document.getElementById("ts-eff").textContent = `${eff}%`;
+  const effEl = document.getElementById("ts-eff");
+  effEl.style.color = eff >= 60 ? "#2e7d32" : eff >= 35 ? "#f57f17" : "#c62828";
+}
+
+function renderSectionPerf(sections, defs) {
+  const el = document.getElementById("sec-perf-list");
+  if (!sections || !defs.length) { noData("sec-perf-list"); return; }
+
+  el.innerHTML = defs.map((def, i) => {
+    const d     = sections[def.id] || { correct:0, wrong:0, skipped:0, rawScaled:0 };
+    const att   = d.correct + d.wrong;
+    const tot   = att + d.skipped;
+    const acc   = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+    const sc    = parseFloat((d.rawScaled / 1000).toFixed(2));
+    const color = COLORS[i % COLORS.length];
+    const scSign = sc >= 0 ? "+" : "";
+    return `
+      <div class="sp-row" style="border-left-color:${color}">
+        <div class="sp-rank" style="background:${color}20;color:${color}">${i + 1}</div>
+        <div class="sp-name" title="${def.label}">${def.label}</div>
+        <div class="sp-bar-area">
+          <div class="sp-bar-labels">
+            <span>Accuracy</span>
+            <span>${acc}%</span>
+          </div>
+          <div class="sp-bar-track">
+            <div class="sp-bar-fill" data-w="${acc}" style="width:0%;background:${color}"></div>
+          </div>
+        </div>
+        <div class="sp-stats-mini">
+          <div class="sm c"><div class="sm-v">${d.correct}</div><div class="sm-l">✓</div></div>
+          <div class="sm w"><div class="sm-v">${d.wrong}</div><div class="sm-l">✗</div></div>
+          <div class="sm s"><div class="sm-v">${d.skipped}</div><div class="sm-l">—</div></div>
+        </div>
+        <div class="sp-score">${scSign}${sc}</div>
+      </div>`;
+  }).join("");
+
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll(".sp-bar-fill").forEach(b => {
+      b.style.width = `${b.dataset.w}%`;
+    });
+  }, 120);
+}
+
+function renderVerdicts(sections, defs) {
+  const el = document.getElementById("verdict-grid");
+  if (!sections || !defs.length) { noData("verdict-grid"); return; }
+
+  const cards = defs.map((def, i) => {
+    const d   = sections[def.id] || { correct:0, wrong:0, skipped:0 };
+    const att = d.correct + d.wrong;
+    const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+    const cls = acc >= 70 ? "strong" : acc >= 40 ? "moderate" : "weak";
+    const lbl = acc >= 70 ? "💪 Strong" : acc >= 40 ? "📈 Moderate" : "⚠️ Needs Work";
+    const tip = acc >= 70 ? `Great performance!` : acc >= 40 ? `Revisit weak topics` : `Focus on this section`;
+    return `
+      <div class="vcard ${cls}">
+        <span class="vcard-badge">${lbl}</span>
+        <div class="vcard-name">${def.label}</div>
+        <div class="vcard-pct">${acc}%</div>
+        <div class="vcard-sub">${d.correct}C · ${d.wrong}W · ${d.skipped}S</div>
+        <div class="vcard-sub" style="font-size:10px;color:#8a9ab7;margin-top:2px">${tip}</div>
+      </div>`;
+  });
+
+  // Sort: weak first, then moderate, then strong
+  const order = { weak:0, moderate:1, strong:2 };
+  const sorted = defs.map((def, i) => {
+    const d = sections[def.id] || { correct:0, wrong:0, skipped:0 };
+    const att = d.correct + d.wrong;
+    const acc = att > 0 ? Math.round((d.correct / att) * 100) : 0;
+    const cls = acc >= 70 ? "strong" : acc >= 40 ? "moderate" : "weak";
+    return { def, i, acc, cls };
+  }).sort((a, b) => order[a.cls] - order[b.cls]);
+
+  el.innerHTML = sorted.map(({ def, i, acc, cls }) => {
+    const d = sections[def.id] || { correct:0, wrong:0, skipped:0 };
+    const lbl = cls === "strong" ? "💪 Strong" : cls === "moderate" ? "📈 Moderate" : "⚠️ Needs Work";
+    const tip = cls === "strong" ? "Great performance!" : cls === "moderate" ? "Revisit weak topics" : "Focus on this section";
+    return `
+      <div class="vcard ${cls}">
+        <span class="vcard-badge">${lbl}</span>
+        <div class="vcard-name">${def.label}</div>
+        <div class="vcard-pct">${acc}%</div>
+        <div class="vcard-sub">${d.correct} Correct · ${d.wrong} Wrong · ${d.skipped} Skipped</div>
+        <div class="vcard-sub" style="font-size:10px;color:#8a9ab7;margin-top:2px">${tip}</div>
+      </div>`;
+  }).join("");
+}
+
+function noData(id) {
+  document.getElementById(id).innerHTML =
+    `<div style="padding:24px;text-align:center;color:#aaa;font-size:13px;background:#fff;border-radius:10px;border:1px solid #e0e4ed">No data available</div>`;
+}
+
+window.goResult = () => { window.location.href = BACK_URL; };
+window.goHome   = () => {
+  window.location.href = _p.get("home_url") || "./";
+};
+
+init();
+</script>
+</body>
+</html>

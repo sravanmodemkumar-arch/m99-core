@@ -1,0 +1,23 @@
+# Cloudflare Workers local dev secrets — copy to .dev.vars and fill in values
+# Used by: wrangler dev
+# Production: wrangler secret put <KEY>
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+# Must be identical across: auth worker, rrb-group-d worker, Lambda
+# Generate: node -e "require('crypto').randomBytes(48).toString('base64url')|0"
+JWT_SECRET=change-me-min-32-chars-random-string
+JWT_EXPIRY_HOURS=24
+
+# ── SMS ───────────────────────────────────────────────────────────────────────
+# Options: log (dev) | msg91 (prod)
+SMS_PROVIDER=log
+MSG91_KEY=
+MSG91_TEMPLATE=
+
+# ── Dev OTP bypass ────────────────────────────────────────────────────────────
+# Any phone can log in with this OTP in local dev — NEVER set in production
+DEV_OTP_BYPASS=123456
+
+# ── Admin phones (pre-seeded via scripts/seed-admin.js) ───────────────────────
+SUPER_ADMIN_PHONE=9000000001
+PRODUCT_ADMIN_PHONE=9000000002

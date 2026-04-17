@@ -1,0 +1,57 @@
+appId: com.mocktestplatform.rrb
+name: Answer all questions and submit — result card appears
+
+---
+
+- launchApp:
+    clearState: false
+
+# Start exam
+- tapOn:
+    text: "Start Exam"
+    index: 0
+- assertVisible:
+    text: "00:"
+    timeout: 10000
+
+# Answer first question — tap option A
+- tapOn:
+    text: "A"
+    index: 0
+
+# Save & Next
+- tapOn:
+    text: "Save & Next"
+
+# Answer second question
+- tapOn:
+    text: "B"
+    index: 0
+- tapOn:
+    text: "Save & Next"
+
+# Answer third question
+- tapOn:
+    text: "C"
+    index: 0
+- tapOn:
+    text: "Save & Next"
+
+# On last question — button becomes Submit
+- tapOn:
+    text: "A"
+    index: 0
+- tapOn:
+    text: "Submit"
+
+# Confirmation modal appears
+- assertVisible: "Submit Exam?"
+
+# Confirm
+- tapOn:
+    text: "Submit"
+
+# Result screen should show score
+- assertVisible:
+    text: "Score"
+    timeout: 10000

@@ -1,0 +1,37 @@
+appId: com.mocktestplatform.rrb
+name: Start exam — questions load correctly
+
+---
+
+- launchApp:
+    clearState: false   # assumes token already seeded from login flow
+
+# Home screen
+- assertVisible: "RRB Group D"
+- assertVisible: "Start Exam"
+
+# Tap the first exam card's Start Exam button
+- tapOn:
+    text: "Start Exam"
+    index: 0
+
+# Loading should appear briefly
+- assertVisible:
+    text: "Loading exam"
+    optional: true
+
+# Exam should load: timer and first question visible
+- assertVisible:
+    text: "00:"          # timer starts with 00: pattern (HH:MM:SS)
+    timeout: 10000
+
+# At least one question option button is visible
+- assertVisible:
+    index: 0
+    text: "Question 1"
+    optional: true
+
+# Section tabs are visible
+- assertVisible:
+    text: "Mathematics"
+    optional: true

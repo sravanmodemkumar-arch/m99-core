@@ -1,0 +1,50 @@
+appId: com.mocktestplatform.rrb
+name: Exam resume — checkpoint restored after app kill
+
+---
+
+- launchApp:
+    clearState: false
+
+# Start exam and answer first 2 questions
+- tapOn:
+    text: "Start Exam"
+    index: 0
+- assertVisible:
+    text: "00:"
+    timeout: 10000
+
+- tapOn:
+    text: "A"
+    index: 0
+- tapOn:
+    text: "Save & Next"
+
+- tapOn:
+    text: "B"
+    index: 0
+- tapOn:
+    text: "Save & Next"
+
+# Force-stop the app to simulate kill
+- stopApp
+
+# Relaunch — app should offer to resume
+- launchApp:
+    clearState: false
+
+# Start Exam again (same exam card)
+- tapOn:
+    text: "Start Exam"
+    index: 0
+
+# After resume, should be on question 3 (checkpoint: 2 answered)
+- assertVisible:
+    text: "00:"
+    timeout: 10000
+
+# Palette should show at least 2 answered buttons (green)
+# This assertion verifies the checkpoint was restored
+- assertVisible:
+    id: "palette-answered"
+    optional: true

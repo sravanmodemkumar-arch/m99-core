@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam</title>
+<link rel="stylesheet" href="/modules/exam-engine/fe/shared/exam.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="window.__katexReady=true"></script>
+<script src="/modules/rrb-group-d/fe/desktop/desktop-adapter.js"></script>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-wrap">
+  <div class="spin"></div>
+  <div style="color:#555;font-size:0.875rem;margin-top:0.5rem">Loading exam…</div>
+</div>
+
+<!-- Exam shell -->
+<div class="exam-shell" id="exam-shell" style="display:none">
+
+  <!-- ══ LEFT COLUMN ══ -->
+  <div class="exam-left">
+
+    <div class="exam-nav-row">
+      <div class="exam-pill" id="exam-title">Exam</div>
+    </div>
+
+    <div class="sections-label-row">
+      <span class="sections-lbl">Sections</span>
+      <span class="timer-label">Time Left : <strong class="exam-timer" id="exam-timer">90:00</strong></span>
+    </div>
+
+    <div class="section-tabs-row">
+      <div class="section-tabs-inner" id="section-tabs"></div>
+    </div>
+
+    <div class="marks-bar">
+      <div style="flex:1"></div>
+      <span id="marks-info-text" style="display:flex;gap:8px;align-items:center"></span>
+      <select class="lang-select" id="lang-select">
+        <option>View In : English</option>
+      </select>
+    </div>
+
+    <div class="main-scroll" id="main-scroll">
+      <div id="question-area"></div>
+    </div>
+
+    <div id="action-bar"></div>
+  </div>
+
+  <!-- ══ RIGHT COLUMN (SIDEBAR) ══ -->
+  <div class="exam-right" id="exam-right">
+
+    <!-- Candidate card -->
+    <div class="sidebar-candidate-card">
+      <div class="candidate-photo-col">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div class="user-name" id="sidebar-name">Candidate</div>
+      </div>
+      <div class="candidate-details-col">
+        <div class="candidate-field">
+          <span class="candidate-field-lbl">Reg. No.</span>
+          <span class="candidate-field-val" id="sidebar-reg">—</span>
+        </div>
+        <div class="candidate-field">
+          <span class="candidate-field-lbl">Hall Ticket</span>
+          <span class="candidate-field-val" id="sidebar-hall">—</span>
+        </div>
+        <div class="candidate-field">
+          <span class="candidate-field-lbl">Date of Birth</span>
+          <span class="candidate-field-val" id="sidebar-dob">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="sidebar-legend-wrap" id="sidebar-legend"></div>
+
+    <!-- Question palette -->
+    <div class="sidebar-palette-scroll" id="sidebar-palette"></div>
+
+    <!-- Submit -->
+    <div class="sidebar-submit-wrap">
+      <button class="btn-sidebar-submit" onclick="__submitExam()">Submit</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Mobile drawer -->
+<div class="palette-backdrop" id="palette-backdrop" onclick="closePalette()"></div>
+<div class="palette-drawer-wrap" id="palette-drawer">
+  <div class="drawer-handle"></div>
+  <div id="drawer-palette"></div>
+  <div style="margin-top:0.75rem">
+    <button class="btn-sidebar-submit" style="width:100%" onclick="__submitExam()">Submit</button>
+  </div>
+</div>
+
+<!-- Submit modal -->
+<div id="submit-overlay">
+  <div class="submit-modal">
+    <div class="submit-modal-title">Submit Exam?</div>
+    <div class="submit-modal-sub">You cannot change your answers after submitting.</div>
+    <div id="modal-summary"></div>
+    <div style="display:flex;gap:0.75rem;margin-top:1.25rem">
+      <button class="ref-btn" style="flex:1" onclick="closeSubmitModal()">Go Back</button>
+      <button class="ref-btn ref-btn-primary" style="flex:1" id="confirm-submit-btn" onclick="confirmSubmit()">Submit Now</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { boot, requireAuth, api } from "/modules/auth/fe/web/app.js";
+import {
+  renderQuestion, renderPaletteSection, renderActionBar,
+  renderSectionTabs, renderSubmitSummary, renderLegend,
+} from "/modules/exam-engine/fe/shared/components.js";
+import {
+  initState, goTo, selectOption, clearOption, toggleMark,
+  tick, summary, serialize, deserialize, Q,
+} from "/modules/exam-engine/fe/shared/qstate.js";
+import { scoreExam, percentage } from "/modules/exam-engine/fe/shared/scoring.js";
+
+// ── Config from URL ────────────────────────────────────────────────────────
+// Required: ?exam_id=xxx
+// Optional: ?api_prefix=/rrb  (default: /exam)
+//           ?result_url=./result.html
+const _params     = new URLSearchParams(location.search);
+const API_PREFIX  = _params.get("api_prefix")  || "/exam";
+const RESULT_URL  = _params.get("result_url")  || "./result.html";
+const EXAM_ID     = _params.get("exam_id")     || "";
+const BACK_URL    = _params.get("back_url")    || "./";
+const EXAM_LABEL  = _params.get("label")       || "";
+
+function _unisexSvg() {
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="40" cy="40" r="40" fill="#e3f2fd"/>
+    <circle cx="40" cy="30" r="14" fill="#90caf9"/>
+    <path d="M12 75 Q12 54 40 54 Q68 54 68 75 Z" fill="#90caf9"/>
+  </svg>`;
+}
+
+let state           = null;
+let bundle          = null;
+let sessionId       = null;
+let timerHandle     = null;
+let syncHandle      = null;
+let activeSectionId = null;
+let sectionElapsed  = {};
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+async function init() {
+  if (!requireAuth()) return;
+  await boot();
+
+  const name    = localStorage.getItem("name")        || "Candidate";
+  const photoUrl= localStorage.getItem("avatar_url")  || localStorage.getItem("photo_url") || "";
+  const regNo   = localStorage.getItem("reg_no")      || localStorage.getItem("registration_no") || "—";
+  const hallTkt = localStorage.getItem("hall_ticket") || "—";
+  const dob     = localStorage.getItem("dob")         || "—";
+
+  document.getElementById("sidebar-name").textContent = name;
+  document.getElementById("sidebar-reg").textContent  = regNo;
+  document.getElementById("sidebar-hall").textContent = hallTkt;
+  document.getElementById("sidebar-dob").textContent  = dob;
+  document.getElementById("user-avatar").innerHTML    = photoUrl
+    ? `<img src="${photoUrl}" alt="${name}" onerror="this.parentElement.innerHTML=_unisexSvg()">`
+    : _unisexSvg();
+
+  const { ok, data } = await api(`${API_PREFIX}/exam/start`, {
+    method: "POST",
+    body: JSON.stringify({ exam_id: EXAM_ID }),
+  });
+  if (!ok) { alert(data.error || "Failed to start exam"); return; }
+
+  sessionId = data.session_id;
+
+  const bundleRes = await fetch(data.bundle_url, {
+    headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` },
+  });
+  bundle = await bundleRes.json();
+
+  const m = bundle.marking || { correct: 1, wrong: -0.333 };
+  document.getElementById("marks-info-text").innerHTML =
+    `<span class="mark-chip mark-chip-correct">✔ Correct <strong>+${m.correct}</strong></span>
+     <span class="mark-chip mark-chip-wrong">✘ Wrong <strong>−${Math.abs(m.wrong).toFixed(2)}</strong></span>`;
+
+  document.getElementById("exam-title").textContent =
+    bundle.exam_title || "Exam";
+  document.title = bundle.exam_title || "Exam";
+
+  if (data.resumed && data.checkpoint && Object.keys(data.checkpoint).length > 0) {
+    state = deserialize(localStorage.getItem(`checkpoint_${sessionId}`) || "{}");
+    if (!state?.order) state = initState(bundle.questions);
+    for (const [qid, r] of Object.entries(data.checkpoint)) {
+      if (r.chosen && r.attempted) state = selectOption(state, qid, r.chosen);
+    }
+  } else {
+    state = initState(bundle.questions);
+  }
+
+  activeSectionId = bundle.sections[0]?.id;
+  state = goTo(state, state.order[0]);
+
+  document.getElementById("loading-wrap").style.display = "none";
+  document.getElementById("exam-shell").style.display   = "";
+  if (window.__examStarted) window.__examStarted();
+
+  document.getElementById("sidebar-legend").innerHTML = renderLegend(summary(state).total);
+  renderSectionTabsBar();
+  renderCurrentQuestion();
+  renderAllPalettes();
+
+  startTimer(bundle.duration_s, data.elapsed_s || 0);
+  syncHandle = setInterval(pushSync, 30000);
+}
+
+// ── Timer ──────────────────────────────────────────────────────────────────
+function startTimer(duration, elapsed) {
+  state = { ...state, elapsed };
+  timerHandle = setInterval(() => {
+    state = tick(state);
+    if (bundle.timer_mode === "section") {
+      sectionElapsed[activeSectionId] = (sectionElapsed[activeSectionId] || 0) + 1;
+      const sec = bundle.sections.find(s => s.id === activeSectionId);
+      if (sec?.duration_s && sectionElapsed[activeSectionId] >= sec.duration_s) {
+        const idx  = bundle.sections.findIndex(s => s.id === activeSectionId);
+        const next = bundle.sections[idx + 1];
+        if (next) window.__switchSection(next.id);
+        else autoSubmit();
+      }
+    }
+    updateTimerDisplay();
+    if (state.elapsed >= duration) { clearInterval(timerHandle); clearInterval(syncHandle); autoSubmit(); }
+  }, 1000);
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  let remaining;
+  if (bundle.timer_mode === "section") {
+    const sec = bundle.sections.find(s => s.id === activeSectionId);
+    const dur = sec?.duration_s || bundle.duration_s;
+    remaining = Math.max(0, dur - (sectionElapsed[activeSectionId] || 0));
+  } else {
+    remaining = Math.max(0, bundle.duration_s - state.elapsed);
+  }
+  const m  = Math.floor(remaining / 60);
+  const s  = remaining % 60;
+  const el = document.getElementById("exam-timer");
+  el.textContent = `${m}:${String(s).padStart(2, "0")}`;
+  el.classList.toggle("timer-warn", remaining < 300);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderCurrentQuestion() {
+  const qId    = state.current;
+  const qState = state.questions[qId];
+  const idx    = state.order.indexOf(qId);
+  const q      = bundle.questions.find(q => q.id === qId);
+
+  document.getElementById("question-area").innerHTML = renderQuestion({
+    id: qId, index: idx, total: state.order.length,
+    body: q.body, text: q.text, image: q.image,
+    options: q.options, chosen: qState.chosen,
+  });
+
+  document.getElementById("action-bar").innerHTML = renderActionBar({
+    qId,
+    isLast:    idx === state.order.length - 1,
+    isMarked:  qState.status === Q.MARKED_REVIEW || qState.status === Q.ANSWERED_MARKED,
+    hasAnswer: !!qState.chosen,
+  });
+
+  const snap = summary(state);
+  document.getElementById("sidebar-legend").innerHTML = renderLegend(snap.total);
+  renderSectionTabsBar();
+  renderAllPalettes();
+  _scrollToCurrent();
+  _renderMath();
+}
+
+function renderSectionTabsBar() {
+  const counts   = summary(state);
+  const sections = bundle.sections.map(s => ({
+    id:       s.id,
+    label:    s.label,
+    answered: counts.sections[s.id]?.answered || 0,
+    total:    s.count,
+  }));
+  document.getElementById("section-tabs").innerHTML = renderSectionTabs(sections, activeSectionId);
+}
+
+function renderAllPalettes() {
+  const html = _buildPaletteHTML();
+  document.getElementById("sidebar-palette").innerHTML = html;
+  document.getElementById("drawer-palette").innerHTML  = html;
+}
+
+function _buildPaletteHTML() {
+  const section = bundle.sections.find(s => s.id === activeSectionId) || bundle.sections[0];
+  if (!section) return "";
+  const sectionQs = state.order
+    .map(id => state.questions[id])
+    .filter(q => q.section === section.id)
+    .map((q, i) => ({ ...q, index: i }));
+  return renderPaletteSection(
+    { id: section.id, label: section.label, questions: sectionQs },
+    state.current
+  );
+}
+
+function _scrollToCurrent() {
+  for (const scrollEl of ["sidebar-palette", "drawer-palette"]) {
+    const container = document.getElementById(scrollEl)?.closest(".sidebar-palette-scroll, .palette-drawer-wrap");
+    const btn = document.getElementById(scrollEl)?.querySelector(".palette-btn.q-current");
+    if (!container || !btn) continue;
+    const cTop = container.getBoundingClientRect().top;
+    const bTop = btn.getBoundingClientRect().top;
+    container.scrollBy({ top: bTop - cTop - container.clientHeight / 2 + btn.clientHeight / 2, behavior: "smooth" });
+  }
+}
+
+function _renderMath() {
+  if (!window.__katexReady || !window.renderMathInElement) return;
+  const el = document.getElementById("question-area");
+  if (!el) return;
+  try {
+    renderMathInElement(el, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true  },
+        { left: "\\(", right: "\\)", display: false },
+        { left: "$$",  right: "$$",  display: true  },
+        { left: "$",   right: "$",   display: false },
+      ],
+      throwOnError: false,
+    });
+  } catch(e) {}
+}
+
+// ── Global actions ─────────────────────────────────────────────────────────
+window.__goTo = (qId) => {
+  state = goTo(state, qId);
+  const q = state.questions[qId];
+  if (q?.section !== activeSectionId) {
+    activeSectionId = q.section;
+    renderSectionTabsBar();
+  }
+  renderCurrentQuestion();
+  closePalette();
+};
+
+window.__selectOption = (qId, option) => {
+  state = selectOption(state, qId, option);
+  renderCurrentQuestion();
+};
+
+window.__clearOption = (qId) => {
+  state = clearOption(state, qId);
+  renderCurrentQuestion();
+};
+
+window.__toggleMark = (qId) => {
+  state = toggleMark(state, qId);
+};
+
+window.__saveAndNext = (qId) => {
+  const idx = state.order.indexOf(qId);
+  if (idx < state.order.length - 1) window.__goTo(state.order[idx + 1]);
+  else window.__submitExam();
+};
+
+window.__switchSection = (sectionId) => {
+  activeSectionId = sectionId;
+  const q = state.order.find(id => {
+    const qd = state.questions[id];
+    return qd.section === sectionId && qd.status === Q.NOT_VISITED;
+  }) || state.order.find(id => state.questions[id].section === sectionId);
+  if (q) window.__goTo(q);
+  renderSectionTabsBar();
+};
+
+window.__submitExam = () => {
+  const counts = summary(state).total;
+  document.getElementById("modal-summary").innerHTML = renderSubmitSummary(counts);
+  document.getElementById("submit-overlay").classList.add("open");
+};
+
+window.openPalette  = () => {
+  document.getElementById("palette-backdrop").classList.add("open");
+  document.getElementById("palette-drawer").classList.add("open");
+};
+window.closePalette = () => {
+  document.getElementById("palette-backdrop").classList.remove("open");
+  document.getElementById("palette-drawer").classList.remove("open");
+};
+
+window.closeSubmitModal = () => document.getElementById("submit-overlay").classList.remove("open");
+
+window.confirmSubmit = async function() {
+  const btn = document.getElementById("confirm-submit-btn");
+  btn.disabled = true; btn.textContent = "Submitting…";
+  clearInterval(timerHandle); clearInterval(syncHandle);
+  if (window.__examEnded) window.__examEnded();
+
+  const responses = {};
+  for (const [id, q] of Object.entries(state.questions))
+    responses[id] = { chosen: q.chosen, attempted: q.attempted };
+
+  const { ok, data } = await api(`${API_PREFIX}/exam/submit`, {
+    method: "POST",
+    body: JSON.stringify({ session_id: sessionId, responses, elapsed_s: state.elapsed }),
+  });
+  if (!ok) { btn.disabled = false; btn.textContent = "Submit Now"; alert(data.error || "Submission failed."); return; }
+
+  const sectionMap = {};
+  for (const section of bundle.sections) {
+    sectionMap[section.id] = bundle.questions
+      .filter(q => q.section === section.id)
+      .map(q => ({
+        chosen:    state.questions[q.id]?.chosen || null,
+        correct:   data.answer_key[q.id],
+        attempted: state.questions[q.id]?.attempted || false,
+      }));
+  }
+  const result = scoreExam(sectionMap);
+  const params = new URLSearchParams({
+    session_id: sessionId,
+    score:      result.total.score,
+    correct:    result.total.correct,
+    wrong:      result.total.wrong,
+    skipped:    result.total.skipped,
+    total:      bundle.questions.length,
+    pct:        percentage(result.total.rawScaled, bundle.questions.length),
+    elapsed_s:  state.elapsed,
+    label:      EXAM_LABEL || bundle.exam_title || "Exam",
+    api_prefix: API_PREFIX,
+    back_url:   BACK_URL,
+    home_url:   BACK_URL,
+  });
+  const section_defs = bundle.sections.map(s => ({ id: s.id, label: s.label }));
+  sessionStorage.setItem(`result_${sessionId}`, JSON.stringify({
+    answer_key: data.answer_key, responses,
+    sections: result.sections, section_defs,
+    elapsed_s: state.elapsed, ...result.total,
+  }));
+  window.location.href = `${RESULT_URL}?${params}`;
+};
+
+async function autoSubmit() { window.confirmSubmit(); }
+
+async function pushSync() {
+  if (!sessionId || !state) return;
+  const responses = {};
+  for (const [id, q] of Object.entries(state.questions))
+    if (q.attempted) responses[id] = { chosen: q.chosen, attempted: true };
+  localStorage.setItem(`checkpoint_${sessionId}`, serialize(state));
+  fetch(`${API_PREFIX}/exam/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("auth_token")}` },
+    body: JSON.stringify({ session_id: sessionId, elapsed_s: state.elapsed, responses }),
+  }).catch(() => {});
+}
+
+init();
+</script>
+</body>
+</html>

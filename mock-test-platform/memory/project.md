@@ -22,7 +22,7 @@ Cost: ₹5–10/user/yr → ₹0.10 at scale
 | Web FE | HTMX + Tailwind CDN, fully responsive (mobile/tablet/desktop) |
 | Mobile FE | React Native (Expo), phone + tablet layouts |
 | Desktop | Electron — wraps web renderer, active v1 (not stub) |
-| Tests | Vitest (JS) + Pytest (Python) |
+| Tests | Vitest (unit+integration) + Playwright (web+desktop E2E) + Maestro (mobile E2E) |
 | Deploy | Wrangler (CF) + AWS SAM (Lambda) |
 
 ## v1 Active / Stub
@@ -43,7 +43,7 @@ mock-test-platform/
 ├── docs/                   ← architecture.md, exam-module.md
 ├── memory/                 ← THIS FOLDER (canonical)
 ├── platform/
-│   ├── gateway/            ← CF Worker: routing
+│   ├── gateway/            ← CF Worker: routing + wrangler.toml
 │   └── lambda/             ← SAM stack
 │       ├── shared/         ← config.py, db.py, models.py
 │       ├── tenant/tps/     ← ACTIVE
@@ -55,52 +55,84 @@ mock-test-platform/
 │       ├── migrations/
 │       ├── template.yaml
 │       └── requirements.txt
-└── modules/
-    ├── auth/               ← 25 screens, dynamic RBAC, theme-aware
-    │   ├── backend/        ← worker.js, otp.js, jwt.js, access.js, config.js, session.js, device.js
-    │   └── fe/
-    │       ├── web/        ← 25 screens (responsive: mobile/tablet/desktop)
-    │       ├── mobile/     ← 25 screens (phone + tablet, React Native)
-    │       └── shared/     ← themes.js (25 themes × 2 modes), layouts/ (25 templates)
-    ├── app-shell/          ← composition root ONLY
-    └── rrb-group-d/        ← exam module template
-        ├── backend/        ← worker.js, config.js, marking.js, tsf.js, tenant.js, theme.js
-        ├── fe/
-        │   ├── shared/     ← scoring.js, qstate.js
-        │   ├── shared/components/  ← copy-paste UI library (Table, Modal, Drawer…)
-        │   ├── web/        ← index.html, app.js, storage.js, sync.js, sw.js (responsive: mobile/tablet/desktop)
-        │   ├── mobile/     ← ExamScreen, ResultScreen, components/, services/, utils/ (phone + tablet)
-        │   └── desktop/    ← main.js, preload.js, package.json (Electron, wraps web)
-        ├── tests/
-        ├── package.json
-        └── wrangler.toml
+├── modules/
+│   ├── auth/               ← COMPLETE (backend + web 15 screens + mobile 15 screens + desktop)
+│   │   ├── backend/        ← worker.js, otp.js, jwt.js, access.js, config.js
+│   │   ├── wrangler.toml
+│   │   └── fe/
+│   │       ├── web/        ← 15 HTML screens
+│   │       ├── mobile/     ← 15 screens (React Native, plain JS)
+│   │       ├── desktop/    ← desktop-adapter.js, main.js, preload.js, desktop.css
+│   │       └── shared/     ← api.js, base.css, components.js, themes.js (25×2), landing-layouts.js (25)
+│   ├── app-shell/          ← placeholder (empty)
+│   └── rrb-group-d/        ← COMPLETE — exam module template
+│       ├── backend/        ← worker.js, config.js, marking.js, tsf.js
+│       ├── wrangler.toml
+│       └── fe/
+│           ├── shared/     ← scoring.ts+js, qstate.ts+js, useQstate.ts+js (TS=source, JS=esbuild output)
+│           │               ← package.json with build:shared + typecheck scripts
+│           ├── web/        ← exam.html, result.html, home.html, analysis.html
+│           ├── mobile/     ← ExamScreen.js, ResultScreen.js, HomeScreen.js (React Native)
+│           │               ← api.ts (TypeScript boundary), Navigator.tsx
+│           └── desktop/    ← main.js, preload.js, package.json (Electron)
+└── tests/                  ← COMPLETE — 115 tests all green
+    ├── unit/               ← scoring (22 tests), qstate (37 tests)
+    ├── integration/
+    │   ├── auth/           ← worker.test.ts (23 tests)
+    │   └── rrb-group-d/    ← worker.test.ts (33 tests)
+    ├── e2e/
+    │   ├── web/            ← auth.spec.ts (8), exam.spec.ts (14) — Playwright
+    │   ├── mobile/         ← 6 Maestro YAML flows
+    │   └── desktop/        ← exam.spec.ts (7) — Playwright Electron
+    └── package.json        ← vitest + playwright deps
 ```
+
+## TypeScript Boundary Rule
+TypeScript ONLY at shared boundaries — never in leaf nodes:
+- `fe/shared/*.ts` — scoring, qstate, useQstate (types consumed by both mobile + web)
+- `fe/mobile/src/utils/api.ts` — API contract (injected via initApi(getToken) factory)
+- `fe/mobile/src/navigation/Navigator.tsx` — typed screen params
+- Leaf nodes (screens, RN components) stay plain `.js`
+- Web HTML files import `.js` versions (esbuild-compiled from `.ts`)
+
+## Scoring — Integer Scale
+- CORRECT_SCALED = 1000, NEGATIVE_SCALED = 333 (floor 1000/3)
+- Never round mid-calculation — only at display via formatScore()
+- formatScore uses toFixed(3) + strip trailing zeros → -333 displays as "-0.333"
+
+## Key KV Keys
+| Key | Value |
+|---|---|
+| `jwt:{hash}` | JWT claims — written by auth worker on login |
+| `tsf:{session_id}` | Test Session File (has answer_key, never in R2 bundle) |
+| `active_session:{tenantId}:{uid}` | Current session_id for resume detection |
+| `idem:submit:{session_id}` | Cached submit result (24h idempotency) |
+| `history:{tenantId}:{uid}` | Array of past attempt summaries (last 200) |
+| `exam_catalogue:{tenantId}` | Override for GET /rrb/exams (optional) |
+| `otp:{phone}` | 6-digit OTP (10-min TTL) |
+| `user:{tenantId}:{phone}` | uid mapping (30-day TTL) |
+| `tenant:{tenantId}` | Tenant config (modules, tier) |
 
 ## Stable Contracts (never change after v1)
 | Contract | Value |
 |---|---|
 | TSF JSON schema | session_id, tenant_id, uid, exam_id, started_at, duration_ms, bundle_key, answers, states, current_qid, submitted, submitted_at |
-| KV keys | `slug:` `domain:` `tenant:` `flag:` `tsf:` `idem:` `bundle:` `auth_config:` `landing:` `otp:` `user:` `session:` `lockout:` `device:` |
-| Module API routes | `/config` `/session` `/start` `/answer` `/flag` `/submit` `/result` |
-| Batch result format | `{test_id, module_id, score, correct, wrong, unattempted, answers, submitted_at}` |
-| QID format | `SUBJ-topic-subtopic-type-difficulty-cat-000001` (7 parts) |
-| 5 question states | not_visited, not_answered, answered, marked_review, answered_marked |
+| Module API routes | `GET /rrb/exams` `POST /rrb/exam/start` `POST /rrb/exam/sync` `POST /rrb/exam/submit` `GET /rrb/exam/resume` `GET /rrb/bundle/:key` `GET /rrb/stats` `GET /rrb/history` |
+| Auth API routes | `POST /auth/otp/request` `POST /auth/otp/verify` `GET /auth/me` |
+| 6 question states | not_visited, active, answered, skipped, marked_review, answered_marked |
 | Schema naming | `tenant_{slug}` |
 
-## Theme + Landing System
-- Theme = tenant-level (all modules share one brand)
-- Layout + Content = module-level (per exam)
-- 25 themes × 25 layouts × 2 modes = 1,250 combinations
-- KV: `tenant:{id}` holds theme config
-- KV: `landing:{tenantId}:{moduleId}` holds layout + content
-- Admin publishes → KV write → live instantly
-- Preview Player shows all 25 auth screens with selected config
+## Build / v1 Status
+- Branch: `build/v1`
+- All tests: 115 passing (unit + integration + specs written)
+- app-shell module: placeholder only (not needed for v1 launch)
+- Vite build for web: not yet (web HTML works without bundler for dev; prod bundling deferred)
+- Next: merge build/v1 → main when ready to deploy
 
 ## Adding a New Module
 1. Copy `modules/rrb-group-d/` → `modules/{id}/`
 2. Update `backend/config.js` — pattern, sections, marking
-3. Update `package.json` name, `wrangler.toml` worker name + routes
-4. Add 2 lines to `app-shell/mobile/App.js` (import + Stack.Screen)
-5. Add entry to `auth/backend/access.js` MODULE_REGISTRY
-6. Add service binding to `platform/gateway/wrangler.toml`
-7. `wrangler deploy` from module folder
+3. Update `wrangler.toml` — worker name
+4. Add 2 lines to `auth/backend/access.js` MODULE_REGISTRY
+5. Add service binding to `platform/gateway/wrangler.toml`
+6. `wrangler deploy` from module folder
